@@ -51,8 +51,6 @@ function drawConnections() {
 
         ctx.beginPath();
         ctx.moveTo(x1, y1);
-
-        // curva estilo cabo
         ctx.bezierCurveTo(
             x1 + 100, y1,
             x2 - 100, y2,
@@ -75,7 +73,7 @@ function updateClock() {
 }
 setInterval(updateClock, 1000);
 updateClock();
-
+//FDRAG
 function makeDraggable(element, handleElement) {
     let pos1=0,pos2=0,pos3=0,pos4=0;
     const dragHandle = handleElement || element;
@@ -96,6 +94,7 @@ function makeDraggable(element, handleElement) {
             pos2 = pos4 - e.clientY;
             pos3 = e.clientX;
             pos4 = e.clientY;
+            drawConnections();
 
             element.style.top = (element.offsetTop - pos2) + "px";
             element.style.left = (element.offsetLeft - pos1) + "px";
@@ -118,7 +117,9 @@ async function loadApps() {
 }
 
 function createDesktopIcons() {
-    desktop.innerHTML = '';
+    document.querySelectorAll('.icon.app').forEach(e => e.remove());
+    const icon = document.createElement('div');
+    icon.className = 'icon app'; 
 
     appsList.forEach((app, i) => {
         const icon = document.createElement('div');
@@ -295,7 +296,7 @@ document.getElementById('menu-open').onclick = () => {
         openAppById(currentTargetIcon.dataset.app);
     }
 };
-
+document.getElementById('menu-new-notepad').onclick = createNotepadFile;
 document.getElementById('menu-rename').onclick = () => {
     if (!currentTargetIcon) return;
 
@@ -389,6 +390,7 @@ function applySavedState() {
     if (state.wallpaper) {
         document.body.style.backgroundImage = `url('${state.wallpaper}')`;
     }
+
 }
 
 
@@ -538,6 +540,93 @@ window.pescar = function(appId) {
 
     emitResource(appId, peixe);
 };
+function renderDesktopFiles() {
+    // SWIPE NOS ICONES ANTIGOS
+    document.querySelectorAll('.icon.file').forEach(e => e.remove());
+
+    const files = getFiles();
+
+    files.forEach((file, i) => {
+        if (file.type !== 'text') return;
+
+        const icon = document.createElement('div');
+        icon.className = 'icon file';
+
+        icon.style.top = `${20 + i * 80}px`;
+        icon.style.left = `120px`;
+
+        icon.innerHTML = `
+            <div class="icon-img">📝</div>
+            <span>${file.name}</span>
+        `;
+
+        makeDraggable(icon);
+
+        icon.ondblclick = () => openNotepad(file.id);
+
+        desktop.appendChild(icon);
+    });
+}
+function openNotepad(fileId) {
+    const files = getFiles();
+    const file = files.find(f => f.id === fileId);
+    if (!file) return;
+
+    const win = document.createElement('div');
+    win.className = 'window';
+    win.style.zIndex = ++zIndexCounter;
+
+    win.style.top = '120px';
+    win.style.left = '150px';
+    win.style.width = '300px';
+    win.style.height = '200px';
+
+    win.innerHTML = `
+        <div class="title-bar">
+            <span>${file.name}</span>
+            <button class="close-btn">X</button>
+        </div>
+        <textarea class="notepad-area" 
+            style="width:100%;height:calc(100% - 30px);resize:none;">
+${file.data?.content || ''}
+        </textarea>
+    `;
+
+    desktop.appendChild(win);
+
+    const textarea = win.querySelector('.notepad-area');
+
+   
+    textarea.addEventListener('mousedown', e => e.stopPropagation());
+
+    // AUTO SAVE
+    textarea.addEventListener('input', () => {
+        file.data.content = textarea.value;
+        saveFiles(files);
+    });
+
+    win.querySelector('.close-btn').onclick = () => {
+        win.remove();
+    };
+
+    makeDraggable(win, win.querySelector('.title-bar'));
+    makeResizable(win);
+}
+function createNotepadFile() {
+    const success = addFile({
+        name: "Novo.txt",
+        type: "text",
+        data: {
+            content: ""
+        }
+    });
+
+    if (success) {
+        renderDesktopFiles();
+    }
+}
 //INIT
 loadApps();
 applySavedState();
+renderDesktopFiles(); 
+

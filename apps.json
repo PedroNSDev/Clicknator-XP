@@ -12,7 +12,8 @@
     "html": "apps/notas.html",
     "type": "text",
     "conn": "output",
-    "format": "fish"
+    "format": "fish",
+    "instantiable": true
   },
   {
     "id": "gonetgo",
