@@ -29,9 +29,37 @@
 <iframe id="frame"></iframe>
 
 <script>
-function go() {
-    let url = document.getElementById('url').value;
+async function go() {
+    let url = document.getElementById('url').value.trim();
 
+    // .gogo
+    if (url.endsWith('.gogo')) {
+        const nome = url.replace('.gogo', '').toLowerCase();
+
+        try {
+            const res = await fetch('../sites.json'); // 👈 caminho corrigido
+            const sites = await res.json();
+
+            const site = sites.find(s => 
+                s.nome.toLowerCase() === nome
+            );
+
+            if (!site) {
+                alert('Site .gogo não encontrado!');
+                return;
+            }
+
+            document.getElementById('frame').src = site.html;
+            return;
+
+        } catch (err) {
+            console.error(err);
+            alert('Erro ao carregar sites.json');
+            return;
+        }
+    }
+
+    // FLUXO NORMAL
     if (!url.startsWith('http')) {
         url = 'https://' + url;
     }
@@ -39,6 +67,5 @@ function go() {
     document.getElementById('frame').src = url;
 }
 </script>
-
 </body>
 </html>

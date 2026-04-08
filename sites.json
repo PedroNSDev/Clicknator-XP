@@ -2,5 +2,11 @@
   {
     "nome": "googlar",
     "html": "../sites/googlar.html"
+  },
+  {
+    "nome": "gogoshop",
+    "html":"../sites/GoGoShop.html"
+
+
   }
 ]

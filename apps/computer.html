@@ -1,0 +1,22 @@
+<div>Usuário: <span id="username"></span></div>
+<div>RAM: <span id="ram"></span></div>
+<div>Espaço: <span id="space"></span></div>
+<div>Sessão: <span id="session"></span></div>
+<script>
+function updateSystemInfo() {
+    const sys = window.parent.systemInfo;
+
+    if (!sys) return;
+
+    document.getElementById('username').innerText = sys.username || "User";
+    document.getElementById('ram').innerText = sys.ram + " MB";
+    document.getElementById('space').innerText = sys.space + " MB";
+    document.getElementById('session').innerText = sys.session_time + "s";
+}
+
+// roda ao carregar
+updateSystemInfo();
+
+// atualiza a cada segundo
+setInterval(updateSystemInfo, 1000);
+</script>

@@ -7,6 +7,18 @@ const SAVE_KEY = 'winxp-state';
 //VARIAVEIS DE CONTROLE 
 let pendingConnection = null;
 
+let systemInfo = {
+    username: "",
+    ram: 64,
+    space: 2048,
+    session_time: 0
+};
+window.systemInfo = {
+    username: "",
+    ram: 64,
+    space: 2048,
+    session_time: 0
+};
 
 function saveState(data) {
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
@@ -170,7 +182,7 @@ function createWindow(app) {
     win.className = 'window';
     win.id = `window-${app.id}`;
     win.style.zIndex = ++zIndexCounter;
-
+    
     const offset = (openApps.size * 20) + 50;
     win.style.top = `${offset}px`;
     win.style.left = `${offset}px`;
@@ -540,6 +552,7 @@ window.pescar = function(appId) {
 
     emitResource(appId, peixe);
 };
+
 function renderDesktopFiles() {
     // SWIPE NOS ICONES ANTIGOS
     document.querySelectorAll('.icon.file').forEach(e => e.remove());
