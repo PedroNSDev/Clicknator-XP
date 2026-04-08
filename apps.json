@@ -1,0 +1,26 @@
+[
+  {
+    "id": "computer",
+    "nome": "Meu Computador",
+    "icone": "💻",
+    "html": "apps/computer.html"
+  },
+  {
+    "id": "notepad",
+    "nome": "Bloco de Notas",
+    "icone": "📝",
+    "html": "apps/notepad.html"
+  },
+  {
+    "id": "gonetgo",
+    "nome": "GoNetGo!",
+    "icone": "🌐",
+    "html": "apps/browser.html"
+  },
+   {
+    "id": "dungeonclash",
+    "nome": "DungeonC lash",
+    "icone": "⚔",
+    "html": "apps/Dungeon.html"
+   }
+]

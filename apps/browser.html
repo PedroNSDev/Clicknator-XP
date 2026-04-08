@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { margin:0; font-family:sans-serif; }
+        .bar {
+            background:#ddd;
+            padding:5px;
+            display:flex;
+        }
+        input {
+            flex:1;
+            padding:5px;
+        }
+        iframe {
+            width:100%;
+            height:calc(100vh - 40px);
+            border:none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="bar">
+    <input id="url" placeholder="Digite uma URL (ex: https://example.com)">
+    <button onclick="go()">Ir</button>
+</div>
+
+<iframe id="frame"></iframe>
+
+<script>
+function go() {
+    let url = document.getElementById('url').value;
+
+    if (!url.startsWith('http')) {
+        url = 'https://' + url;
+    }
+
+    document.getElementById('frame').src = url;
+}
+</script>
+
+</body>
+</html>
