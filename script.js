@@ -1,7 +1,21 @@
-// ================= ESTADO =================
 const openApps = new Set();
 let zIndexCounter = 10;
 let appsList = [];
+let connections = [];
+const SAVE_KEY = 'winxp-state';
+
+//VARIAVEIS DE CONTROLE 
+let pendingConnection = null;
+
+
+function saveState(data) {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+}
+
+function loadState() {
+    const data = localStorage.getItem(SAVE_KEY);
+    return data ? JSON.parse(data) : {};
+}
 
 const desktop = document.getElementById('desktop');
 const taskbarApps = document.getElementById('taskbar-apps');
@@ -14,8 +28,45 @@ const wallpaperInput = document.getElementById('wallpaper-input');
 const changeWallpaperBtn = document.getElementById('change-wallpaper');
 
 let currentTargetIcon = null;
+///FCANVAS
+const canvas = document.getElementById('cables');
+const ctx = canvas.getContext('2d');
 
-// ================= CLOCK =================
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+function drawConnections() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    connections.forEach(conn => {
+        const rect1 = conn.from.getBoundingClientRect();
+        const rect2 = conn.to.getBoundingClientRect();
+
+        const x1 = rect1.left + rect1.width;
+        const y1 = rect1.top + rect1.height / 2;
+
+        const x2 = rect2.left;
+        const y2 = rect2.top + rect2.height / 2;
+
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+
+        // curva estilo cabo
+        ctx.bezierCurveTo(
+            x1 + 100, y1,
+            x2 - 100, y2,
+            x2, y2
+        );
+
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    });
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+////FClock
 function updateClock() {
     const now = new Date();
     const h = now.getHours().toString().padStart(2, '0');
@@ -25,7 +76,6 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
-// ================= DRAG =================
 function makeDraggable(element, handleElement) {
     let pos1=0,pos2=0,pos3=0,pos4=0;
     const dragHandle = handleElement || element;
@@ -54,19 +104,19 @@ function makeDraggable(element, handleElement) {
         if (element.classList.contains('window')) {
             element.style.zIndex = ++zIndexCounter;
         }
+        if (element.classList.contains('window')) {
+            drawConnections();
+        }
     };
 }
 
-// ================= LOAD APPS =================
 async function loadApps() {
     const res = await fetch('apps.json');
     appsList = await res.json();
-
     createDesktopIcons();
     populateStartMenu();
 }
 
-// ================= ICONS =================
 function createDesktopIcons() {
     desktop.innerHTML = '';
 
@@ -100,7 +150,6 @@ function createDesktopIcons() {
     });
 }
 
-// ================= OPEN APP =================
 function openAppById(appId) {
     const app = appsList.find(a => a.id === appId);
     if (!app) return;
@@ -115,7 +164,6 @@ function openAppById(appId) {
     createWindow(app);
 }
 
-// ================= WINDOW =================
 function createWindow(app) {
     const win = document.createElement('div');
     win.className = 'window';
@@ -126,16 +174,20 @@ function createWindow(app) {
     win.style.top = `${offset}px`;
     win.style.left = `${offset}px`;
 
-        win.innerHTML = `
+    win.dataset.conn = app.conn || 'none';
+    win.dataset.format = app.format || 'any';
+
+    win.innerHTML = `
         <div class="title-bar">
             <span>${app.nome}</span>
-            <button class="close-btn">X</button>
+            <div>
+                <button class="connect-btn">🔌</button>
+                <button class="close-btn">X</button>
+            </div>
         </div>
         <div class="window-content">
             <iframe src="${app.html}" style="width:100%;height:100%;border:none;"></iframe>
         </div>
-
-        <!-- Handles de resize -->
         <div class="resize-handle right"></div>
         <div class="resize-handle bottom"></div>
         <div class="resize-handle corner"></div>
@@ -143,10 +195,29 @@ function createWindow(app) {
 
     desktop.appendChild(win);
 
+    // ✅ AGORA sim ele existe
+    const connectBtn = win.querySelector('.connect-btn');
+
+    connectBtn.onclick = () => {
+        if (!pendingConnection) {
+            pendingConnection = {
+                win: win,
+                type: win.dataset.conn,
+                format: win.dataset.format
+            };
+            connectBtn.style.background = 'yellow';
+        } else {
+            tryConnect(pendingConnection, win);
+            pendingConnection = null;
+
+            document.querySelectorAll('.connect-btn')
+                .forEach(btn => btn.style.background = '');
+        }
+    };
+
     makeDraggable(win, win.querySelector('.title-bar'));
     makeResizable(win);
 
-    // TASKBAR
     const taskItem = document.createElement('div');
     taskItem.className = 'taskbar-app active';
     taskItem.innerText = app.nome;
@@ -154,7 +225,6 @@ function createWindow(app) {
 
     taskItem.onclick = () => win.style.zIndex = ++zIndexCounter;
 
-    // CLOSE
     win.querySelector('.close-btn').onclick = () => {
         win.remove();
         taskItem.remove();
@@ -166,101 +236,7 @@ function createWindow(app) {
     });
 }
 
-// ================= CONTEXT MENU =================
-document.addEventListener('click', () => {
-    contextMenu.classList.remove('visible');
-});
 
-document.getElementById('menu-open').onclick = () => {
-    if (currentTargetIcon) {
-        openAppById(currentTargetIcon.dataset.app);
-    }
-};
-
-document.getElementById('menu-rename').onclick = () => {
-    if (!currentTargetIcon) return;
-
-    const span = currentTargetIcon.querySelector('span');
-    const nome = prompt("Novo nome:", span.innerText);
-
-    if (nome) span.innerText = nome;
-};
-
-document.getElementById('menu-pin').onclick = () => {
-    if (!currentTargetIcon) return;
-
-    const appId = currentTargetIcon.dataset.app;
-
-    if (document.getElementById(`quick-${appId}`)) return;
-
-    const quick = document.createElement('div');
-    quick.className = 'quick-icon';
-    quick.id = `quick-${appId}`;
-    quick.innerText = currentTargetIcon.querySelector('.icon-img').innerText;
-
-    quick.onclick = () => openAppById(appId);
-
-    document.getElementById('quick-launch').appendChild(quick);
-};
-
-// ================= START MENU =================
-startBtn.onclick = (e) => {
-    e.stopPropagation();
-    startMenu.classList.toggle('visible');
-};
-
-document.addEventListener('click', (e) => {
-    if (!startMenu.contains(e.target) && e.target !== startBtn) {
-        startMenu.classList.remove('visible');
-    }
-});
-
-function populateStartMenu() {
-    const list = document.getElementById('start-apps-list');
-    if (!list) return;
-
-    list.innerHTML = '';
-
-    appsList.forEach(app => {
-        const item = document.createElement('div');
-        item.className = 'menu-item-right';
-        item.innerHTML = `${app.icone} ${app.nome}`;
-
-        item.onclick = () => {
-            openAppById(app.id);
-            startMenu.classList.remove('visible');
-        };
-
-        list.appendChild(item);
-    });
-}
-
-// ================= WALLPAPER =================
-if (changeWallpaperBtn && wallpaperInput) {
-    changeWallpaperBtn.onclick = () => wallpaperInput.click();
-
-    wallpaperInput.onchange = function() {
-        const file = this.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = e => {
-            document.body.style.backgroundImage = `url('${e.target.result}')`;
-        };
-        reader.readAsDataURL(file);
-    };
-}
-
-// ================= SHUTDOWN =================
-const shutdownBtn = document.getElementById('shutdown-btn');
-if (shutdownBtn) {
-    shutdownBtn.onclick = () => {
-        if (confirm("Desligar?")) {
-            document.body.innerHTML =
-                "<div style='background:black;color:white;height:100vh;display:flex;align-items:center;justify-content:center;'>Pode desligar com segurança.</div>";
-        }
-    };
-}
 function makeResizable(win) {
     const right = win.querySelector('.resize-handle.right');
     const bottom = win.querySelector('.resize-handle.bottom');
@@ -303,5 +279,241 @@ function makeResizable(win) {
     bottom.onmousedown = (e) => initResize(e, 'bottom');
     corner.onmousedown = (e) => initResize(e, 'corner');
 }
-// ================= INIT =================
+
+document.addEventListener('click', () => {
+    contextMenu.classList.remove('visible');
+});
+
+document.getElementById('menu-open').onclick = () => {
+    if (currentTargetIcon) {
+        openAppById(currentTargetIcon.dataset.app);
+    }
+};
+
+document.getElementById('menu-rename').onclick = () => {
+    if (!currentTargetIcon) return;
+
+    const span = currentTargetIcon.querySelector('span');
+    const nome = prompt("Novo nome:", span.innerText);
+
+    if (nome) span.innerText = nome;
+};
+
+document.getElementById('menu-pin').onclick = () => {
+    if (!currentTargetIcon) return;
+
+    const appId = currentTargetIcon.dataset.app;
+
+    if (document.getElementById(`quick-${appId}`)) return;
+
+    const quick = document.createElement('div');
+    quick.className = 'quick-icon';
+    quick.id = `quick-${appId}`;
+    quick.innerText = currentTargetIcon.querySelector('.icon-img').innerText;
+
+    quick.onclick = () => openAppById(appId);
+
+    document.getElementById('quick-launch').appendChild(quick);
+};
+
+startBtn.onclick = (e) => {
+    e.stopPropagation();
+    startMenu.classList.toggle('visible');
+};
+
+document.addEventListener('click', (e) => {
+    if (!startMenu.contains(e.target) && e.target !== startBtn) {
+        startMenu.classList.remove('visible');
+    }
+});
+
+function populateStartMenu() {
+    const list = document.getElementById('start-apps-list');
+    if (!list) return;
+
+    list.innerHTML = '';
+
+    appsList.forEach(app => {
+        const item = document.createElement('div');
+        item.className = 'menu-item-right';
+        item.innerHTML = `${app.icone} ${app.nome}`;
+
+        item.onclick = () => {
+            openAppById(app.id);
+            startMenu.classList.remove('visible');
+        };
+
+        list.appendChild(item);
+    });
+}
+
+if (changeWallpaperBtn && wallpaperInput) {
+    changeWallpaperBtn.onclick = () => wallpaperInput.click();
+
+    wallpaperInput.onchange = function() {
+        const file = this.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = e => {
+    const img = e.target.result;
+
+    document.body.style.backgroundImage = `url('${img}')`;
+
+    const state = loadState();
+    state.wallpaper = img;
+    saveState(state);
+};
+        reader.readAsDataURL(file);
+    };
+}
+
+const shutdownBtn = document.getElementById('shutdown-btn');
+if (shutdownBtn) {
+    shutdownBtn.onclick = () => {
+        if (confirm("Desligar?")) {
+            document.body.innerHTML =
+                "<div style='background:black;color:white;height:100vh;display:flex;align-items:center;justify-content:center;'>Pode desligar com segurança.</div>";
+        }
+    };
+}
+function applySavedState() {
+    const state = loadState();
+
+    if (state.wallpaper) {
+        document.body.style.backgroundImage = `url('${state.wallpaper}')`;
+    }
+}
+
+
+window.addEventListener('message', (event) => {
+    if (event.data.type === 'open-app') {
+        openAppById(event.data.appId);
+    }
+});
+/////FFILE
+const FILE_KEY = 'winxp-files';
+window.addEventListener('message', (event) => {
+
+    if (event.data.type === 'create-file') {
+        const success = addFile(event.data.file);
+
+        if (!success) {
+            alert('Inventário cheio!');
+        }
+    }
+
+});
+function getFiles() {
+    return JSON.parse(localStorage.getItem(FILE_KEY)) || [];
+}
+
+function saveFiles(files) {
+    localStorage.setItem(FILE_KEY, JSON.stringify(files));
+}
+
+function addFile(file) {
+    const files = getFiles();
+
+    if (files.length >= 10) {
+        alert('Inventário cheio!');
+        return false;
+    }
+
+    files.push({
+        id: Date.now(),
+        name: file.name,
+        type: file.type,
+        data: file.data || null
+    });
+
+    saveFiles(files);
+    return true;
+}
+
+function deleteFile(id) {
+    let files = getFiles();
+    files = files.filter(f => f.id !== id);
+    saveFiles(files);
+}
+////FCONECT
+function tryConnect(a, targetWin) {
+    const b = {
+        win: targetWin,
+        type: targetWin.dataset.conn,
+        format: targetWin.dataset.format
+    };
+
+    if (a.win === b.win) return;
+
+    if (a.type === b.type) {
+        alert('Precisa conectar input com output');
+        return;
+    }
+
+    if (a.type !== 'storage' && b.type !== 'storage') {
+        if (a.format !== b.format) {
+            alert('Formato incompatível');
+            return;
+        }
+    }
+
+    connections.push({
+        from: a.type === 'output' ? a.win : b.win,
+        to: a.type === 'output' ? b.win : a.win
+    });
+
+    drawConnections();
+}
+window.emitResource = function(appId, resource) {
+
+    const sourceWin = document.getElementById(`window-${appId}`);
+    if (!sourceWin) return;
+
+    const conn = connections.find(c => c.from === sourceWin);
+
+    if (!conn) {
+        alert('Nenhuma conexão encontrada!');
+        return false;
+    }
+
+    const targetWin = conn.to;
+    const targetType = targetWin.dataset.conn;
+    const targetFormat = targetWin.dataset.format;
+
+    //FCHECK
+    if (targetType !== 'storage' && targetType !== 'input') {
+        alert('Destino inválido!');
+        return false;
+    }
+
+    // FCHECK .FORMAT
+    if (targetType !== 'storage' && targetFormat !== resource.type) {
+        alert('Formato incompatível!');
+        return false;
+    }
+
+    const success = addFile(resource);
+
+    if (!success) {
+        alert('Inventário cheio!');
+        return false;
+    }
+
+    return true;
+};
+window.pescar = function(appId) {
+
+    const peixe = {
+        name: "Peixe_" + Math.floor(Math.random()*100),
+        type: "fish",
+        data: {
+            raridade: Math.random()
+        }
+    };
+
+    emitResource(appId, peixe);
+};
+//INIT
 loadApps();
+applySavedState();

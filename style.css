@@ -331,3 +331,14 @@ body {
     height: 10px;
     cursor: nwse-resize;
 }
+.connect-btn {
+    margin-right: 5px;
+    cursor: pointer;
+}
+#cables {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none; 
+    z-index: 999;
+}

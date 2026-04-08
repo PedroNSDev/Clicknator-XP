@@ -7,20 +7,63 @@
   },
   {
     "id": "notepad",
-    "nome": "Bloco de Notas",
+    "nome": "Me leia.txt",
     "icone": "📝",
-    "html": "apps/notepad.html"
+    "html": "apps/notas.html",
+    "type": "text",
+    "conn": "output",
+    "format": "fish"
   },
   {
     "id": "gonetgo",
     "nome": "GoNetGo!",
     "icone": "🌐",
-    "html": "apps/browser.html"
+    "html": "apps/browser.html",
+    "type": "Browser"
   },
    {
     "id": "dungeonclash",
     "nome": "DungeonC lash",
-    "icone": "⚔",
-    "html": "apps/Dungeon.html"
-   }
-]
+    "icone": "📪",
+    "html": "apps/dungeon.html"
+   },
+    {
+    "id": "mail",
+    "nome": "GoMailGo!",
+    "icone": "📪",
+    "html": "apps/mail.html"
+   },
+   {
+    "id": "credits",
+    "nome": "Creditos",
+    "icone": "👯",
+    "html": "apps/creditos.html"
+   },
+    {
+    "id": "clicknator",
+    "nome": "clicknator.exe",
+    "icone": "🖱",
+    "html": "apps/clicknator.html",
+    "type": "Game",
+    "conn": "output",
+    "format": "fish"
+   },
+   {
+  "id": "pescaria",
+  "nome": "Pescaria.exe",
+  "icone": "🎣",
+  "html": "apps/pescaria.html",
+  "type": "Game",
+  "conn": "output",
+  "format": "fish"
+},
+  {
+  "id": "inventario",
+  "nome": "Inventário.exe",
+  "icone": "📁",
+  "html": "apps/inventario.html",
+  "type": "System",
+  "conn": "storage",
+  "format": "any"
+}
+]   
