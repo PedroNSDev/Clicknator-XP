@@ -195,7 +195,6 @@ function createWindow(app) {
 
     desktop.appendChild(win);
 
-    // ✅ AGORA sim ele existe
     const connectBtn = win.querySelector('.connect-btn');
 
     connectBtn.onclick = () => {
@@ -226,10 +225,17 @@ function createWindow(app) {
     taskItem.onclick = () => win.style.zIndex = ++zIndexCounter;
 
     win.querySelector('.close-btn').onclick = () => {
-        win.remove();
-        taskItem.remove();
-        openApps.delete(app.id);
-    };
+    
+        connections = connections.filter(conn => 
+            conn.from !== win && conn.to !== win
+        );
+
+    drawConnections(); // redesenha sem elas :P
+
+    win.remove();
+    taskItem.remove();
+    openApps.delete(app.id);
+};
 
     win.addEventListener('mousedown', () => {
         win.style.zIndex = ++zIndexCounter;
@@ -437,6 +443,13 @@ function deleteFile(id) {
     saveFiles(files);
 }
 ////FCONECT
+function removeConnectionsByWindow(win) {
+    connections = connections.filter(conn =>
+        conn.from !== win && conn.to !== win
+    );
+
+    drawConnections();
+}
 function tryConnect(a, targetWin) {
     const b = {
         win: targetWin,
@@ -458,6 +471,17 @@ function tryConnect(a, targetWin) {
         }
     }
 
+    const existingIndex = connections.findIndex(c =>
+        (c.from === a.win && c.to === b.win) ||
+        (c.from === b.win && c.to === a.win)
+    );
+
+    if (existingIndex !== -1) {
+    
+        connections.splice(existingIndex, 1);
+        drawConnections();
+        return;
+    }
     connections.push({
         from: a.type === 'output' ? a.win : b.win,
         to: a.type === 'output' ? b.win : a.win
