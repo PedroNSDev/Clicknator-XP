@@ -3,6 +3,6 @@
 - Utilizar programas Imbutidos
 - Armazenar dados
 - Gerenciar Pastas
-- Salvar Dados
+- Salvar Dados ( apps, baixados, arquivos armazenados.)
  
  

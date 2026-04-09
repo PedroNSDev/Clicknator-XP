@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>GoGo Downloads</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Tahoma, Arial;
+    background: #dfe9f5;
+}
+
+header {
+    background: linear-gradient(#3a6ea5, #2b5797);
+    color: white;
+    padding: 15px;
+}
+
+.container {
+    max-width: 800px;
+    margin: 20px auto;
+    background: white;
+    padding: 20px;
+    border: 1px solid #aaa;
+}
+
+.app {
+    border: 1px solid #ccc;
+    padding: 15px;
+}
+
+button {
+    background: #2b5797;
+    color: white;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #1f3f73;
+}
+</style>
+
+</head>
+
+<body>
+
+<header>
+    <h1>📦 GoGo Downloads</h1>
+    <small>Baixe novos aplicativos para seu sistema</small>
+</header>
+
+<div class="container">
+
+```
+<div class="app">
+    <h2>🎣 Pescaria.exe</h2>
+    <p>Pesque peixes raros e conecte com seu inventário!</p>
+    <p><b>Tamanho:</b> 2MB</p>
+    <p><b>Versão:</b> 1.0</p>
+
+    <button onclick="baixar('pescaria')">Baixar</button>
+</div>
+<div class="app">
+    <h2>🎣 Getmoney.exe</h2>
+    <p>Ganhe Dinheiro OMAI GAAH</p>
+    <p><b>Tamanho:</b> 18.2MB</p>
+    <p><b>Versão:</b> 0.6.66</p>
+
+    <button onclick="baixar('money')">Baixar</button>
+</div>
+
+```
+<div class="app">
+    <h2>🎣 Clicknator.exe</h2>
+    <p>Click</p>
+    <p><b>Tamanho:</b> 100MB</p>
+    <p><b>Versão:</b> 1.0</p>
+
+    <button onclick="baixar('clicknator')">Baixar</button>
+</div>
+</div>
+
+<script>
+function baixar(id) {
+    window.parent.unlockApp(id);
+    alert('Download concluído! 🎉');
+    window.parent.postMessage({
+        type: 'open-app',
+        appId: id
+    }, '*');
+}
+</script>
+
+</body>
+</html>

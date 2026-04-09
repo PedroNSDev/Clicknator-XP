@@ -6,7 +6,9 @@
   {
     "nome": "gogoshop",
     "html":"../sites/GoGoShop.html"
-
-
+  },
+    {
+    "nome": "bloggy",
+    "html":"../sites/Bloggy.html"
   }
 ]

@@ -3,7 +3,31 @@ let zIndexCounter = 10;
 let appsList = [];
 let connections = [];
 const SAVE_KEY = 'winxp-state';
+const UNLOCK_KEY = 'winxp-unlocks';
 
+function getUnlocks() {
+    return JSON.parse(localStorage.getItem(UNLOCK_KEY)) || {};
+}
+function saveUnlocks(data) {
+    localStorage.setItem(UNLOCK_KEY, JSON.stringify(data));
+}
+function isUnlocked(app) {
+    if (app.unlocked === undefined) return true;
+    const unlocks = getUnlocks();
+    if (unlocks.hasOwnProperty(app.id)) {
+        return unlocks[app.id];
+    }
+
+    return app.unlocked;
+}
+function unlockApp(appId) {
+    const unlocks = getUnlocks();
+    unlocks[appId] = true;
+    saveUnlocks(unlocks);
+
+    createDesktopIcons();
+}
+window.unlockApp = unlockApp;
 //VARIAVEIS DE CONTROLE 
 let pendingConnection = null;
 
@@ -127,13 +151,14 @@ async function loadApps() {
     createDesktopIcons();
     populateStartMenu();
 }
-
 function createDesktopIcons() {
-    document.querySelectorAll('.icon.app').forEach(e => e.remove());
-    const icon = document.createElement('div');
-    icon.className = 'icon app'; 
+    desktop.innerHTML = '';
 
     appsList.forEach((app, i) => {
+
+        // FILTRO DE UNLOCK
+        if (!isUnlocked(app)) return;
+
         const icon = document.createElement('div');
         icon.className = 'icon';
         icon.dataset.app = app.id;
