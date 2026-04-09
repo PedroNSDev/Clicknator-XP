@@ -1,4 +1,4 @@
-#Replica simples do Windows XP
+clicknator.com.br
 - Navegar Web
 - Utilizar programas Imbutidos
 - Armazenar dados
