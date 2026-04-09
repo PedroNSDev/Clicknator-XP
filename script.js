@@ -663,6 +663,41 @@ function createNotepadFile() {
         renderDesktopFiles();
     }
 }
+function baixar(id) {
+    unlockApp(id);
+    alert('Download concluído! 🎉');
+    window.postMessage({
+        type: 'open-app',
+        appId: id
+    }, '*');
+}
+window.addEventListener('message', (event) => {
+    const { type, appId, file } = event.data;
+
+    if (type === 'open-app') {
+        openAppById(appId);
+    }
+
+    if (type === 'download-app') {
+        unlockApp(appId); 
+        console.log("App desbloqueado via download:", appId);
+        
+        
+        openAppById(appId);
+    }
+
+    if (type === 'create-file') {
+        const success = addFile(file);
+        if (!success) alert('Inventário cheio!');
+        renderDesktopFiles();
+    }
+});
+
+
+function baixarDireto(id) {
+    unlockApp(id);
+    alert('Download concluído! 🎉');
+}
 //INIT
 loadApps();
 applySavedState();

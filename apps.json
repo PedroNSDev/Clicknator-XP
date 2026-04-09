@@ -50,7 +50,7 @@
     "type": "Game",
     "conn": "output",
     "format": "fish",
-    "unlocked":true
+    "unlocked":false
    },
  
    {
@@ -61,7 +61,7 @@
   "type": "Game",
   "conn": "output",
   "format": "fish",
-  "unlocked":true 
+  "unlocked":false
 },
   {
   "id": "inventario",

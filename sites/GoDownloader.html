@@ -1,51 +1,67 @@
 <!DOCTYPE html>
-
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<title>GoGo Downloads</title>
+    <meta charset="UTF-8">
+    <title>GoGo Downloads</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: "Tahoma", "Arial", sans-serif;
+            background: #dfe9f5;
+            color: #333;
+        }
 
-<style>
-body {
-    margin: 0;
-    font-family: Tahoma, Arial;
-    background: #dfe9f5;
-}
+        header {
+            background: linear-gradient(#3a6ea5, #2b5797);
+            color: white;
+            padding: 15px;
+            border-bottom: 2px solid #1f3f73;
+        }
 
-header {
-    background: linear-gradient(#3a6ea5, #2b5797);
-    color: white;
-    padding: 15px;
-}
+        header h1 { margin: 0; font-size: 24px; }
+        header small { opacity: 0.9; }
 
-.container {
-    max-width: 800px;
-    margin: 20px auto;
-    background: white;
-    padding: 20px;
-    border: 1px solid #aaa;
-}
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            background: white;
+            padding: 20px;
+            border: 1px solid #aaa;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+        }
 
-.app {
-    border: 1px solid #ccc;
-    padding: 15px;
-}
+        .app {
+            border: 1px solid #ccc;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f9f9f9;
+        }
 
-button {
-    background: #2b5797;
-    color: white;
-    border: none;
-    padding: 10px;
-    cursor: pointer;
-}
+        .app-info h2 { margin: 0 0 5px 0; color: #2b5797; font-size: 18px; }
+        .app-info p { margin: 2px 0; font-size: 13px; }
 
-button:hover {
-    background: #1f3f73;
-}
-</style>
+        button {
+            background: linear-gradient(#4a8cdb, #2b5797);
+            color: white;
+            border: 1px solid #1f3f73;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-weight: bold;
+            border-radius: 3px;
+        }
 
+        button:hover {
+            background: #1f3f73;
+        }
+
+        button:active {
+            background: #152c51;
+        }
+    </style>
 </head>
-
 <body>
 
 <header>
@@ -54,45 +70,44 @@ button:hover {
 </header>
 
 <div class="container">
+    <div class="app">
+        <div class="app-info">
+            <h2>🎣 Pescaria.exe</h2>
+            <p>Pesque peixes raros e conecte com seu inventário!</p>
+            <p><b>Tamanho:</b> 2MB | <b>Versão:</b> 1.0</p>
+        </div>
+        <button onclick="baixar('pescaria')">Baixar</button>
+    </div>
 
-```
-<div class="app">
-    <h2>🎣 Pescaria.exe</h2>
-    <p>Pesque peixes raros e conecte com seu inventário!</p>
-    <p><b>Tamanho:</b> 2MB</p>
-    <p><b>Versão:</b> 1.0</p>
+    <div class="app">
+        <div class="app-info">
+            <h2>🤑 Getmoney.exe</h2>
+            <p>Ganhe Dinheiro OMAI GAAH</p>
+            <p><b>Tamanho:</b> 18.2MB | <b>Versão:</b> 0.6.66</p>
+        </div>
+        <button onclick="baixar('money')">Baixar</button>
+    </div>
 
-    <button onclick="baixar('pescaria')">Baixar</button>
-</div>
-<div class="app">
-    <h2>🎣 Getmoney.exe</h2>
-    <p>Ganhe Dinheiro OMAI GAAH</p>
-    <p><b>Tamanho:</b> 18.2MB</p>
-    <p><b>Versão:</b> 0.6.66</p>
-
-    <button onclick="baixar('money')">Baixar</button>
-</div>
-
-```
-<div class="app">
-    <h2>🎣 Clicknator.exe</h2>
-    <p>Click</p>
-    <p><b>Tamanho:</b> 100MB</p>
-    <p><b>Versão:</b> 1.0</p>
-
-    <button onclick="baixar('clicknator')">Baixar</button>
-</div>
+    <div class="app">
+        <div class="app-info">
+            <h2>🖱️ Clicknator.exe</h2>
+            <p>O simulador de cliques definitivo.</p>
+            <p><b>Tamanho:</b> 100MB | <b>Versão:</b> 1.0</p>
+        </div>
+        <button onclick="baixar('clicknator')">Baixar</button>
+    </div>
 </div>
 
 <script>
-function baixar(id) {
-    window.parent.unlockApp(id);
-    alert('Download concluído! 🎉');
-    window.parent.postMessage({
-        type: 'open-app',
-        appId: id
-    }, '*');
-}
+    function baixar(id) {
+       
+        window.parent.postMessage({
+            type: 'download-app',
+            appId: id
+        }, '*');
+        
+        alert('O download de "' + id + '" foi enviado ao sistema! 🎉');
+    }
 </script>
 
 </body>
