@@ -13,7 +13,8 @@
     "type": "text",
     "conn": "output",
     "format": "fish",
-    "instantiable": true
+    "instantiable": true,
+    "ram": 32
 
   },
   {
@@ -21,13 +22,15 @@
     "nome": "GoNetGo!",
     "icone": "🌐",
     "html": "apps/browser.html",
-    "type": "Browser"
+    "type": "Browser",
+    "ram":32
     
   },
    {
     "id": "dungeonclash",
+    "ram": 100,
     "nome": "DungeonC lash",
-    "icone": "📪",
+    "icone": "🤺",
     "html": "apps/dungeon.html"
    },
     {
@@ -40,7 +43,8 @@
     "id": "credits",
     "nome": "Creditos",
     "icone": "👯",
-    "html": "apps/creditos.html"
+    "html": "apps/creditos.html",
+    "ram": 32
    },
     {
     "id": "clicknator",
@@ -61,7 +65,8 @@
   "type": "Game",
   "conn": "output",
   "format": "fish",
-  "unlocked":false
+  "unlocked":false,
+  "ram": 32
 },
   {
   "id": "inventario",

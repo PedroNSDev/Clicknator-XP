@@ -26,18 +26,28 @@
     <button onclick="go()">Ir</button>
 </div>
 
+<div>
+     <button onclick="go('bloggy.gogo')">BLOGGY.gogoo</button>
+</div>
+
 <iframe id="frame"></iframe>
 
 <script>
-async function go() {
-    let url = document.getElementById('url').value.trim();
+async function go(customUrl = null) {
+    let url;
+
+    if (customUrl) {
+        url = customUrl;
+    } else {
+        url = document.getElementById('url').value.trim();
+    }
 
     // .gogo
     if (url.endsWith('.gogo')) {
         const nome = url.replace('.gogo', '').toLowerCase();
 
         try {
-            const res = await fetch('../sites.json'); // 👈 caminho corrigido
+            const res = await fetch('../sites.json');
             const sites = await res.json();
 
             const site = sites.find(s => 

@@ -30,17 +30,12 @@ function unlockApp(appId) {
 window.unlockApp = unlockApp;
 //VARIAVEIS DE CONTROLE 
 let pendingConnection = null;
+let usedRAM = 0;
 
-let systemInfo = {
-    username: "",
-    ram: 64,
-    space: 2048,
-    session_time: 0
-};
 window.systemInfo = {
     username: "",
     ram: 64,
-    space: 2048,
+    space: 100,
     session_time: 0
 };
 
@@ -149,21 +144,23 @@ async function loadApps() {
     const res = await fetch('apps.json');
     appsList = await res.json();
     createDesktopIcons();
+    renderDesktopFiles();
     populateStartMenu();
-}
-function createDesktopIcons() {
+
+}function createDesktopIcons() {
     desktop.innerHTML = '';
 
-    appsList.forEach((app, i) => {
+    let visibleIndex = 0;
 
-        // FILTRO DE UNLOCK
+    appsList.forEach((app) => {
+
         if (!isUnlocked(app)) return;
 
         const icon = document.createElement('div');
         icon.className = 'icon';
         icon.dataset.app = app.id;
 
-        icon.style.top = `${20 + i * 80}px`;
+        icon.style.top = `${20 + visibleIndex * 80}px`;
         icon.style.left = `20px`;
 
         icon.innerHTML = `
@@ -185,6 +182,8 @@ function createDesktopIcons() {
         });
 
         desktop.appendChild(icon);
+
+        visibleIndex++;
     });
 }
 
@@ -192,12 +191,21 @@ function openAppById(appId) {
     const app = appsList.find(a => a.id === appId);
     if (!app) return;
 
+    const requiredRAM = app.ram || 0;
+    const totalRAM = window.systemInfo.ram;
+
+    if (usedRAM + requiredRAM > totalRAM) {
+        alert(`RAM insuficiente!\nUsando: ${usedRAM}/${totalRAM}MB\nPrecisa: ${requiredRAM}MB`);
+        return;
+    }
+
     if (openApps.has(appId)) {
         const existing = document.getElementById(`window-${appId}`);
         if (existing) existing.style.zIndex = ++zIndexCounter;
         return;
     }
 
+    usedRAM += requiredRAM;
     openApps.add(appId);
     createWindow(app);
 }
@@ -263,12 +271,17 @@ function createWindow(app) {
     taskItem.onclick = () => win.style.zIndex = ++zIndexCounter;
 
     win.querySelector('.close-btn').onclick = () => {
-    
-        connections = connections.filter(conn => 
-            conn.from !== win && conn.to !== win
-        );
 
-    drawConnections(); // redesenha sem elas :P
+    const appRAM = app.ram || 0;
+    usedRAM -= appRAM;
+
+    if (usedRAM < 0) usedRAM = 0; 
+
+    connections = connections.filter(conn => 
+        conn.from !== win && conn.to !== win
+    );
+
+    drawConnections();
 
     win.remove();
     taskItem.remove();
@@ -343,6 +356,9 @@ document.getElementById('menu-rename').onclick = () => {
     if (nome) span.innerText = nome;
 };
 
+document.getElementById('menu-unlock').onclick = () => {
+    unlockApp('pescaria')
+}
 document.getElementById('menu-pin').onclick = () => {
     if (!currentTargetIcon) return;
 
@@ -460,8 +476,12 @@ function saveFiles(files) {
 function addFile(file) {
     const files = getFiles();
 
-    if (files.length >= 10) {
-        alert('Inventário cheio!');
+    const fileSize = file.size || 50; 
+
+    const usedSpace = files.reduce((total, f) => total + (f.size || 50), 0);
+
+    if (usedSpace + fileSize > window.systemInfo.space) {
+        alert('Armazenamento cheio!');
         return false;
     }
 
@@ -469,17 +489,22 @@ function addFile(file) {
         id: Date.now(),
         name: file.name,
         type: file.type,
+        size: fileSize,
         data: file.data || null
     });
 
     saveFiles(files);
     return true;
 }
-
+function getUsedSpace() {
+    const files = getFiles();
+    return files.reduce((total, f) => total + (f.size || 50), 0);
+}
 function deleteFile(id) {
     let files = getFiles();
     files = files.filter(f => f.id !== id);
     saveFiles(files);
+    
 }
 ////FCONECT
 function removeConnectionsByWindow(win) {
@@ -566,15 +591,14 @@ window.emitResource = function(appId, resource) {
     return true;
 };
 window.pescar = function(appId) {
-
     const peixe = {
         name: "Peixe_" + Math.floor(Math.random()*100),
         type: "fish",
+        size: Math.floor(Math.random() * 100) + 10, 
         data: {
             raridade: Math.random()
         }
     };
-
     emitResource(appId, peixe);
 };
 
@@ -698,8 +722,37 @@ function baixarDireto(id) {
     unlockApp(id);
     alert('Download concluído! 🎉');
 }
+function initSessionTime() {
+    const state = loadState();
+
+    if (!state.session_time) state.session_time = 0;
+
+    window.systemInfo.session_time = state.session_time;
+    setInterval(() => {
+        window.systemInfo.session_time++;
+
+    }, 1000);
+    setInterval(() => {
+        const state = loadState();
+        state.session_time = window.systemInfo.session_time;
+        saveState(state);
+
+    }, 10000);
+}
+function calculateRAM() {
+    const files = getFiles();
+    const baseRAM = 64; 
+    const perFile = 5;  
+    const used = files.length * perFile;
+    window.systemInfo.ram = baseRAM + used;
+}
+function getRAMInfo() {
+    return `${usedRAM}/${window.systemInfo.ram} MB`;
+}
+window.getRAMInfo = getRAMInfo;
 //INIT
-loadApps();
+
 applySavedState();
-renderDesktopFiles(); 
+initSessionTime();
+loadApps();
 
