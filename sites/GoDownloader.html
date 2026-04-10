@@ -101,14 +101,16 @@
 <script>
     function baixar(id) {
        
-        window.parent.postMessage({
+        window.top.postMessage({ ///ERA LOWKEY SO TER COLOCADO TOP AO INVES DE PARENT KKKKKKKKKKKK
             type: 'download-app',
             appId: id
         }, '*');
-        
+        //placeholder criar notificao do proprio os
         alert('O download de "' + id + '" foi enviado ao sistema! 🎉');
     }
 </script>
 
 </body>
 </html>
+
+

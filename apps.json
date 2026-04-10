@@ -43,8 +43,8 @@
     "id": "credits",
     "nome": "Creditos",
     "icone": "👯",
-    "html": "apps/creditos.html",
-    "ram": 32
+    "html": "https://github.com/PedroNSDev/Portfolio",
+    "ram": 1
    },
     {
     "id": "clicknator",
@@ -54,7 +54,8 @@
     "type": "Game",
     "conn": "output",
     "format": "fish",
-    "unlocked":false
+    "unlocked":false,
+    "ram": 100
    },
  
    {
@@ -66,7 +67,7 @@
   "conn": "output",
   "format": "fish",
   "unlocked":false,
-  "ram": 32
+  "ram": 50
 },
   {
   "id": "inventario",

@@ -73,14 +73,15 @@ function loadFiles() {
         list.appendChild(tr);
     });
 }
-
 function remover(id) {
-    let files = JSON.parse(localStorage.getItem('winxp-files')) || [];
-    files = files.filter(f => f.id !== id);
-    localStorage.setItem('winxp-files', JSON.stringify(files));
+    if (window.parent && window.parent.deleteFile) {
+        window.parent.deleteFile(id);
+    } else {
+        console.error('deleteFile não encontrado no sistema principal');
+    }
+
     loadFiles();
 }
-
 loadFiles();
 </script>
 

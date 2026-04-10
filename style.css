@@ -342,3 +342,26 @@ body {
     pointer-events: none; 
     z-index: 999;
 }
+#system-stats {
+    font-size: 12px;
+    padding: 5px;
+    color: black;
+}
+
+.xp-bar {
+    display: flex;
+    gap: 2px;
+    margin: 3px 0 8px;
+}
+
+.xp-block {
+    width: 10px;
+    height: 10px;
+    background: #c0c0c0;
+    border: 1px solid #808080;
+}
+
+.xp-block.active {
+    background: linear-gradient(#4caf50, #2e7d32);
+    border: 1px solid #1b5e20;
+}

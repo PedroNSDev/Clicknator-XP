@@ -10,5 +10,11 @@
     {
     "nome": "bloggy",
     "html":"../sites/Bloggy.html"
+  },
+  {
+    "nome": "godownloader",
+     "html":"../sites/GoDownloader.html"
   }
+
+
 ]

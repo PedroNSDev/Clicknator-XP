@@ -1,10 +1,11 @@
 const openApps = new Set();
 let zIndexCounter = 10;
 let appsList = [];
+let installed_apps = [];
 let connections = [];
 const SAVE_KEY = 'winxp-state';
 const UNLOCK_KEY = 'winxp-unlocks';
-
+window.deleteFile = deleteFile;
 function getUnlocks() {
     return JSON.parse(localStorage.getItem(UNLOCK_KEY)) || {};
 }
@@ -24,8 +25,14 @@ function unlockApp(appId) {
     const unlocks = getUnlocks();
     unlocks[appId] = true;
     saveUnlocks(unlocks);
-
-    createDesktopIcons();
+    const app = appsList.find(a => a.id === appId);
+    if (app) addDesktopIcon(app);
+}
+function lockApp(appId) { //FLOCK
+    const unlocks = getUnlocks();
+    unlocks[appId] = false;
+    saveUnlocks(unlocks);
+    
 }
 window.unlockApp = unlockApp;
 //VARIAVEIS DE CONTROLE 
@@ -35,7 +42,7 @@ let usedRAM = 0;
 window.systemInfo = {
     username: "",
     ram: 64,
-    space: 100,
+    space: 2048,
     session_time: 0
 };
 
@@ -186,7 +193,7 @@ async function loadApps() {
         visibleIndex++;
     });
 }
-
+window.getUsedRAM = () => usedRAM;
 function openAppById(appId) {
     const app = appsList.find(a => a.id === appId);
     if (!app) return;
@@ -274,6 +281,7 @@ function createWindow(app) {
 
     const appRAM = app.ram || 0;
     usedRAM -= appRAM;
+    
 
     if (usedRAM < 0) usedRAM = 0; 
 
@@ -446,27 +454,12 @@ function applySavedState() {
 
 }
 
-
-window.addEventListener('message', (event) => {
-    if (event.data.type === 'open-app') {
-        openAppById(event.data.appId);
-    }
-});
 /////FFILE
 const FILE_KEY = 'winxp-files';
-window.addEventListener('message', (event) => {
 
-    if (event.data.type === 'create-file') {
-        const success = addFile(event.data.file);
-
-        if (!success) {
-            alert('Inventário cheio!');
-        }
-    }
-
-});
 function getFiles() {
     return JSON.parse(localStorage.getItem(FILE_KEY)) || [];
+    
 }
 
 function saveFiles(files) {
@@ -495,17 +488,28 @@ function addFile(file) {
 
     saveFiles(files);
     return true;
+    
 }
 function getUsedSpace() {
     const files = getFiles();
     return files.reduce((total, f) => total + (f.size || 50), 0);
+    
 }
 function deleteFile(id) {
     let files = getFiles();
+    const file = files.find(f => f.id === id);
+
     files = files.filter(f => f.id !== id);
     saveFiles(files);
-    
+
+    if (file && file.type === 'app') {
+        const appId = file.name.replace('.exe', '');
+
+        lockApp(appId);
+        removeDesktopIcon(appId); 
+    }
 }
+
 ////FCONECT
 function removeConnectionsByWindow(win) {
     connections = connections.filter(conn =>
@@ -686,31 +690,68 @@ function createNotepadFile() {
     if (success) {
         renderDesktopFiles();
     }
-}
-function baixar(id) {
+}function baixar(id) {
+    const app = appsList.find(a => a.id === id);
+    if (!app) return;
+    const appSize = app.size || 20;
+    const usedSpace = getUsedSpace();
+    const totalSpace = window.systemInfo.space;
+    if (usedSpace + appSize > totalSpace) {
+        alert(`Sem espaço!\nUsado: ${usedSpace}/${totalSpace}\nPrecisa: ${appSize}`);
+        return;
+    }
+    const success = addFile({
+        name: app.nome + ".exe",
+        type: "app",
+        size: appSize
+    });
+    if (!success) return;
     unlockApp(id);
-    alert('Download concluído! 🎉');
-    window.postMessage({
-        type: 'open-app',
-        appId: id
-    }, '*');
+    alert('Download concluído!');
+    setTimeout(() => {
+        openAppById(id);
+    }, 250);
+}
+function addDesktopIcon(app) {
+    const icon = document.createElement('div');
+    icon.className = 'icon';
+    icon.dataset.app = app.id;
+
+    icon.style.top = `20px`;
+    icon.style.left = `20px`;
+
+    icon.innerHTML = `
+        <div class="icon-img">${app.icone}</div>
+        <span>${app.nome}</span>
+    `;
+
+    makeDraggable(icon);
+    icon.ondblclick = () => openAppById(app.id);
+
+    desktop.appendChild(icon);
+}
+
+function removeDesktopIcon(appId) {
+    const icon = document.querySelector(`.icon[data-app="${appId}"]`);
+    
+    if (!icon) return;
+
+    icon.remove();
 }
 window.addEventListener('message', (event) => {
+    if (!event.data) return;
+
     const { type, appId, file } = event.data;
 
-    if (type === 'open-app') {
+    if (type === 'download-app' && appId) {
+        baixar(appId);
+    }
+
+    if (type === 'open-app' && appId) {
         openAppById(appId);
     }
 
-    if (type === 'download-app') {
-        unlockApp(appId); 
-        console.log("App desbloqueado via download:", appId);
-        
-        
-        openAppById(appId);
-    }
-
-    if (type === 'create-file') {
+    if (type === 'create-file' && file) {
         const success = addFile(file);
         if (!success) alert('Inventário cheio!');
         renderDesktopFiles();
@@ -745,11 +786,13 @@ function calculateRAM() {
     const perFile = 5;  
     const used = files.length * perFile;
     window.systemInfo.ram = baseRAM + used;
+    
 }
 function getRAMInfo() {
     return `${usedRAM}/${window.systemInfo.ram} MB`;
 }
 window.getRAMInfo = getRAMInfo;
+
 //INIT
 
 applySavedState();

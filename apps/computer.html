@@ -1,22 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Meu Computador</title>
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
 <div>Usuário: <span id="username"></span></div>
-<div>RAM: <span id="ram"></span></div>
-<div>Espaço: <span id="space"></span></div>
+
+<div id="system-stats">
+    <div>
+        <span id="ram-text">RAM</span>
+        <div class="xp-bar" id="ram-bar"></div>
+    </div>
+
+    <div>
+        <span id="space-text">DISCO</span>
+        <div class="xp-bar" id="space-bar"></div>
+    </div>
+</div>
+
 <div>Sessão: <span id="session"></span></div>
+
 <script>
-function updateSystemInfo() {
-    const sys = window.parent.systemInfo;
+function renderXPBar(containerId, percent) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
 
-    if (!sys) return;
+    container.innerHTML = '';
 
-    document.getElementById('username').innerText = sys.username || "User";
-    document.getElementById('ram').innerText = sys.ram + " MB";
-    document.getElementById('space').innerText = sys.space + " MB";
-    document.getElementById('session').innerText = sys.session_time + "s";
+    const totalBlocks = 10;
+    const activeBlocks = Math.floor(percent / 10);
+
+    for (let i = 0; i < totalBlocks; i++) {
+        const block = document.createElement('div');
+        block.className = 'xp-block';
+
+        if (i < activeBlocks) {
+            if (percent < 40) {
+                block.style.background = 'limegreen';
+            } else if (percent < 70) {
+                block.style.background = 'gold';
+            } else {
+                block.style.background = 'red';
+            }
+        }
+
+        container.appendChild(block);
+    }
 }
 
-// roda ao carregar
-updateSystemInfo();
+function updateSystemInfo() {
+    const sys = window.parent.systemInfo;
+    if (!sys) return;
 
-// atualiza a cada segundo
+    document.getElementById('username').innerText = sys.username || "Pedro";
+    document.getElementById('session').innerText = sys.session_time + "s";
+
+    const usedRAM = window.parent.getUsedRAM
+        ? window.parent.getUsedRAM()
+        : 0;
+
+    const ramPercent = (usedRAM / sys.ram) * 100;
+
+    const usedSpace = window.parent.getUsedSpace
+        ? window.parent.getUsedSpace()
+        : 0;
+
+    const spacePercent = (usedSpace / sys.space) * 100;
+
+
+    document.getElementById('ram-text').innerText =
+        `RAM: ${usedRAM}/${sys.ram} MB`;
+
+    document.getElementById('space-text').innerText =
+        `DISCO: ${usedSpace}/${sys.space} MB`;
+
+
+    renderXPBar('ram-bar', ramPercent);
+    renderXPBar('space-bar', spacePercent);
+}
+
+updateSystemInfo();
 setInterval(updateSystemInfo, 1000);
 </script>
+
+</body>
+</html>
