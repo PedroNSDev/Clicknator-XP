@@ -8,43 +8,53 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-   
-    <canvas id="cables"></canvas>
-    <div id="desktop">
-    </div>
+
+<canvas id="cables"></canvas>
+
+<div id="desktop"></div>
+
 <div id="taskbar">
-        <button id="start-btn">
-            <span style="font-style: italic; font-weight: bold;">Iniciar</span>
-        </button>
-        <div id="start-menu">
-    <div id="start-apps-list"></div>
+    <button id="start-btn">
+        <span style="font-style:italic;font-weight:bold;">Iniciar</span>
+    </button>
+
+    <div id="start-menu">
+        <div id="start-apps-list"></div>
+        <div class="menu-separator"></div>
+        <button id="change-wallpaper">Trocar papel de parede</button>
+        <input type="file" id="wallpaper-input" style="display:none">
+        <button id="shutdown-btn">Desligar</button>
+    </div>
+
+    <div id="quick-launch"></div>
+    <div id="taskbar-apps"></div>
+    <div id="clock">12:00</div>
+</div>
+
+<!-- ═══ CONTEXT MENU ════════════════════════════════════════════ -->
+<div id="context-menu">
+
+    <!-- itens sempre visíveis -->
+    <div class="menu-item" id="menu-open">Abrir</div>
+    <div class="menu-item" id="menu-rename">Renomear</div>
+
+    <!-- só para arquivos (text, folder…) -->
+    <div class="menu-item" id="menu-delete" style="color:#a00;">🗑 Excluir</div>
 
     <div class="menu-separator"></div>
 
-    <button id="change-wallpaper">Trocar papel de parede</button>
-    <input type="file" id="wallpaper-input" style="display:none">
+    <!-- só para ícones de app -->
+    <div class="menu-item" id="menu-pin">Adicionar à Barra de Tarefas</div>
 
-    <button id="shutdown-btn">Desligar</button>
+    <div class="menu-separator"></div>
+    <div class="menu-item" id="menu-unlock">Desbloquear Pescaria</div>
+
+    <div class="menu-separator"></div>
+    <div class="menu-item" id="menu-new-notepad">Novo &gt; Bloco de notas</div>
+    <div class="menu-item" id="menu-new-folder">Novo &gt; Pasta</div>
+
 </div>
-        <div id="quick-launch"></div> 
-        
-        <div id="taskbar-apps"></div>
-        <div id="clock">12:00</div>
-    </div>
 
-    <div id="context-menu">
-        <div class="menu-item" id="menu-open">Abrir</div>
-        <div class="menu-item" id="menu-rename">Renomear</div>
-        <div class="menu-separator"></div>
-        <div class="menu-item" id="menu-pin">Adicionar à Barra de Tarefas</div>
-         <div class="menu-separator"></div>
-           <div class="menu-item" id="menu-unlock">Desbloquear Pescaria</div>
-        <div class="menu-separator"></div>
-        <div  class="menu-item"id="menu-new-notepad">Novo > Bloco de notas</div>
-       
-        
-    </div>
-
-    <script src="script.js"></script>
+<script src="script.js"></script>
 </body>
 </html>

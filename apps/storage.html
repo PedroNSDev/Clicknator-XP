@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+    body {
+        font-family: Tahoma, sans-serif;
+        background: #ece9d8;
+        margin: 0;
+        padding: 10px;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        box-shadow: inset 1px 1px 2px rgba(0,0,0,0.2);
+    }
+    th, td {
+        border: 1px solid #d4d0c8;
+        padding: 5px 8px;
+        font-size: 12px;
+    }
+    th {
+        background: #d4d0c8;
+        text-align: left;
+        border: 1px solid #fff;
+        border-right-color: #999;
+        border-bottom-color: #999;
+    }
+    tr.file-row:hover { background: #316ac5; color: white; }
+    tr.file-row:hover .folder-toggle,
+    tr.file-row:hover .child-connector { color: white; }
+
+    .toolbar { padding: 5px 0 10px 0; }
+    .tipo-app { color: #800000; font-weight: bold; }
+
+    .folder-toggle {
+        display: inline-block;
+        width: 16px;
+        cursor: pointer;
+        font-size: 10px;
+        color: #333;
+        user-select: none;
+    }
+    .child-connector {
+        position: absolute;
+        left: 12px;
+        color: #999;
+    }
+    .child-row td:first-child {
+        padding-left: 30px;
+        position: relative;
+    }
+
+    .thumb {
+        width: 24px;
+        height: 24px;
+        object-fit: cover;
+        border-radius: 2px;
+        vertical-align: middle;
+        margin-right: 4px;
+        cursor: pointer;
+        border: 1px solid #ccc;
+    }
+    button {
+        font-family: Tahoma;
+        font-size: 11px;
+    }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+    <button onclick="carregarArquivos()">🔄 Atualizar</button>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>Nome</th>
+            <th>Tipo</th>
+            <th>Tamanho</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody id="file-list"></tbody>
+</table>
+
+<script>
+    const ICONES = { text: '📝', folder: '📁', app: '⚙️', fish: '🐟', image: '🖼️', default: '📄' };
+
+    function carregarArquivos() {
+        const tbody    = document.getElementById('file-list');
+        tbody.innerHTML = '';
+        const arquivos = window.parent.getFiles ? window.parent.getFiles() : [];
+
+        if (arquivos.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#666;">O armazenamento está vazio.</td></tr>';
+            return;
+        }
+
+        const childIds = new Set();
+        arquivos.forEach(f => {
+            if (f.type === 'folder' && f.data?.children) f.data.children.forEach(id => childIds.add(id));
+        });
+
+        const raiz = arquivos.filter(f => !childIds.has(f.id));
+
+        function renderRow(file, isChild = false) {
+            const tr     = document.createElement('tr');
+            tr.className = isChild ? 'file-row child-row' : 'file-row';
+            const isFolder = file.type === 'folder';
+            const isImage  = file.type === 'image';
+            const icon     = ICONES[file.type] || ICONES.default;
+            const isApp    = file.type === 'app';
+
+            let nameCell = '';
+            if (isFolder) {
+                nameCell = `<span class="folder-toggle" onclick="toggleFolder(${file.id}, this, event)">▶</span> ${icon} ${file.name}`;
+            } else if (isImage && file.data?.src) {
+                nameCell = `<span style="display:inline-block;width:16px;"></span>
+                            <img class="thumb" src="${file.data.src}" title="Ver imagem"
+                                 onclick="window.parent.openImageViewer && window.parent.openImageViewer(${JSON.stringify(file).replace(/"/g, '&quot;')})">
+                            ${file.name}`;
+            } else {
+                nameCell = `<span style="display:inline-block;width:16px;"></span> ${icon} ${file.name}`;
+            }
+
+            if (isChild) {
+                nameCell = `<span class="child-connector">└─</span>` + nameCell;
+            }
+
+            tr.innerHTML = `
+                <td>${nameCell}</td>
+                <td ${isApp ? 'class="tipo-app"' : ''}>${file.type}</td>
+                <td>${file.size || 0} MB</td>
+                <td><button onclick="deletarArquivo(${file.id})">Excluir</button></td>
+            `;
+            tbody.appendChild(tr);
+
+            if (isFolder && file.data?.children) {
+                file.data.children.forEach(childId => {
+                    const child = arquivos.find(x => x.id === childId);
+                    if (!child) return;
+                    const childTr = renderRow(child, true);
+                    childTr.classList.add(`parent-${file.id}`);
+                    childTr.style.display = 'none';
+                });
+            }
+            return tr;
+        }
+
+        raiz.forEach(f => renderRow(f));
+    }
+
+    window.toggleFolder = function(folderId, span, event) {
+        event.stopPropagation();
+        const expanded = span.innerText === '▼';
+        span.innerText = expanded ? '▶' : '▼';
+        document.querySelectorAll('.parent-' + folderId).forEach(tr => {
+            tr.style.display = expanded ? 'none' : 'table-row';
+        });
+    };
+
+    window.deletarArquivo = function(id) {
+        if (confirm('Tem certeza que deseja excluir este item?')) {
+            window.parent.deleteFile?.(id);
+            carregarArquivos();
+        }
+    };
+
+    window.addEventListener('message', event => {
+        if (event.data?.type === 'file-deleted') carregarArquivos();
+    });
+
+    carregarArquivos();
+</script>
+
+</body>
+</html>

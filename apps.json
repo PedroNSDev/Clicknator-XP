@@ -4,6 +4,7 @@
     "nome": "Meu Computador",
     "icone": "💻",
     "html": "apps/computer.html"
+  
   },
   {
     "id": "notepad",
@@ -73,7 +74,7 @@
   "id": "inventario",
   "nome": "Inventário.exe",
   "icone": "📁",
-  "html": "apps/inventario.html",
+  "html": "apps/storage.html",
   "type": "System",
   "conn": "storage",
   "format": "any"
