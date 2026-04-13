@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+        font-family: Tahoma, sans-serif;
+        background: #ece9d8;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .shop-header {
+        background: linear-gradient(135deg, #1a3a6c 0%, #2756b0 60%, #1a3a6c 100%);
+        color: white;
+        padding: 10px 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 2px solid #0d2a55;
+        flex-shrink: 0;
+    }
+    .shop-title {
+        font-size: 16px;
+        font-weight: bold;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .balance-box {
+        background: rgba(255,255,255,0.15);
+        border: 1px solid rgba(255,255,255,0.3);
+        border-radius: 4px;
+        padding: 4px 12px;
+        font-size: 13px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .balance-num { font-size: 16px; color: #ffd700; }
+
+    /* ── Tabs ── */
+    .tabs {
+        background: #d4d0c8;
+        display: flex;
+        border-bottom: 2px solid #999;
+        flex-shrink: 0;
+    }
+    .tab {
+        padding: 5px 16px;
+        font-size: 12px;
+        cursor: pointer;
+        border-right: 1px solid #999;
+        user-select: none;
+        white-space: nowrap;
+    }
+    .tab.active {
+        background: #ece9d8;
+        font-weight: bold;
+        border-bottom: 2px solid #ece9d8;
+        margin-bottom: -2px;
+    }
+    .tab:hover:not(.active) { background: #c9c5bc; }
+
+    /* ── Body ── */
+    .shop-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .section-title {
+        font-size: 11px;
+        font-weight: bold;
+        color: #444;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #bbb;
+        padding-bottom: 3px;
+        margin-top: 4px;
+    }
+
+    /* ── Cards ── */
+    .cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+        gap: 8px;
+    }
+
+    .card {
+        background: white;
+        border: 1px solid #bbb;
+        border-radius: 3px;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        box-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        position: relative;
+    }
+    .card.maxed { background: #f0fff0; border-color: #88cc88; }
+    .card.locked { background: #f5f5f5; opacity: 0.7; }
+
+    .card-icon { font-size: 28px; text-align: center; }
+    .card-name { font-size: 12px; font-weight: bold; color: #222; }
+    .card-desc { font-size: 10px; color: #666; line-height: 1.4; }
+    .card-stat {
+        font-size: 11px;
+        background: #f0ede5;
+        border: 1px solid #ddd;
+        padding: 3px 6px;
+        border-radius: 2px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .card-stat .val { font-weight: bold; color: #316ac5; }
+
+    .progress-bar-wrap {
+        background: #e0ddd8;
+        border: 1px solid #bbb;
+        height: 8px;
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    .progress-bar {
+        height: 100%;
+        background: linear-gradient(to right, #316ac5, #5a9de8);
+        border-radius: 3px;
+        transition: width 0.4s ease;
+    }
+    .progress-bar.full { background: linear-gradient(to right, #2a8c2a, #44cc44); }
+
+    .card-price {
+        font-size: 11px;
+        font-weight: bold;
+        color: #b8860b;
+        display: flex;
+        align-items: center;
+        gap: 3px;
+    }
+    .card-price.cant-afford { color: #cc3333; }
+
+    .btn-buy {
+        font-family: Tahoma;
+        font-size: 11px;
+        font-weight: bold;
+        padding: 4px 0;
+        cursor: pointer;
+        border-radius: 2px;
+        border: 1px solid;
+        width: 100%;
+        transition: opacity 0.1s;
+    }
+    .btn-buy.green {
+        background: linear-gradient(to bottom, #4caf50, #2e7d32);
+        color: white;
+        border-color: #1b5e20;
+    }
+    .btn-buy.green:hover { opacity: 0.88; }
+    .btn-buy.green:active { background: #1b5e20; }
+    .btn-buy.grey {
+        background: #ccc; color: #888; border-color: #aaa; cursor: not-allowed;
+    }
+    .btn-buy.maxed-btn {
+        background: linear-gradient(to bottom, #66bb6a, #388e3c);
+        color: white; border-color: #1b5e20; cursor: default;
+    }
+
+    .badge-max {
+        position: absolute; top: 6px; right: 6px;
+        background: #2a8c2a; color: white;
+        font-size: 9px; padding: 1px 5px;
+        border-radius: 8px; font-weight: bold;
+    }
+
+    .owned-tag {
+        font-size: 9px; color: #555;
+        text-align: right;
+    }
+
+    /* ── Inventory tab ── */
+    .inv-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 11px;
+        background: white;
+    }
+    .inv-table th, .inv-table td {
+        border: 1px solid #d4d0c8;
+        padding: 4px 8px;
+    }
+    .inv-table th { background: #d4d0c8; text-align: left; }
+    .inv-table tr:hover td { background: #eef3ff; }
+    .inv-table .val-cell { color: #b8860b; font-weight: bold; }
+    .spend-btn {
+        font-family: Tahoma; font-size: 10px;
+        padding: 1px 6px; cursor: pointer;
+        background: #e44; color: white;
+        border: 1px solid #c00; border-radius: 2px;
+    }
+    .spend-btn:hover { background: #c00; }
+
+    @keyframes pop {
+        0%   { transform: scale(1); }
+        50%  { transform: scale(1.3); color: #ff9900; }
+        100% { transform: scale(1); }
+    }
+
+    /* ── Status bar ── */
+    .statusbar {
+        background: #d4d0c8;
+        border-top: 1px solid #999;
+        font-size: 11px;
+        padding: 2px 8px;
+        display: flex;
+        gap: 16px;
+        flex-shrink: 0;
+    }
+    .statusbar span { color: #444; }
+    .statusbar strong { color: #003399; }
+</style>
+</head>
+<body>
+
+<div class="shop-header">
+    <div class="shop-title">🛒 PC Upgrade Shop</div>
+    <div class="balance-box">
+        💰 Saldo: <span class="balance-num" id="balance">0</span> moedas
+    </div>
+</div>
+
+<div class="tabs">
+    <div class="tab active" onclick="switchTab('hardware')" id="tab-hardware">🖥️ Hardware</div>
+    <div class="tab" onclick="switchTab('software')"  id="tab-software">💿 Software</div>
+    <div class="tab" onclick="switchTab('inventory')" id="tab-inventory">💰 Carteira</div>
+</div>
+
+<div class="shop-body" id="shop-body"></div>
+
+<div class="statusbar">
+    <span>RAM: <strong id="st-ram">—</strong></span>
+    <span>Armazenamento: <strong id="st-space">—</strong></span>
+    <span>Upgrades: <strong id="st-upg">0</strong></span>
+</div>
+
+<script>
+// ── Constants ─────────────────────────────────────────────────
+const BASE_RAM   = 256;
+const BASE_SPACE = 2048;
+
+// Upgrade catalogue
+// each tier entry: { label, ramBonus, spaceBonus, cost, maxOwned }
+const UPGRADES = {
+    hardware: [
+        {
+            id: 'ram_64',
+            icon: '🧠',
+            name: 'RAM Stick 64MB',
+            desc: 'Adiciona 64 MB de RAM. Permite abrir mais apps simultaneamente.',
+            ramBonus: 64, spaceBonus: 0,
+            cost: 40, maxOwned: 6,
+        },
+        {
+            id: 'ram_128',
+            icon: '🧠',
+            name: 'RAM Turbo 128MB',
+            desc: 'Módulo de alta velocidade +128 MB de RAM.',
+            ramBonus: 128, spaceBonus: 0,
+            cost: 90, maxOwned: 4,
+        },
+        {
+            id: 'ram_256',
+            icon: '🧠',
+            name: 'RAM Elite 256MB',
+            desc: 'Módulo premium com +256 MB de RAM.',
+            ramBonus: 256, spaceBonus: 0,
+            cost: 200, maxOwned: 2,
+        },
+        {
+            id: 'hdd_512',
+            icon: '💾',
+            name: 'HD 512MB',
+            desc: 'Disco rígido compacto, +512 MB de armazenamento.',
+            ramBonus: 0, spaceBonus: 512,
+            cost: 30, maxOwned: 8,
+        },
+        {
+            id: 'hdd_2gb',
+            icon: '💾',
+            name: 'HD Rápido 2GB',
+            desc: 'HD de alta capacidade +2048 MB de espaço.',
+            ramBonus: 0, spaceBonus: 2048,
+            cost: 110, maxOwned: 4,
+        },
+        {
+            id: 'ssd_4gb',
+            icon: '⚡',
+            name: 'SSD 4GB',
+            desc: 'Armazenamento sólido ultrarrápido +4096 MB.',
+            ramBonus: 0, spaceBonus: 4096,
+            cost: 350, maxOwned: 2,
+        },
+    ],
+    software: [
+        {
+            id: 'cache_opt',
+            icon: '🔧',
+            name: 'Cache Optimizer',
+            desc: 'Otimiza o cache do sistema. Reduz uso de RAM de todos os apps em 10%.',
+            ramBonus: 0, spaceBonus: 0,
+            effect: 'ramDiscount',
+            cost: 60, maxOwned: 1,
+        },
+        {
+            id: 'compress',
+            icon: '🗜️',
+            name: 'Disk Compressor',
+            desc: 'Compressão de dados em tempo real. +512MB de espaço virtual.',
+            ramBonus: 0, spaceBonus: 512,
+            cost: 45, maxOwned: 3,
+        },
+        {
+            id: 'defrag',
+            icon: '🧹',
+            name: 'Desfragmentador Pro',
+            desc: 'Melhora organização do disco. +256MB de espaço efetivo.',
+            ramBonus: 0, spaceBonus: 256,
+            cost: 25, maxOwned: 4,
+        },
+    ],
+};
+
+let currentTab = 'hardware';
+
+// ── VFS helpers ───────────────────────────────────────────────
+function getVFS() {
+    try { return window.parent.getFiles?.() || []; } catch { return []; }
+}
+
+function getDinheiroFiles() {
+    return getVFS().filter(f => f.type === 'dinheiro');
+}
+
+function getTotalBalance() {
+    return walletBalance;
+}
+
+function getOwnedUpgrades() {
+    try { return window.parent.getUpgrades?.() || { ram: 0, space: 0, items: {} }; }
+    catch { return { ram: 0, space: 0, items: {} }; }
+}
+
+function getOwnedCount(upgradeId) {
+    return getOwnedUpgrades().items?.[upgradeId] || 0;
+}
+
+function getTotalUpgradesCount() {
+    const items = getOwnedUpgrades().items || {};
+    return Object.values(items).reduce((a, b) => a + b, 0);
+}
+
+// ── Spend dinheiro ────────────────────────────────────────────
+function spendMoedas(amount) {
+    // Spend from the in-session wallet balance
+    walletBalance = Math.max(0, walletBalance - amount);
+    const el = document.getElementById('wallet-bal-num');
+    if (el) el.textContent = walletBalance;
+}
+
+// ── Buy upgrade ───────────────────────────────────────────────
+function buyUpgrade(upgradeId) {
+    const upgrade = [...UPGRADES.hardware, ...UPGRADES.software].find(u => u.id === upgradeId);
+    if (!upgrade) return;
+
+    const owned   = getOwnedCount(upgradeId);
+    const balance = walletBalance;
+
+    if (owned >= upgrade.maxOwned) { alert('Upgrade já está no nível máximo!'); return; }
+    if (balance < upgrade.cost)    {
+        alert(`Saldo insuficiente na carteira!\nPrecisa: 💰 ${upgrade.cost}\nCarteira: 💰 ${balance}\n\n👜 Vá à aba Carteira e deposite arquivos de dinheiro.`);
+        return;
+    }
+
+    // Deduct cost
+    spendMoedas(upgrade.cost);
+
+    // Record purchase
+    try {
+        const u = window.parent.getUpgrades?.() || { ram: 0, space: 0, items: {} };
+        if (!u.items) u.items = {};
+        u.items[upgradeId] = (u.items[upgradeId] || 0) + 1;
+        u.ram   = (u.ram   || 0) + upgrade.ramBonus;
+        u.space = (u.space || 0) + upgrade.spaceBonus;
+        window.parent.saveUpgrades?.(u);
+    } catch(e) { alert('Erro ao salvar upgrade: ' + e.message); return; }
+
+    renderAll();
+    updateStatusBar();
+
+    const newBal = getTotalBalance();
+    showToast(`✅ ${upgrade.name} comprado!\nSaldo restante: 💰 ${newBal} moedas`);
+}
+
+function showToast(msg) {
+    alert(msg); // Simple for now — could be upgraded to a non-blocking notification
+}
+
+// ── Render ────────────────────────────────────────────────────
+function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(`tab-${tab}`).classList.add('active');
+    renderAll();
+}
+
+function renderAll() {
+    updateBalance();
+    if      (currentTab === 'hardware')  renderCards(UPGRADES.hardware);
+    else if (currentTab === 'software')  renderCards(UPGRADES.software);
+    else if (currentTab === 'inventory') renderInventory();
+}
+
+function updateBalance() {
+    const bal = getTotalBalance();
+    document.getElementById('balance').textContent = bal;
+}
+
+function updateStatusBar() {
+    try {
+        const si = window.parent.systemInfo || {};
+        document.getElementById('st-ram').textContent   = `${si.ram   || BASE_RAM}   MB`;
+        document.getElementById('st-space').textContent = `${si.space || BASE_SPACE} MB`;
+    } catch {}
+    document.getElementById('st-upg').textContent = getTotalUpgradesCount();
+}
+
+function renderCards(list) {
+    const body    = document.getElementById('shop-body');
+    const balance = getTotalBalance();
+    body.innerHTML = '';
+
+    const container = document.createElement('div');
+    container.className = 'cards';
+
+    list.forEach(upg => {
+        const owned   = getOwnedCount(upg.id);
+        const isMaxed = owned >= upg.maxOwned;
+        const canBuy  = !isMaxed && balance >= upg.cost;
+
+        const card = document.createElement('div');
+        card.className = 'card' + (isMaxed ? ' maxed' : '');
+
+        const pct = Math.round(owned / upg.maxOwned * 100);
+        const barClass = isMaxed ? 'progress-bar full' : 'progress-bar';
+
+        const statLines = [];
+        if (upg.ramBonus   > 0) statLines.push(`<div class="card-stat"><span>🧠 RAM</span><span class="val">+${upg.ramBonus} MB</span></div>`);
+        if (upg.spaceBonus > 0) statLines.push(`<div class="card-stat"><span>💾 Espaço</span><span class="val">+${upg.spaceBonus} MB</span></div>`);
+        if (upg.effect)         statLines.push(`<div class="card-stat"><span>⚡ Efeito</span><span class="val">Especial</span></div>`);
+
+        const priceClass = canBuy || isMaxed ? 'card-price' : 'card-price cant-afford';
+        const btnClass   = isMaxed ? 'btn-buy maxed-btn' : canBuy ? 'btn-buy green' : 'btn-buy grey';
+        const btnText    = isMaxed ? '✅ Máximo' : `💰 Comprar — ${upg.cost} moedas`;
+        const btnClick   = isMaxed || !canBuy ? '' : `onclick="buyUpgrade('${upg.id}')"`;
+
+        card.innerHTML = `
+            ${isMaxed ? '<div class="badge-max">MAX</div>' : ''}
+            <div class="card-icon">${upg.icon}</div>
+            <div class="card-name">${upg.name}</div>
+            <div class="card-desc">${upg.desc}</div>
+            ${statLines.join('')}
+            <div>
+                <div style="display:flex;justify-content:space-between;font-size:10px;color:#666;margin-bottom:2px;">
+                    <span>Nível ${owned}/${upg.maxOwned}</span>
+                    <span>${pct}%</span>
+                </div>
+                <div class="progress-bar-wrap">
+                    <div class="${barClass}" style="width:${pct}%"></div>
+                </div>
+            </div>
+            <div class="${priceClass}">${isMaxed ? '✅ Adquirido' : `💰 ${upg.cost} moedas`}</div>
+            <button class="${btnClass}" ${btnClick}>${btnText}</button>
+        `;
+        container.appendChild(card);
+    });
+
+    body.appendChild(container);
+}
+
+// ── Wallet state ──────────────────────────────────────────────
+let walletBalance = 0; // moedas depositadas na carteira (sessão)
+
+function renderInventory() {
+    const body  = document.getElementById('shop-body');
+    body.innerHTML = '';
+
+    const files = getDinheiroFiles();
+
+    // ── Instructions ──────────────────────────────────────────
+    const instr = document.createElement('div');
+    instr.style.cssText = 'font-size:11px;color:#666;background:#f9f6ec;border:1px solid #ddd;padding:6px 10px;border-radius:3px;';
+    instr.innerHTML = '📋 <b>Como usar:</b> Arraste um arquivo 💰 do desktop para a carteira abaixo. O valor é somado ao saldo. Use o saldo nas abas Hardware / Software.';
+    body.appendChild(instr);
+
+    // ── Drop zone (wallet) ────────────────────────────────────
+    const wallet = document.createElement('div');
+    wallet.id = 'wallet-drop';
+    wallet.style.cssText = `
+        border: 3px dashed #c8a900;
+        border-radius: 6px;
+        background: linear-gradient(135deg,#fffbe6,#fff3cc);
+        padding: 18px 14px;
+        text-align: center;
+        cursor: pointer;
+        transition: background 0.2s, border-color 0.2s;
+        min-height: 90px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+    `;
+    wallet.innerHTML = `
+        <div style="font-size:36px;">👜</div>
+        <div style="font-size:13px;font-weight:bold;color:#b8860b;">
+            Arraste arquivos 💰 aqui para depositar
+        </div>
+        <div style="font-size:11px;color:#888;">
+            Os arquivos serão consumidos e o valor somado ao saldo
+        </div>
+    `;
+
+    wallet.addEventListener('dragover', e => {
+        e.preventDefault();
+        wallet.style.background = 'linear-gradient(135deg,#fff3a0,#ffe040)';
+        wallet.style.borderColor = '#e6a800';
+    });
+    wallet.addEventListener('dragleave', () => {
+        wallet.style.background = 'linear-gradient(135deg,#fffbe6,#fff3cc)';
+        wallet.style.borderColor = '#c8a900';
+    });
+    wallet.addEventListener('drop', e => {
+        e.preventDefault();
+        wallet.style.background = 'linear-gradient(135deg,#fffbe6,#fff3cc)';
+        wallet.style.borderColor = '#c8a900';
+
+        // Accept drops from desktop icons (data-file-id) or HTML5 DnD
+        const fileIdStr = e.dataTransfer.getData('vfs-file-id') ||
+                          e.dataTransfer.getData('text/plain');
+        if (!fileIdStr) return;
+        const fileId = parseInt(fileIdStr);
+        depositFile(fileId);
+    });
+
+    body.appendChild(wallet);
+
+    // ── Balance display ───────────────────────────────────────
+    const balDiv = document.createElement('div');
+    balDiv.id = 'wallet-balance-display';
+    balDiv.style.cssText = `
+        background:linear-gradient(135deg,#1a3a6c,#2756b0);
+        color:white;border-radius:4px;
+        padding:10px 14px;display:flex;
+        justify-content:space-between;align-items:center;
+    `;
+    balDiv.innerHTML = `
+        <div>
+            <div style="font-size:10px;opacity:0.7;">Saldo na carteira</div>
+            <div style="font-size:22px;font-weight:bold;color:#ffd700;" id="wallet-bal-num">${walletBalance}</div>
+        </div>
+        <div style="font-size:36px;">💵</div>
+    `;
+    body.appendChild(balDiv);
+
+    // ── Files available to deposit ────────────────────────────
+    if (!files.length) {
+        const empty = document.createElement('div');
+        empty.style.cssText = 'text-align:center;padding:14px;color:#888;font-size:12px;';
+        empty.innerHTML = '🪹 Sem arquivos de dinheiro no disco.<br>Use o Conversor.exe ou a Processadora.exe para gerar moedas.';
+        body.appendChild(empty);
+        return;
+    }
+
+    const label = document.createElement('div');
+    label.className = 'section-title';
+    label.textContent = 'Arquivos de dinheiro no disco (arraste para a carteira)';
+    body.appendChild(label);
+
+    const grid = document.createElement('div');
+    grid.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;';
+
+    files.forEach(file => {
+        const valor = file.data?.valor || 0;
+        const card  = document.createElement('div');
+        card.style.cssText = `
+            background:white;border:2px solid #ddd;border-radius:4px;
+            padding:8px 10px;cursor:grab;text-align:center;
+            min-width:80px;user-select:none;
+            transition:transform 0.1s,box-shadow 0.1s;
+        `;
+        card.title     = `${file.name} — arraste para a carteira`;
+        card.innerHTML = `
+            <div style="font-size:26px;">💰</div>
+            <div style="font-size:12px;font-weight:bold;color:#b8860b;">${valor}</div>
+            <div style="font-size:9px;color:#888;">${file.size}MB</div>
+        `;
+
+        // Native drag
+        card.draggable = true;
+        card.addEventListener('dragstart', ev => {
+            ev.dataTransfer.setData('vfs-file-id',   String(file.id));
+            ev.dataTransfer.setData('text/plain',     String(file.id));
+            card.style.opacity = '0.5';
+        });
+        card.addEventListener('dragend',  () => { card.style.opacity = '1'; });
+
+        // Click-to-deposit shortcut
+        card.addEventListener('dblclick', () => depositFile(file.id));
+
+        grid.appendChild(card);
+    });
+    body.appendChild(grid);
+
+    const hint = document.createElement('div');
+    hint.style.cssText = 'font-size:10px;color:#aaa;text-align:center;';
+    hint.textContent = 'Duplo-clique também deposita';
+    body.appendChild(hint);
+}
+
+function depositFile(fileId) {
+    const files = getDinheiroFiles();
+    const file  = files.find(f => f.id === fileId);
+    if (!file) { alert('Arquivo não encontrado ou não é dinheiro.'); return; }
+
+    const valor = file.data?.valor || 0;
+    walletBalance += valor;
+
+    // Delete from VFS
+    try { window.parent.deleteFile?.(fileId); } catch {}
+
+    // Update balance display
+    const el = document.getElementById('wallet-bal-num');
+    if (el) {
+        el.textContent = walletBalance;
+        el.style.animation = 'none';
+        requestAnimationFrame(() => { el.style.animation = 'pop 0.3s ease'; });
+    }
+
+    // Re-render file grid
+    setTimeout(renderInventory, 100);
+}
+
+window.deleteOne = function(id) {
+    if (!confirm('Excluir este arquivo de dinheiro?')) return;
+    try { window.parent.deleteFile?.(id); } catch {}
+    renderAll();
+    updateStatusBar();
+};
+
+// ── Expose saveFiles to parent for partial-spend ──────────────
+// We rely on window.parent.saveFiles being exposed — let's also expose it here
+// so partial spend can work even if not available:
+window._partialSpend = spendMoedas;
+
+// ── Auto-deposit via cable connection ─────────────────────────
+window.addEventListener('message', event => {
+    const { type, resource } = event.data || {};
+    if (type !== 'resource-received' || !resource) return;
+    if (resource.type === 'dinheiro') {
+        const valor = resource.data?.valor || 0;
+        if (!valor) return;
+        walletBalance += valor;
+        const el = document.getElementById('wallet-bal-num');
+        if (el) {
+            el.textContent = walletBalance;
+            el.style.animation = 'none';
+            requestAnimationFrame(() => { el.style.animation = 'pop 0.3s ease'; });
+        }
+        // Show toast if inventory tab not open
+        if (currentTab !== 'inventory') {
+            const toast = document.createElement('div');
+            toast.style.cssText = `position:fixed;bottom:10px;right:10px;background:#b8860b;
+                color:white;padding:6px 12px;border-radius:4px;font-size:12px;z-index:9999;
+                font-family:Tahoma;box-shadow:2px 2px 4px rgba(0,0,0,0.3);`;
+            toast.textContent = `💰 +${valor} moedas depositados!`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2500);
+        }
+    }
+});
+
+// ── Init ──────────────────────────────────────────────────────
+updateBalance();
+updateStatusBar();
+renderCards(UPGRADES.hardware);
+
+// Refresh every 3s (in case files change from outside)
+setInterval(() => {
+    updateBalance();
+    updateStatusBar();
+    if (currentTab === 'inventory') renderInventory();
+}, 3000);
+</script>
+</body>
+</html>

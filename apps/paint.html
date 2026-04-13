@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+        font-family: Tahoma, sans-serif;
+        background: #d4d0c8;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+        user-select: none;
+    }
+
+    /* ── Toolbar ── */
+    .toolbar {
+        background: #d4d0c8;
+        border-bottom: 1px solid #808080;
+        padding: 3px 6px;
+        display: flex;
+        gap: 3px;
+        align-items: center;
+        flex-wrap: wrap;
+        min-height: 38px;
+    }
+
+    .tool-btn {
+        width: 30px; height: 30px;
+        border: 2px solid transparent;
+        background: #d4d0c8;
+        cursor: pointer;
+        font-size: 14px;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 2px;
+        flex-shrink: 0;
+    }
+    .tool-btn:hover { border: 2px outset #fff; }
+    .tool-btn.active {
+        border: 2px inset #808080;
+        background: #b8b4a8;
+    }
+
+    .sep { width:1px; height:26px; background:#888; margin:0 2px; flex-shrink:0; }
+
+    label { font-size: 11px; color:#333; }
+
+    select, input[type=number] {
+        font-family: Tahoma; font-size: 11px;
+        border: 1px inset #808080;
+        background: white; padding: 1px 3px; height: 22px;
+    }
+    input[type=color] {
+        width: 28px; height: 28px; padding: 1px;
+        border: 1px solid #808080; cursor: pointer;
+    }
+
+    /* Palette */
+    .palette { display:flex; gap:2px; flex-wrap:wrap; max-width:190px; }
+    .swatch {
+        width: 15px; height: 15px;
+        border: 1px solid #555; cursor: pointer; flex-shrink:0;
+    }
+    .swatch:hover { outline: 2px solid #316ac5; }
+
+    .color-wells { display:flex; flex-direction:column; gap:1px; margin-right:1px; }
+    .color-box {
+        width: 22px; height: 22px;
+        border: 1px solid #808080; cursor: pointer;
+    }
+
+    /* ── Canvas area ── */
+    .canvas-wrap {
+        flex: 1; overflow: auto;
+        background: #808080;
+        padding: 12px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: flex-start;
+    }
+    canvas {
+        display: block;
+        cursor: crosshair;
+        box-shadow: 3px 3px 8px rgba(0,0,0,.5);
+        image-rendering: pixelated;
+        background: white;
+    }
+
+    /* ── Status bar ── */
+    .statusbar {
+        background: #d4d0c8;
+        border-top: 1px solid #808080;
+        padding: 2px 8px;
+        font-size: 11px; color: #333;
+        display: flex; gap: 0; height: 20px;
+        align-items: center;
+    }
+    .statusbar span {
+        padding: 0 10px 0 0; margin-right: 10px;
+        border-right: 1px solid #999;
+    }
+    .statusbar span:last-child { border: none; }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+    <!-- Drawing tools -->
+    <button class="tool-btn active" id="btn-pencil"  title="Lápis [P]">✏️</button>
+    <button class="tool-btn"        id="btn-brush"   title="Pincel [B]">🖌️</button>
+    <button class="tool-btn"        id="btn-eraser"  title="Borracha [E]">🧹</button>
+    <button class="tool-btn"        id="btn-fill"    title="Balde [F]">🪣</button>
+    <button class="tool-btn"        id="btn-eyedrop" title="Conta-gotas [I]">💉</button>
+    <div class="sep"></div>
+    <button class="tool-btn"        id="btn-line"    title="Linha [L]">╱</button>
+    <button class="tool-btn"        id="btn-rect"    title="Retângulo [R]">▭</button>
+    <button class="tool-btn"        id="btn-ellipse" title="Elipse [O]">⬭</button>
+    <div class="sep"></div>
+
+    <label>Tam:</label>
+    <select id="sizeSelect">
+        <option value="1">1px</option>
+        <option value="2" selected>2px</option>
+        <option value="4">4px</option>
+        <option value="8">8px</option>
+        <option value="14">14px</option>
+        <option value="24">24px</option>
+        <option value="40">40px</option>
+    </select>
+    <div class="sep"></div>
+
+    <!-- Color wells: left-click = fg, right-click menu = bg -->
+    <div class="color-wells">
+        <div class="color-box" id="fgBox" title="Cor principal (clique)"
+             style="background:#000;"></div>
+        <div class="color-box" id="bgBox" title="Cor de fundo (clique dir. na paleta)"
+             style="background:#fff;"></div>
+    </div>
+    <input type="color" id="colorPicker" value="#000000"
+           style="position:absolute;opacity:0;pointer-events:none;" title="Cor">
+    <div class="sep"></div>
+
+    <!-- Palette -->
+    <div class="palette" id="palette"></div>
+    <div class="sep"></div>
+
+    <!-- Canvas dimensions -->
+    <label>W:</label>
+    <input type="number" id="cW" value="600" min="50" max="3000" style="width:52px;">
+    <label>H:</label>
+    <input type="number" id="cH" value="400" min="50" max="3000" style="width:52px;">
+    <button onclick="applySize()" title="Aplicar tamanho do canvas">↩ Ok</button>
+    <div class="sep"></div>
+
+    <button onclick="clearCanvas()">🗑️ Limpar</button>
+    <button onclick="saveToVFS()">💾 Salvar</button>
+    <button onclick="exportPNG()">📥 Exportar</button>
+</div>
+
+<div class="canvas-wrap" id="canvasWrap">
+    <canvas id="c" width="600" height="400"></canvas>
+</div>
+
+<div class="statusbar">
+    <span id="s-tool">Lápis</span>
+    <span id="s-pos">0, 0</span>
+    <span id="s-size">600 × 400</span>
+    <span id="s-color">#000000</span>
+</div>
+
+<script>
+// ── Setup ──────────────────────────────────────────────────────
+const c   = document.getElementById('c');
+const ctx = c.getContext('2d');
+ctx.fillStyle = '#ffffff';
+ctx.fillRect(0, 0, c.width, c.height);
+
+// ── State ──────────────────────────────────────────────────────
+let tool     = 'pencil';
+let fgColor  = '#000000';
+let bgColor  = '#ffffff';
+let drawing  = false;
+let snap     = null;         // ImageData snapshot for shape preview
+let lastX=0, lastY=0, startX=0, startY=0;
+
+const TOOL_NAMES = {
+    pencil:'Lápis', brush:'Pincel', eraser:'Borracha',
+    fill:'Balde', eyedrop:'Conta-gotas',
+    line:'Linha', rect:'Retângulo', ellipse:'Elipse',
+};
+
+// ── Colour palette ─────────────────────────────────────────────
+const PALETTE = [
+    '#000000','#808080','#800000','#808000','#008000','#008080','#000080','#800080',
+    '#ffffff','#c0c0c0','#ff0000','#ffff00','#00ff00','#00ffff','#0000ff','#ff00ff',
+    '#ff8000','#804000','#408000','#004040','#0040ff','#8000ff','#ff0080','#ff8080',
+    '#ffd700','#40e0d0','#ff69b4','#adff2f','#87cefa','#dda0dd','#f0e68c','#ffa07a',
+];
+const paletteEl = document.getElementById('palette');
+PALETTE.forEach(hex => {
+    const sw = document.createElement('div');
+    sw.className = 'swatch';
+    sw.style.background = hex;
+    sw.title = hex;
+    sw.addEventListener('click',       () => setFg(hex));
+    sw.addEventListener('contextmenu', e  => { e.preventDefault(); setBg(hex); });
+    paletteEl.appendChild(sw);
+});
+
+// ── Colour helpers ─────────────────────────────────────────────
+function setFg(hex) {
+    fgColor = hex;
+    document.getElementById('fgBox').style.background = hex;
+    document.getElementById('colorPicker').value = hex;
+    document.getElementById('s-color').textContent = hex;
+}
+function setBg(hex) {
+    bgColor = hex;
+    document.getElementById('bgBox').style.background = hex;
+}
+
+const picker = document.getElementById('colorPicker');
+document.getElementById('fgBox').onclick = () => { picker.onchange = e => setFg(e.target.value); picker.click(); };
+
+// ── Tool selection ─────────────────────────────────────────────
+['pencil','brush','eraser','fill','eyedrop','line','rect','ellipse'].forEach(t => {
+    document.getElementById(`btn-${t}`)?.addEventListener('click', () => selectTool(t));
+});
+
+function selectTool(t) {
+    tool = t;
+    document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(`btn-${t}`)?.classList.add('active');
+    document.getElementById('s-tool').textContent = TOOL_NAMES[t] || t;
+}
+
+document.addEventListener('keydown', e => {
+    if (['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName)) return;
+    const map = { p:'pencil',b:'brush',e:'eraser',f:'fill',i:'eyedrop',l:'line',r:'rect',o:'ellipse' };
+    if (map[e.key.toLowerCase()]) selectTool(map[e.key.toLowerCase()]);
+    if ((e.ctrlKey||e.metaKey) && e.key==='z') { e.preventDefault(); undo(); }
+});
+
+// ── Undo (single-level) ────────────────────────────────────────
+let undoStack = [];
+function pushUndo() { undoStack.push(ctx.getImageData(0, 0, c.width, c.height)); if (undoStack.length > 30) undoStack.shift(); }
+function undo() { const u = undoStack.pop(); if (u) ctx.putImageData(u, 0, 0); }
+
+// ── Coordinate helper ──────────────────────────────────────────
+function getPos(e) {
+    const rect   = c.getBoundingClientRect();
+    const scaleX = c.width  / rect.width;
+    const scaleY = c.height / rect.height;
+    return {
+        x: Math.round((e.clientX - rect.left) * scaleX),
+        y: Math.round((e.clientY - rect.top)  * scaleY),
+    };
+}
+function getSize() { return parseInt(document.getElementById('sizeSelect').value); }
+function currentColor(e) { return (e.buttons & 2) ? bgColor : fgColor; }
+
+// ── Mouse events ───────────────────────────────────────────────
+c.addEventListener('contextmenu', e => e.preventDefault());
+
+c.addEventListener('mousedown', e => {
+    e.preventDefault();
+    const pos = getPos(e);
+    startX = lastX = pos.x;
+    startY = lastY = pos.y;
+
+    if (tool === 'fill') {
+        pushUndo();
+        floodFill(pos.x, pos.y, currentColor(e));
+        return;
+    }
+    if (tool === 'eyedrop') { pickColor(pos.x, pos.y, !!(e.buttons & 2)); return; }
+
+    pushUndo();
+    snap    = ctx.getImageData(0, 0, c.width, c.height);
+    drawing = true;
+
+    // Paint a dot immediately for pencil / brush / eraser
+    if (['pencil','brush','eraser'].includes(tool)) {
+        drawStroke(pos, pos, e);
+    }
+});
+
+c.addEventListener('mousemove', e => {
+    const pos = getPos(e);
+    document.getElementById('s-pos').textContent = `${pos.x}, ${pos.y}`;
+    if (!drawing) return;
+
+    ctx.lineJoin = 'round';
+    ctx.lineCap  = 'round';
+
+    switch (tool) {
+        case 'pencil':
+        case 'brush':
+        case 'eraser':
+            drawStroke({ x: lastX, y: lastY }, pos, e);
+            lastX = pos.x; lastY = pos.y;
+            break;
+        case 'line':
+            ctx.putImageData(snap, 0, 0);
+            ctx.strokeStyle = currentColor(e);
+            ctx.lineWidth   = getSize();
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+            break;
+        case 'rect':
+            ctx.putImageData(snap, 0, 0);
+            if (e.buttons & 2) {
+                ctx.fillStyle = bgColor;
+                ctx.fillRect(startX, startY, pos.x - startX, pos.y - startY);
+            } else {
+                ctx.strokeStyle = fgColor;
+                ctx.lineWidth   = getSize();
+                ctx.strokeRect(startX, startY, pos.x - startX, pos.y - startY);
+            }
+            break;
+        case 'ellipse': {
+            ctx.putImageData(snap, 0, 0);
+            const rx = Math.abs(pos.x - startX) / 2;
+            const ry = Math.abs(pos.y - startY) / 2;
+            const cx = startX + (pos.x - startX) / 2;
+            const cy = startY + (pos.y - startY) / 2;
+            ctx.strokeStyle = currentColor(e);
+            ctx.lineWidth   = getSize();
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, Math.max(1, rx), Math.max(1, ry), 0, 0, Math.PI * 2);
+            ctx.stroke();
+            break;
+        }
+    }
+});
+
+c.addEventListener('mouseup',    () => { drawing = false; });
+c.addEventListener('mouseleave', () => { drawing = false; });
+
+function drawStroke(from, to, e) {
+    const size = getSize();
+    ctx.lineJoin = 'round';
+    ctx.lineCap  = 'round';
+    ctx.lineWidth = tool === 'brush' ? size * 2 : size;
+
+    if (tool === 'eraser') {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = bgColor;
+    } else {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = currentColor(e);
+    }
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.stroke();
+    // Dot at endpoint
+    ctx.beginPath();
+    ctx.arc(to.x, to.y, (tool === 'brush' ? size : size / 2), 0, Math.PI * 2);
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.fill();
+}
+
+// ── Flood fill ─────────────────────────────────────────────────
+function hexToRgb(hex) {
+    const v = parseInt(hex.slice(1), 16);
+    return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+}
+function floodFill(sx, sy, fillHex) {
+    if (sx < 0 || sy < 0 || sx >= c.width || sy >= c.height) return;
+    const [fr, fg, fb] = hexToRgb(fillHex);
+    const img     = ctx.getImageData(0, 0, c.width, c.height);
+    const data    = img.data;
+    const w = c.width, h = c.height;
+    const i0      = (sy * w + sx) * 4;
+    const [tr, tg, tb, ta] = [data[i0], data[i0+1], data[i0+2], data[i0+3]];
+    if (tr === fr && tg === fg && tb === fb && ta === 255) return;
+
+    const match   = i => data[i]===tr && data[i+1]===tg && data[i+2]===tb && data[i+3]===ta;
+    const visited = new Uint8Array(w * h);
+    const stack   = [[sx, sy]];
+    while (stack.length) {
+        const [cx, cy] = stack.pop();
+        if (cx < 0 || cx >= w || cy < 0 || cy >= h) continue;
+        const i = (cy * w + cx) * 4;
+        if (visited[cy*w+cx] || !match(i)) continue;
+        visited[cy*w+cx] = 1;
+        data[i]=fr; data[i+1]=fg; data[i+2]=fb; data[i+3]=255;
+        stack.push([cx+1,cy],[cx-1,cy],[cx,cy+1],[cx,cy-1]);
+    }
+    ctx.putImageData(img, 0, 0);
+}
+
+// ── Eye dropper ────────────────────────────────────────────────
+function pickColor(x, y, secondary) {
+    const p = ctx.getImageData(x, y, 1, 1).data;
+    const hex = '#' + [p[0],p[1],p[2]].map(v => v.toString(16).padStart(2,'0')).join('');
+    if (secondary) setBg(hex); else setFg(hex);
+}
+
+// ── Canvas resize ──────────────────────────────────────────────
+function applySize() {
+    const nW = Math.max(50, parseInt(document.getElementById('cW').value) || 600);
+    const nH = Math.max(50, parseInt(document.getElementById('cH').value) || 400);
+    const img = ctx.getImageData(0, 0, c.width, c.height);
+    c.width = nW; c.height = nH;
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, nW, nH);
+    ctx.putImageData(img, 0, 0);
+    document.getElementById('s-size').textContent = `${nW} × ${nH}`;
+}
+
+function clearCanvas() {
+    if (!confirm('Limpar a tela?')) return;
+    pushUndo();
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, c.width, c.height);
+}
+
+// ── Save to VFS ────────────────────────────────────────────────
+function saveToVFS() {
+    const input = prompt('Nome do arquivo:', 'desenho.png');
+    if (!input) return;
+    const name = input.endsWith('.png') ? input : input + '.png';
+
+    c.toBlob(blob => {
+        if (!blob) return;
+        const sizeMB = Math.max(1, Math.round(blob.size / 1024 / 1024));
+        const reader = new FileReader();
+        reader.onload = ev => {
+            const p = window.parent;
+            if (p?.addFile) {
+                const saved = p.addFile({ name, type: 'image', size: sizeMB, data: { src: ev.target.result } });
+                if (saved) {
+                    p.renderDesktopFiles?.();
+                    alert(`"${name}" salvo no desktop! 🎨\nAbra-o com duplo clique.`);
+                }
+            } else {
+                // Fallback: download
+                const a = document.createElement('a'); a.href = ev.target.result; a.download = name; a.click();
+            }
+        };
+        reader.readAsDataURL(blob);
+    }, 'image/png');
+}
+
+function exportPNG() {
+    const input = prompt('Nome do arquivo:', 'desenho.png');
+    if (!input) return;
+    const name = input.endsWith('.png') ? input : input + '.png';
+    const a = document.createElement('a');
+    a.href = c.toDataURL('image/png');
+    a.download = name;
+    a.click();
+}
+</script>
+</body>
+</html>

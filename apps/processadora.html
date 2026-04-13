@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+        font-family: Tahoma, sans-serif;
+        background: #1a1a2e;
+        color: #e0e0e0;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+        background: linear-gradient(135deg, #0f3460, #16213e);
+        padding: 8px 12px;
+        border-bottom: 2px solid #0d7ab5;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-shrink: 0;
+    }
+    .header h2 {
+        font-size: 13px;
+        color: #5bc8f5;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .status-pill {
+        font-size: 10px;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-weight: bold;
+    }
+    .status-pill.idle    { background: #333; color: #aaa; }
+    .status-pill.active  { background: #1a5c2a; color: #44ff88; animation: blink 1.2s infinite; }
+    .status-pill.full    { background: #7a4500; color: #ffd700; }
+
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+    /* ── Conveyor / main area ── */
+    .main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 12px;
+        gap: 12px;
+    }
+
+    /* Fish slots */
+    .slots-label {
+        font-size: 11px;
+        color: #5bc8f5;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .slots {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .slot {
+        width: 64px;
+        height: 64px;
+        border: 2px dashed #334;
+        border-radius: 8px;
+        background: #0d1117;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        transition: all 0.3s;
+        position: relative;
+    }
+    .slot.filled {
+        border-color: #0d7ab5;
+        background: #0f2a40;
+        box-shadow: 0 0 10px rgba(13,122,181,0.4);
+    }
+    .slot.filled::after {
+        content: attr(data-name);
+        position: absolute;
+        bottom: -18px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 9px;
+        color: #5bc8f5;
+        white-space: nowrap;
+        max-width: 70px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .slot-empty-icon { font-size: 18px; opacity: 0.2; }
+
+    .arrow {
+        font-size: 20px;
+        color: #334;
+        animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
+
+    .result-slot {
+        width: 72px;
+        height: 72px;
+        border: 2px solid #5c3800;
+        border-radius: 8px;
+        background: #1a0e00;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 38px;
+        transition: all 0.4s;
+        position: relative;
+    }
+    .result-slot.ready {
+        border-color: #ffd700;
+        background: #2a1a00;
+        box-shadow: 0 0 18px rgba(255,215,0,0.5);
+        animation: glow 1s ease-in-out infinite alternate;
+    }
+    @keyframes glow {
+        from { box-shadow: 0 0 8px rgba(255,215,0,0.3); }
+        to   { box-shadow: 0 0 22px rgba(255,215,0,0.8); }
+    }
+
+    /* ── Progress bar ── */
+    .progress-wrap {
+        width: 100%;
+        max-width: 320px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .progress-meta {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        color: #aaa;
+    }
+    .progress-outer {
+        background: #0d1117;
+        border: 1px solid #334;
+        border-radius: 4px;
+        height: 18px;
+        overflow: hidden;
+        position: relative;
+    }
+    .progress-inner {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        background: linear-gradient(90deg, #0d7ab5, #5bc8f5);
+        position: relative;
+    }
+    .progress-inner::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%);
+        animation: shimmer 1.5s infinite;
+        background-size: 200% 100%;
+    }
+    @keyframes shimmer { 0%{background-position:200%} 100%{background-position:-200%} }
+    .progress-inner.full {
+        background: linear-gradient(90deg, #ffa500, #ffd700);
+    }
+    .progress-text {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: bold;
+        color: white;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        z-index: 1;
+    }
+
+    /* ── Buttons ── */
+    .btn-row {
+        display: flex;
+        gap: 8px;
+    }
+    .btn {
+        font-family: Tahoma;
+        font-size: 11px;
+        padding: 5px 14px;
+        border-radius: 3px;
+        border: 1px solid;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    .btn-process {
+        background: linear-gradient(to bottom, #1a7a30, #0f5020);
+        color: #aaffbb;
+        border-color: #0a3a18;
+    }
+    .btn-process:hover { opacity: 0.85; }
+    .btn-process:disabled { opacity: 0.3; cursor: not-allowed; }
+    .btn-flush {
+        background: linear-gradient(to bottom, #7a4500, #4a2a00);
+        color: #ffc066;
+        border-color: #3a1a00;
+    }
+    .btn-flush:hover  { opacity: 0.85; }
+    .btn-flush:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    /* ── Log ── */
+    .log-wrap {
+        background: #0d1117;
+        border-top: 1px solid #1e2a3a;
+        padding: 6px 10px;
+        max-height: 110px;
+        overflow-y: auto;
+        flex-shrink: 0;
+        scrollbar-width: thin;
+        scrollbar-color: #334 transparent;
+    }
+    .log-wrap::-webkit-scrollbar { width: 4px; }
+    .log-wrap::-webkit-scrollbar-thumb { background: #334; }
+
+    .log-entry {
+        font-size: 10px;
+        font-family: 'Courier New', monospace;
+        padding: 1px 0;
+        border-bottom: 1px solid #1a1a2e;
+        display: flex;
+        gap: 6px;
+    }
+    .log-entry .ts  { color: #445; flex-shrink: 0; }
+    .log-entry .msg { flex: 1; }
+    .log-entry.recv { color: #5bc8f5; }
+    .log-entry.gen  { color: #ffd700; }
+    .log-entry.info { color: #888; }
+    .log-entry.err  { color: #ff5555; }
+
+    /* ── Stats ── */
+    .stats {
+        display: flex;
+        gap: 14px;
+        flex-shrink: 0;
+        padding: 4px 12px;
+        background: #0d1117;
+        border-top: 1px solid #1e2a3a;
+        font-size: 10px;
+        color: #666;
+    }
+    .stats span strong { color: #5bc8f5; }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h2>⚙️ Processadora de Peixes</h2>
+    <span class="status-pill idle" id="status-pill">IDLE</span>
+</div>
+
+<div class="main">
+    <div class="slots-label">Buffer de entrada (🔌 conecte uma fonte de peixes)</div>
+
+    <div class="slots" id="fish-slots">
+        <div class="slot" id="slot-0"><span class="slot-empty-icon">🐟</span></div>
+        <div class="slot" id="slot-1"><span class="slot-empty-icon">🐟</span></div>
+        <div class="slot" id="slot-2"><span class="slot-empty-icon">🐟</span></div>
+        <span class="arrow">→</span>
+        <div class="result-slot" id="result-slot">
+            <span style="font-size:18px;opacity:0.2;">💰</span>
+        </div>
+    </div>
+
+    <div class="progress-wrap">
+        <!-- Fish buffer fill -->
+        <div class="progress-meta">
+            <span>Peixes no buffer</span>
+            <span id="prog-label">0 / 3</span>
+        </div>
+        <div class="progress-outer">
+            <div class="progress-inner" id="prog-bar" style="width:0%"></div>
+            <div class="progress-text" id="prog-text">0/3</div>
+        </div>
+        <!-- Cycle cooldown -->
+        <div class="progress-meta" style="margin-top:6px;">
+            <span>⏱ Próximo ciclo</span>
+            <span id="cycle-label">—</span>
+        </div>
+        <div class="progress-outer">
+            <div class="progress-inner" id="cycle-bar"
+                 style="width:100%;background:linear-gradient(90deg,#2a5c1a,#44aa22);"></div>
+            <div class="progress-text" id="cycle-text">Pronto</div>
+        </div>
+    </div>
+
+    <div class="btn-row">
+        <button class="btn btn-flush"   id="btn-flush"   disabled onclick="flush()">
+            ⚡ Converter agora
+        </button>
+        <button class="btn btn-process" id="btn-clear"   onclick="clearBuffer()">
+            🗑️ Limpar buffer
+        </button>
+    </div>
+</div>
+
+<div class="log-wrap" id="log"></div>
+
+<div class="stats">
+    <span>Recebidos: <strong id="st-recv">0</strong></span>
+    <span>Convertidos: <strong id="st-conv">0</strong> ciclos</span>
+    <span>💰 Gerado: <strong id="st-din">0</strong> dinheiro</span>
+</div>
+
+<script>
+const BATCH_SIZE    = 3;    // fish needed per conversion
+const RATE_PER_FISH = 10;   // base dinheiro per fish
+const CYCLE_MS      = 4000; // cooldown between conversions (ms)
+
+let buffer    = [];  // fish resources waiting to be converted
+let totalRecv = 0;
+let totalConv = 0;
+let totalDin  = 0;
+
+// Cycle cooldown
+let cycleReady    = true;
+let cycleStart    = null;
+let cycleAnimFrame = null;
+
+function startCycleCooldown() {
+    cycleReady = false;
+    cycleStart = performance.now();
+    animateCycle();
+}
+
+function animateCycle() {
+    const elapsed  = performance.now() - cycleStart;
+    const pct      = Math.min(100, (elapsed / CYCLE_MS) * 100);
+    const remaining = Math.max(0, ((CYCLE_MS - elapsed) / 1000)).toFixed(1);
+
+    const bar  = document.getElementById('cycle-bar');
+    const text = document.getElementById('cycle-text');
+    const lbl  = document.getElementById('cycle-label');
+    if (bar) bar.style.width = pct + '%';
+    if (text) text.textContent = pct >= 100 ? 'Pronto' : `${remaining}s`;
+    if (lbl)  lbl.textContent  = pct >= 100 ? '✅ Pronto' : `${remaining}s restantes`;
+
+    if (elapsed < CYCLE_MS) {
+        cycleAnimFrame = requestAnimationFrame(animateCycle);
+    } else {
+        cycleReady = true;
+        if (bar) bar.style.background = 'linear-gradient(90deg,#2a5c1a,#44aa22)';
+        // If fish accumulated during cooldown, process now
+        if (buffer.length >= BATCH_SIZE) setTimeout(convert, 200);
+    }
+}
+
+// ── UI helpers ────────────────────────────────────────────────
+function ts() {
+    const n = new Date();
+    return `${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}:${String(n.getSeconds()).padStart(2,'0')}`;
+}
+
+function log(msg, kind = 'info') {
+    const el  = document.getElementById('log');
+    const div = document.createElement('div');
+    div.className = `log-entry ${kind}`;
+    div.innerHTML = `<span class="ts">[${ts()}]</span><span class="msg">${msg}</span>`;
+    el.prepend(div); // newest on top
+    if (el.children.length > 60) el.lastChild?.remove();
+}
+
+function updateUI() {
+    const n   = buffer.length;
+    const pct = Math.min(100, Math.round(n / BATCH_SIZE * 100));
+
+    document.getElementById('prog-bar').style.width = pct + '%';
+    document.getElementById('prog-bar').className   = 'progress-inner' + (n >= BATCH_SIZE ? ' full' : '');
+    document.getElementById('prog-text').textContent = `${n}/${BATCH_SIZE}`;
+    document.getElementById('prog-label').textContent = `${n} / ${BATCH_SIZE}`;
+
+    // Slots
+    for (let i = 0; i < BATCH_SIZE; i++) {
+        const slot = document.getElementById(`slot-${i}`);
+        const fish = buffer[i];
+        if (fish) {
+            slot.className = 'slot filled';
+            slot.textContent = '🐟';
+            slot.dataset.name = fish.name || `peixe`;
+        } else {
+            slot.className = 'slot';
+            slot.innerHTML = '<span class="slot-empty-icon">🐟</span>';
+            delete slot.dataset.name;
+        }
+    }
+
+    // Result slot
+    const result = document.getElementById('result-slot');
+    if (n >= BATCH_SIZE) {
+        result.className = 'result-slot ready';
+        result.textContent = '💰';
+    } else {
+        result.className = 'result-slot';
+        result.innerHTML = '<span style="font-size:18px;opacity:0.2;">💰</span>';
+    }
+
+    // Status pill
+    const pill = document.getElementById('status-pill');
+    if (n === 0)               { pill.className = 'status-pill idle';   pill.textContent = 'IDLE'; }
+    else if (n >= BATCH_SIZE)  { pill.className = 'status-pill full';   pill.textContent = 'PRONTO'; }
+    else                        { pill.className = 'status-pill active'; pill.textContent = 'AGUARDANDO'; }
+
+    // Flush button
+    document.getElementById('btn-flush').disabled = n < BATCH_SIZE;
+
+    // Stats
+    document.getElementById('st-recv').textContent = totalRecv;
+    document.getElementById('st-conv').textContent = totalConv;
+    document.getElementById('st-din').textContent  = totalDin;
+}
+
+// ── Receive fish from parent (via postMessage) ────────────────
+window.addEventListener('message', event => {
+    const { type, resource } = event.data || {};
+    if (type !== 'resource-received') return;
+    if (!resource) return;
+    if (resource.type !== 'fish') {
+        log(`Tipo ignorado: ${resource.type || '?'} (esperado: fish)`, 'err');
+        return;
+    }
+
+    buffer.push(resource);
+    totalRecv++;
+    log(`🐟 Recebido: ${resource.name} (${resource.size}MB, raridade ${(resource.data?.raridade ?? 0).toFixed(2)})`, 'recv');
+    updateUI();
+
+    // Auto-convert when batch is complete and cooldown is over
+    if (buffer.length >= BATCH_SIZE && cycleReady) {
+        setTimeout(convert, 400);
+    }
+});
+
+// ── Convert BATCH_SIZE fish → 1 dinheiro ─────────────────────
+function convert() {
+    if (buffer.length < BATCH_SIZE || !cycleReady) return;
+    startCycleCooldown();
+
+    const batch = buffer.splice(0, BATCH_SIZE);
+
+    // Calculate dinheiro value based on average rarity
+    const avgRarity = batch.reduce((s, f) => s + (f.data?.raridade ?? 0.5), 0) / BATCH_SIZE;
+    const bonus     = Math.round(avgRarity * 20); // 0–20 bonus moedas from rarity
+    const valor     = BATCH_SIZE * RATE_PER_FISH + bonus;
+    const sizeMB    = Math.max(0.1, parseFloat((valor * 0.1).toFixed(1)));
+    const name      = `${valor} dinheiro`;
+
+    const resource = {
+        name,
+        type:  'dinheiro',
+        size:  sizeMB,
+        data: {
+            valor,
+            origem:   'fish',
+            qtd:      BATCH_SIZE,
+            taxa:     RATE_PER_FISH,
+            raridade: +avgRarity.toFixed(2),
+            arquivos: batch.map(f => f.id).filter(Boolean),
+        },
+    };
+
+    // Emit via the output connection (conn2) if available, else save to VFS desktop.
+    // The parent handles routing via emit-from-window using event.source.
+    try {
+        window.parent.postMessage({ type: 'emit-from-window', resource }, '*');
+        totalConv++;
+        totalDin += valor;
+        log(`💰 GERADO: ${name} (+${bonus} bônus de raridade) → roteado`, 'gen');
+    } catch(e) {
+        log(`Erro ao emitir: ${e.message}`, 'err');
+    }
+
+    updateUI();
+}
+
+// ── Manual flush (convert whatever is buffered, even < 3) ─────
+function flush() {
+    if (!buffer.length || !cycleReady) {
+        if (!cycleReady) log('⏳ Aguarde o cooldown do ciclo.', 'err');
+        return;
+    }
+    while (buffer.length < BATCH_SIZE) buffer.push({ name:'(vazio)', size:0, data:{ raridade:0 } });
+    convert();
+}
+
+// ── Clear buffer ──────────────────────────────────────────────
+function clearBuffer() {
+    if (!buffer.length) return;
+    if (!confirm(`Descartar ${buffer.length} peixe(s) no buffer?`)) return;
+    buffer = [];
+    log('Buffer limpo.', 'info');
+    updateUI();
+}
+
+// ── Init ──────────────────────────────────────────────────────
+log('Pronto — conecte uma fonte de peixes via 🔌', 'info');
+updateUI();
+</script>
+</body>
+</html>

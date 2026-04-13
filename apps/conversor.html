@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+        font-family: Tahoma, sans-serif;
+        background: #ece9d8;
+        padding: 10px;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        overflow: hidden;
+    }
+
+    h3 {
+        font-size: 12px;
+        color: #003399;
+        border-bottom: 1px solid #999;
+        padding-bottom: 4px;
+    }
+
+    .panel {
+        background: white;
+        border: 1px solid #999;
+        box-shadow: inset 1px 1px 0 #fff;
+        padding: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+    }
+
+    label { min-width: 80px; color: #333; }
+
+    select, input[type=number] {
+        font-family: Tahoma;
+        font-size: 12px;
+        border: 1px inset #808080;
+        background: white;
+        padding: 2px 4px;
+        height: 22px;
+    }
+    input[type=number] { width: 70px; }
+
+    .rate-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 11px;
+    }
+    .rate-table th, .rate-table td {
+        border: 1px solid #d4d0c8;
+        padding: 3px 6px;
+        text-align: left;
+    }
+    .rate-table th { background: #d4d0c8; }
+    .rate-table tr:hover td { background: #eef3ff; }
+
+    .preview-box {
+        background: #f0ede5;
+        border: 1px solid #ccc;
+        padding: 6px 10px;
+        font-size: 13px;
+        text-align: center;
+        color: #333;
+        min-height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        font-weight: bold;
+    }
+    .preview-box.ready { color: #006600; background: #e8f5e9; border-color: #88bb88; }
+    .preview-box.error { color: #cc0000; background: #ffeaea; border-color: #cc8888; }
+
+    .file-list {
+        max-height: 100px;
+        overflow-y: auto;
+        border: 1px inset #808080;
+        background: white;
+        font-size: 11px;
+    }
+    .file-item {
+        padding: 2px 6px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        cursor: pointer;
+        user-select: none;
+    }
+    .file-item:hover { background: #316ac5; color: white; }
+    .file-item.selected { background: #b3cef5; }
+    .file-item input[type=checkbox] { cursor: pointer; }
+
+    .btn-convert {
+        font-family: Tahoma;
+        font-size: 12px;
+        font-weight: bold;
+        padding: 5px 14px;
+        cursor: pointer;
+        background: linear-gradient(to bottom, #4da832, #2d7a18);
+        color: white;
+        border: 1px solid #1a5c0d;
+        border-radius: 2px;
+        text-shadow: 0 1px 0 rgba(0,0,0,0.3);
+    }
+    .btn-convert:hover { background: linear-gradient(to bottom, #5dc13a, #358c1e); }
+    .btn-convert:active { background: #2a7015; }
+    .btn-convert:disabled { background: #aaa; border-color: #888; cursor: not-allowed; }
+
+    .log {
+        flex: 1;
+        overflow-y: auto;
+        background: #1a1a1a;
+        color: #00dd66;
+        font-family: 'Courier New', monospace;
+        font-size: 11px;
+        padding: 6px;
+        border: 1px solid #555;
+    }
+    .log .entry { padding: 1px 0; border-bottom: 1px solid #222; }
+    .log .entry.err { color: #ff4444; }
+    .log .entry.ok  { color: #44ff88; }
+    .log .entry.info { color: #aaaaff; }
+
+    .dinheiro-display {
+        font-size: 22px;
+        font-weight: bold;
+        color: #b8860b;
+        text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
+    }
+</style>
+</head>
+<body>
+
+<h3>💱 Conversor de Arquivos → Dinheiro</h3>
+
+<!-- Config panel -->
+<div class="panel">
+    <div class="row">
+        <label>Tipo de arquivo:</label>
+        <select id="typeSelect" onchange="onTypeChange()">
+            <option value="fish">🐟 fish</option>
+            <option value="image">🖼️ image</option>
+            <option value="text">📝 text</option>
+            <option value="shortcut">⭐ shortcut</option>
+            <option value="dinheiro">💰 dinheiro (consolidar)</option>
+        </select>
+    </div>
+    <div class="row">
+        <label>Quantidade (n):</label>
+        <input type="number" id="nInput" value="1" min="1" step="1" oninput="onNChange()">
+        <span id="available-label" style="font-size:11px;color:#666;"></span>
+    </div>
+    <div class="row">
+        <label>Taxa / item:</label>
+        <select id="rateSelect" onchange="onNChange()">
+            <option value="1">💰 1 moeda</option>
+            <option value="5">💰 5 moedas</option>
+            <option value="10">💰 10 moedas</option>
+            <option value="25">💰 25 moedas</option>
+            <option value="50">💰 50 moedas</option>
+            <option value="100">💰 100 moedas</option>
+        </select>
+        <span style="font-size:10px;color:#888;">(editável abaixo)</span>
+    </div>
+</div>
+
+<!-- Files available -->
+<div class="panel" style="flex:1;min-height:0;">
+    <div style="font-size:11px;font-weight:bold;color:#333;">
+        Arquivos disponíveis do tipo selecionado:
+    </div>
+    <div class="file-list" id="fileList"></div>
+</div>
+
+<!-- Preview & action -->
+<div class="preview-box" id="preview">
+    Selecione tipo e quantidade para calcular
+</div>
+
+<div style="display:flex;gap:6px;align-items:center;">
+    <button class="btn-convert" id="convertBtn" onclick="convert()" disabled>
+        💱 Converter → 💵 Dinheiro
+    </button>
+    <span style="font-size:11px;color:#666;">
+        Requer conexão 🔌 com destino
+    </span>
+</div>
+
+<!-- Log -->
+<div class="log" id="log">
+    <div class="entry info">▶ Sistema de conversão iniciado.</div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────
+// RATE TABLE  (type → base value per file)
+// Can be overridden by rateSelect
+// ─────────────────────────────────────────────────────────────────
+const BASE_RATES = {
+    fish:     10,
+    image:    25,
+    text:     5,
+    shortcut: 15,
+    dinheiro: 1,
+};
+
+const TYPE_ICONS = { fish:'🐟', image:'🖼️', text:'📝', shortcut:'⭐', app:'⚙️', folder:'📁', default:'📄' };
+
+let selectedFileIds = new Set();
+
+// ─── helpers ─────────────────────────────────────────────────────
+function getVFS() {
+    try { return window.parent.getFiles?.() || []; } catch { return []; }
+}
+
+function log(msg, kind = '') {
+    const el  = document.getElementById('log');
+    const div = document.createElement('div');
+    div.className = `entry ${kind}`;
+    const ts = new Date().toLocaleTimeString('pt-BR', { hour12: false });
+    div.textContent = `[${ts}] ${msg}`;
+    el.appendChild(div);
+    el.scrollTop = el.scrollHeight;
+}
+
+// ─── type change ─────────────────────────────────────────────────
+function onTypeChange() {
+    const type = document.getElementById('typeSelect').value;
+    // Suggest matching base rate
+    const rate    = BASE_RATES[type] || 10;
+    const options = document.getElementById('rateSelect').options;
+    let matched   = false;
+    for (const opt of options) {
+        if (parseInt(opt.value) === rate) { opt.selected = true; matched = true; break; }
+    }
+    if (!matched) options[0].selected = true;
+    selectedFileIds.clear();
+    renderFileList();
+    onNChange();
+}
+
+// ─── render available files ───────────────────────────────────────
+function renderFileList() {
+    const type     = document.getElementById('typeSelect').value;
+    const allFiles = getVFS();
+
+    // Exclude files that live inside folders from being double-counted
+    const childIds = new Set();
+    allFiles.forEach(f => {
+        if (f.type === 'folder' && Array.isArray(f.data?.children))
+            f.data.children.forEach(id => childIds.add(id));
+    });
+
+    const available = allFiles.filter(f => f.type === type && !childIds.has(f.id));
+    const list      = document.getElementById('fileList');
+    const nInput    = document.getElementById('nInput');
+
+    document.getElementById('available-label').textContent =
+        `(${available.length} disponível${available.length !== 1 ? 's' : ''})`;
+
+    list.innerHTML = '';
+
+    if (!available.length) {
+        list.innerHTML = `<div class="file-item" style="color:#aaa;cursor:default;">
+            Nenhum arquivo do tipo "${type}" no armazenamento.</div>`;
+        document.getElementById('convertBtn').disabled = true;
+        updatePreview(0, 0, 'error', `Sem arquivos do tipo "${type}"`);
+        return;
+    }
+
+    available.forEach(file => {
+        const item  = document.createElement('div');
+        item.className = 'file-item' + (selectedFileIds.has(file.id) ? ' selected' : '');
+        item.dataset.id = file.id;
+
+        const ico = TYPE_ICONS[file.type] || TYPE_ICONS.default;
+        item.innerHTML = `
+            <input type="checkbox" ${selectedFileIds.has(file.id) ? 'checked' : ''}>
+            <span>${ico} ${file.name}</span>
+            <span style="color:#888;margin-left:auto;">${file.size || 0}MB</span>
+        `;
+        item.querySelector('input').addEventListener('change', e => {
+            e.stopPropagation();
+            if (e.target.checked) selectedFileIds.add(file.id);
+            else selectedFileIds.delete(file.id);
+            // Keep n in sync with manual selection
+            document.getElementById('nInput').value = selectedFileIds.size || 1;
+            onNChange();
+        });
+        item.addEventListener('click', e => {
+            if (e.target.tagName === 'INPUT') return;
+            const cb = item.querySelector('input');
+            cb.checked = !cb.checked;
+            cb.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+        list.appendChild(item);
+    });
+
+    // Auto-select up to n items
+    syncCheckboxesToN();
+}
+
+// ─── sync selection to n ──────────────────────────────────────────
+function syncCheckboxesToN() {
+    const n        = Math.max(1, parseInt(document.getElementById('nInput').value) || 1);
+    const type     = document.getElementById('typeSelect').value;
+    const allFiles = getVFS().filter(f => f.type === type);
+    const childIds = new Set();
+    getVFS().forEach(f => {
+        if (f.type === 'folder' && Array.isArray(f.data?.children))
+            f.data.children.forEach(id => childIds.add(id));
+    });
+    const available = allFiles.filter(f => !childIds.has(f.id));
+
+    // Rebuild selection: take first n available
+    if (selectedFileIds.size !== n) {
+        selectedFileIds.clear();
+        available.slice(0, n).forEach(f => selectedFileIds.add(f.id));
+    }
+
+    // Update checkboxes
+    document.querySelectorAll('#fileList .file-item').forEach(item => {
+        const id = parseInt(item.dataset.id);
+        const cb = item.querySelector('input');
+        const sel = selectedFileIds.has(id);
+        if (cb) cb.checked = sel;
+        item.classList.toggle('selected', sel);
+    });
+}
+
+// ─── quantity change ──────────────────────────────────────────────
+function onNChange() {
+    const n    = Math.max(1, parseInt(document.getElementById('nInput').value) || 1);
+    const rate = parseInt(document.getElementById('rateSelect').value) || 10;
+    const type = document.getElementById('typeSelect').value;
+
+    // Count real available files
+    const childIds = new Set();
+    const all = getVFS();
+    all.forEach(f => {
+        if (f.type === 'folder' && Array.isArray(f.data?.children))
+            f.data.children.forEach(id => childIds.add(id));
+    });
+    const available = all.filter(f => f.type === type && !childIds.has(f.id));
+
+    syncCheckboxesToN();
+
+    if (n < 1) {
+        updatePreview(0, 0, 'error', 'n deve ser ≥ 1');
+        document.getElementById('convertBtn').disabled = true;
+        return;
+    }
+    if (available.length === 0) {
+        updatePreview(0, 0, 'error', `Nenhum arquivo do tipo "${type}"`);
+        document.getElementById('convertBtn').disabled = true;
+        return;
+    }
+    if (n > available.length) {
+        updatePreview(n, 0, 'error',
+            `Somente ${available.length} arquivo(s) disponível(is)`);
+        document.getElementById('convertBtn').disabled = true;
+        return;
+    }
+
+    const total = n * rate;
+    updatePreview(n, total, 'ready',
+        `${n} × ${TYPE_ICONS[type]} ${type} × ${rate} moedas`);
+    document.getElementById('convertBtn').disabled = false;
+}
+
+function updatePreview(n, total, kind, label) {
+    const el = document.getElementById('preview');
+    el.className = `preview-box ${kind}`;
+    if (kind === 'ready') {
+        el.innerHTML = `<span>${label}</span>
+            <span>=</span>
+            <span class="dinheiro-display">💵 ${total} dinheiro</span>`;
+    } else if (kind === 'error') {
+        el.innerHTML = `⚠️ ${label}`;
+    } else {
+        el.textContent = label;
+    }
+}
+
+// ─── CONVERT ─────────────────────────────────────────────────────
+function convert() {
+    const n    = Math.max(1, parseInt(document.getElementById('nInput').value) || 1);
+    const rate = parseInt(document.getElementById('rateSelect').value) || 10;
+    const type = document.getElementById('typeSelect').value;
+
+    // Validate selection
+    const sel = [...selectedFileIds].slice(0, n);
+    if (sel.length < n) {
+        log(`Erro: seleção insuficiente (${sel.length}/${n})`, 'err');
+        return;
+    }
+
+    const dinheiro = n * rate;
+
+    log(`Convertendo ${n}× ${type} @ ${rate} moedas/unidade...`, 'info');
+
+    // Build the dinheiro resource
+    // Size = valor × 0.1 MB (min 0.1)
+    const dinheiroSize = Math.max(0.1, parseFloat((dinheiro * 0.1).toFixed(1)));
+    const dinheiroName = `${dinheiro} dinheiro`;
+
+    const resource = {
+        name:  dinheiroName,
+        type:  'dinheiro',
+        size:  dinheiroSize,
+        data: {
+            valor:   dinheiro,
+            origem:  type,
+            qtd:     n,
+            taxa:    rate,
+            arquivos: sel,
+        },
+    };
+
+    // Try to emit via parent window connection system
+    const appId = 'conversor';
+    try {
+        const result = window.parent.emitResource?.(appId, resource);
+        if (result) {
+            log(`✅ Emitido: 💵 ${dinheiro} dinheiro → destino conectado`, 'ok');
+        } else {
+            // No connection — save directly to VFS as a dinheiro file
+            const saved = window.parent.addFile?.(resource);
+            if (saved) {
+                log(`💾 Salvo no armazenamento: ${resource.name} (${dinheiro} moedas)`, 'ok');
+                window.parent.renderDesktopFiles?.();
+            } else {
+                log('Erro ao salvar no armazenamento.', 'err');
+                return;
+            }
+        }
+    } catch (e) {
+        log(`Erro: ${e.message}`, 'err');
+        return;
+    }
+
+    log(`Convertidos arquivos IDs: [${sel.join(', ')}]`, 'info');
+
+    // Ask whether to consume (delete) the source files
+    if (confirm(`Conversão feita!\n💵 ${dinheiro} dinheiro gerado.\n\nDeletar os ${n} arquivo(s) fonte do armazenamento?`)) {
+        sel.forEach(id => {
+            try { window.parent.deleteFile?.(id); } catch {}
+        });
+        selectedFileIds.clear();
+        log(`🗑️ ${n} arquivo(s) fonte removido(s).`, 'info');
+        renderFileList();
+        onNChange();
+    }
+}
+
+// ─── BOOT ────────────────────────────────────────────────────────
+document.getElementById('typeSelect').value = 'fish';
+onTypeChange();
+</script>
+</body>
+</html>

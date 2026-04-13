@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+
+body {
+    font-family: Tahoma, sans-serif;
+    background: #d4d0c8;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* ── Header bar ── */
+.msn-header {
+    background: linear-gradient(135deg, #003399 0%, #0055cc 50%, #0066ff 100%);
+    padding: 6px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 2px solid #002288;
+    flex-shrink: 0;
+}
+.msn-logo { font-size: 22px; }
+.msn-title { color: white; font-size: 14px; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+.msn-status-dot {
+    width: 10px; height: 10px; border-radius: 50%; margin-left: auto;
+    background: #44ff44; box-shadow: 0 0 6px #44ff44;
+}
+
+/* ── Login screen ── */
+#login-screen {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 14px;
+    background: linear-gradient(180deg, #cce0ff 0%, #e8f0ff 100%);
+}
+.login-box {
+    background: white; border: 1px solid #aaa;
+    padding: 20px 24px; width: 260px; display: flex;
+    flex-direction: column; gap: 10px;
+    box-shadow: 2px 2px 8px rgba(0,0,0,0.2);
+}
+.login-box h2 { font-size: 14px; color: #003399; border-bottom: 1px solid #ddd; padding-bottom: 6px; }
+.login-box label { font-size: 11px; color: #333; }
+.login-box input, .login-box select {
+    width: 100%; font-family: Tahoma; font-size: 12px;
+    border: 1px inset #aaa; padding: 3px 5px; height: 24px;
+}
+.btn-signin {
+    background: linear-gradient(to bottom, #0066ff, #0044cc);
+    color: white; border: 1px solid #002288;
+    font-family: Tahoma; font-size: 12px; font-weight: bold;
+    padding: 5px; cursor: pointer; border-radius: 2px;
+}
+.btn-signin:hover { background: linear-gradient(to bottom, #0077ff, #0055dd); }
+.avatar-pick { display: flex; gap: 6px; flex-wrap: wrap; }
+.av-opt {
+    width: 32px; height: 32px; font-size: 20px; text-align: center;
+    line-height: 32px; border: 2px solid #ccc; cursor: pointer; border-radius: 4px;
+}
+.av-opt.chosen { border-color: #0055cc; background: #e0eeff; }
+
+/* ── Main UI ── */
+#main-ui { flex: 1; display: flex; overflow: hidden; }
+
+/* Contact list */
+.contacts-panel {
+    width: 190px; flex-shrink: 0;
+    background: white; border-right: 1px solid #aaa;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+}
+.my-profile {
+    background: linear-gradient(135deg, #003399, #0055cc);
+    padding: 8px; display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+}
+.my-avatar { font-size: 28px; }
+.my-info { flex: 1; overflow: hidden; }
+.my-name  { font-size: 12px; font-weight: bold; color: white;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.my-mood  { font-size: 10px; color: #aaccff;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.my-status-badge {
+    font-size: 10px; padding: 1px 5px; border-radius: 8px;
+    background: rgba(255,255,255,0.2); color: white; cursor: pointer;
+    white-space: nowrap;
+}
+
+.contacts-title {
+    font-size: 10px; font-weight: bold; color: #666;
+    background: #f0ede5; padding: 3px 8px;
+    border-bottom: 1px solid #ddd; text-transform: uppercase;
+    letter-spacing: 0.5px; flex-shrink: 0;
+}
+.contacts-list { flex: 1; overflow-y: auto; }
+.contact-item {
+    padding: 6px 8px; display: flex; align-items: center; gap: 7px;
+    cursor: pointer; border-bottom: 1px solid #f0ede5;
+    transition: background 0.1s;
+}
+.contact-item:hover { background: #e8f0ff; }
+.contact-item.active { background: #d0e4ff; }
+.contact-item.unread .ct-name { font-weight: bold; }
+.ct-av { font-size: 22px; position: relative; flex-shrink: 0; }
+.ct-dot {
+    position: absolute; bottom: -1px; right: -1px;
+    width: 8px; height: 8px; border-radius: 50%; border: 1px solid white;
+}
+.dot-online { background: #44cc44; }
+.dot-away   { background: #ffaa00; }
+.dot-busy   { background: #cc4444; }
+.dot-offline{ background: #888; }
+.ct-info { flex: 1; overflow: hidden; }
+.ct-name { font-size: 11px; color: #222; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ct-mood { font-size: 10px; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ct-unread-badge {
+    background: #0055cc; color: white;
+    font-size: 9px; padding: 1px 5px; border-radius: 8px; flex-shrink: 0;
+}
+
+/* ── Chat area ── */
+.chat-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.no-chat-placeholder {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 10px; color: #888; background: #f5f3ee;
+}
+.no-chat-placeholder .big-logo { font-size: 56px; }
+.chat-header {
+    background: linear-gradient(135deg, #eef4ff, #ddeaff);
+    padding: 6px 10px; border-bottom: 1px solid #b0c8ee;
+    display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+}
+.chat-header-av { font-size: 26px; }
+.chat-header-info { flex: 1; }
+.chat-header-name { font-size: 13px; font-weight: bold; color: #003399; }
+.chat-header-mood { font-size: 10px; color: #666; }
+.chat-header-status { font-size: 10px; padding: 2px 7px; border-radius: 8px; font-weight: bold; }
+
+.messages {
+    flex: 1; overflow-y: auto; padding: 8px;
+    background: white; display: flex; flex-direction: column; gap: 6px;
+}
+.msg-row { display: flex; align-items: flex-end; gap: 5px; }
+.msg-row.mine  { flex-direction: row-reverse; }
+.msg-av  { font-size: 18px; flex-shrink: 0; }
+.msg-bubble {
+    max-width: 70%; padding: 6px 9px; border-radius: 10px;
+    font-size: 12px; line-height: 1.4;
+    box-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+}
+.msg-row.mine  .msg-bubble { background: #d0e8ff; border-bottom-right-radius: 2px; }
+.msg-row.other .msg-bubble { background: #f0ede5; border-bottom-left-radius: 2px; }
+.msg-img { max-width: 160px; border-radius: 6px; border: 1px solid #ccc; display: block; cursor: pointer; }
+.msg-time { font-size: 9px; color: #aaa; text-align: right; margin-top: 2px; }
+
+.typing-indicator .msg-bubble {
+    background: #e8e4dc; font-style: italic; color: #888;
+    display: flex; gap: 3px; align-items: center;
+}
+.dot-typing {
+    width: 6px; height: 6px; border-radius: 50%; background: #888;
+    animation: blink-dot 1.2s infinite;
+}
+.dot-typing:nth-child(2) { animation-delay: 0.2s; }
+.dot-typing:nth-child(3) { animation-delay: 0.4s; }
+@keyframes blink-dot { 0%,80%,100%{opacity:0.2} 40%{opacity:1} }
+
+.chat-input-bar {
+    background: #d4d0c8; border-top: 1px solid #aaa;
+    padding: 5px 6px; display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;
+}
+.chat-toolbar { display: flex; gap: 4px; }
+.chat-tool-btn {
+    font-family: Tahoma; font-size: 11px;
+    padding: 2px 7px; cursor: pointer;
+    background: #e4e0d8; border: 1px solid #aaa; border-radius: 2px;
+}
+.chat-tool-btn:hover { background: #d4d0c8; }
+.chat-row { display: flex; gap: 5px; }
+.chat-input {
+    flex: 1; font-family: Tahoma; font-size: 12px;
+    border: 1px inset #808080; padding: 4px 6px;
+    resize: none; height: 50px; background: white;
+}
+.chat-send {
+    font-family: Tahoma; font-size: 11px; font-weight: bold;
+    padding: 0 12px; cursor: pointer;
+    background: linear-gradient(to bottom, #0066ff, #0044cc);
+    color: white; border: 1px solid #002288; border-radius: 2px;
+    align-self: flex-end; height: 30px;
+}
+.chat-send:hover { opacity: 0.88; }
+</style>
+</head>
+<body>
+
+<div class="msn-header">
+    <span class="msn-logo">💬</span>
+    <span class="msn-title">MSN Messenger</span>
+    <span class="msn-status-dot" id="hdr-dot"></span>
+</div>
+
+<!-- Login screen -->
+<div id="login-screen">
+    <div class="login-box">
+        <h2>💬 Entrar no MSN</h2>
+        <label>Seu nome</label>
+        <input id="l-name" type="text" placeholder="seu apelido" value="">
+        <label>Seu avatar</label>
+        <div class="avatar-pick" id="av-pick"></div>
+        <label>Mensagem de status</label>
+        <input id="l-mood" type="text" placeholder="o que você está fazendo?">
+        <button class="btn-signin" onclick="signin()">Entrar no Messenger ✔</button>
+    </div>
+</div>
+
+<!-- Main UI (hidden until sign-in) -->
+<div id="main-ui" style="display:none;">
+    <div class="contacts-panel">
+        <div class="my-profile">
+            <div class="my-avatar" id="my-av">😊</div>
+            <div class="my-info">
+                <div class="my-name" id="my-name">Você</div>
+                <div class="my-mood" id="my-mood" onclick="editMood()">Clique para editar...</div>
+            </div>
+            <div class="my-status-badge" id="my-status" onclick="cycleStatus()">● Online</div>
+        </div>
+        <div class="contacts-title">Contatos Online</div>
+        <div class="contacts-list" id="contacts-list"></div>
+    </div>
+    <div class="chat-area" id="chat-area">
+        <div class="no-chat-placeholder">
+            <div class="big-logo">💬</div>
+            <div>Selecione um contato para conversar</div>
+            <div style="font-size:11px;color:#aaa;">Duplo-clique para abrir uma conversa</div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ── Constants ─────────────────────────────────────────────────
+const STORE_KEY = 'msn-data';
+const AVATARS   = ['😊','😎','🤓','😈','👻','🤩','😋','😜','🦊','🐱','🐧','🦄'];
+
+const CONTACTS = [
+    {
+        id: 'mel99', name: 'Mel Silva', avatar: '👩', status: 'online',
+        mood: 'essa música não sai da minha cabeça 🎵',
+        personality: 'Você é Mel, uma jovem animada de 22 anos, fã de música pop e jogos. '+
+                     'Você responde de forma descontraída, usa gírias brasileiras informais, '+
+                     'emojis, e às vezes manda memes em texto. Não seja formal. Converse sobre música, games, dia a dia.',
+    },
+    {
+        id: 'rodrigo_gamer', name: 'Rodrigo XP', avatar: '👾', status: 'online',
+        mood: 'no ranked, não me chame gg',
+        personality: 'Você é Rodrigo, um gamer de 25 anos, fala muito sobre games online, estratégia, e atualidades de tech. '+
+                     'Usa expressões de game como "gg", "ez", "ranked". Conversa de forma curta e direta.',
+    },
+    {
+        id: 'ana_dev', name: 'Ana Dev', avatar: '🧑‍💻', status: 'away',
+        mood: 'debugando há 3 horas... encontrei um ponto e vírgula',
+        personality: 'Você é Ana, programadora de 28 anos, apaixonada por tecnologia e código. '+
+                     'Faz piadas de programador, fala sobre linguagens, bugs engraçados. É um pouco nerd mas simpática.',
+    },
+    {
+        id: 'joao_coins', name: 'João Coins', avatar: '🤑', status: 'busy',
+        mood: 'estudando cripto, to the moon 🚀',
+        personality: 'Você é João, entusiasta de criptomoedas e investimentos, de 30 anos. '+
+                     'Fala sobre "to the moon", HODL, tecnologia blockchain. É otimista e animado com o mercado.',
+    },
+    {
+        id: 'bia_arte', name: 'Bia Arte', avatar: '👩‍🎨', status: 'online',
+        mood: 'desenhando minha nova série ✏️',
+        personality: 'Você é Bia, artista digital de 24 anos, apaixonada por arte, anime e design. '+
+                     'Fala sobre projetos artísticos, recomenda anime, compartilha entusiasmo por arte visual.',
+    },
+];
+
+// ── State ──────────────────────────────────────────────────────
+let profile    = { name: 'Você', avatar: '😊', mood: '', status: 'online' };
+let activeChat = null;
+let unread     = {};   // contactId → count
+let typing     = {};   // contactId → bool
+
+function loadData() {
+    try {
+        const d = JSON.parse(localStorage.getItem(STORE_KEY)) || {};
+        if (d.profile)   profile = d.profile;
+        if (d.messages)  window._msgs = d.messages;
+        if (d.unread)    unread  = d.unread;
+    } catch {}
+    window._msgs = window._msgs || {};
+}
+
+function saveData() {
+    try {
+        localStorage.setItem(STORE_KEY, JSON.stringify({ profile, messages: window._msgs, unread }));
+    } catch {}
+}
+
+function getMsgs(contactId) {
+    if (!window._msgs[contactId]) window._msgs[contactId] = [];
+    return window._msgs[contactId];
+}
+
+// ── Login ──────────────────────────────────────────────────────
+const avPick = document.getElementById('av-pick');
+AVATARS.forEach((av, i) => {
+    const d = document.createElement('div');
+    d.className = 'av-opt' + (i === 0 ? ' chosen' : '');
+    d.textContent = av;
+    d.onclick = () => { document.querySelectorAll('.av-opt').forEach(x=>x.classList.remove('chosen')); d.classList.add('chosen'); };
+    avPick.appendChild(d);
+});
+
+function signin() {
+    const name = document.getElementById('l-name').value.trim() || 'Você';
+    const av   = document.querySelector('.av-opt.chosen')?.textContent || '😊';
+    const mood = document.getElementById('l-mood').value.trim() || 'online e pronto pra conversar';
+    profile    = { name, avatar: av, mood, status: 'online' };
+    saveData();
+    showMain();
+}
+
+// ── Main UI ────────────────────────────────────────────────────
+function showMain() {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('main-ui').style.display      = 'flex';
+    document.getElementById('my-av').textContent   = profile.avatar;
+    document.getElementById('my-name').textContent  = profile.name;
+    document.getElementById('my-mood').textContent  = profile.mood || 'Clique para editar...';
+    renderContacts();
+}
+
+function renderContacts() {
+    const list = document.getElementById('contacts-list');
+    list.innerHTML = '';
+    CONTACTS.forEach(c => {
+        const div = document.createElement('div');
+        div.className = 'contact-item' +
+            (activeChat === c.id ? ' active' : '') +
+            (unread[c.id] ? ' unread' : '');
+        div.innerHTML = `
+            <div class="ct-av">${c.avatar}<span class="ct-dot dot-${c.status}"></span></div>
+            <div class="ct-info">
+                <div class="ct-name">${c.name}</div>
+                <div class="ct-mood">${c.mood}</div>
+            </div>
+            ${unread[c.id] ? `<div class="ct-unread-badge">${unread[c.id]}</div>` : ''}
+        `;
+        div.addEventListener('click', () => openChat(c.id));
+        list.appendChild(div);
+    });
+}
+
+// ── Chat ───────────────────────────────────────────────────────
+function openChat(contactId) {
+    activeChat = contactId;
+    unread[contactId] = 0;
+    saveData();
+    renderContacts();
+    renderChat(contactId);
+}
+
+function renderChat(contactId) {
+    const contact = CONTACTS.find(c => c.id === contactId);
+    const msgs    = getMsgs(contactId);
+    const area    = document.getElementById('chat-area');
+
+    const statusColors = { online:'#006600', away:'#aa6600', busy:'#880000', offline:'#888' };
+    const statusLabels = { online:'Online', away:'Ausente', busy:'Ocupado', offline:'Offline' };
+
+    area.innerHTML = `
+        <div class="chat-header">
+            <div class="chat-header-av">${contact.avatar}</div>
+            <div class="chat-header-info">
+                <div class="chat-header-name">${contact.name}</div>
+                <div class="chat-header-mood">${contact.mood}</div>
+            </div>
+            <span class="chat-header-status"
+                  style="color:${statusColors[contact.status]};background:${statusColors[contact.status]}22;">
+                ● ${statusLabels[contact.status]}
+            </span>
+        </div>
+        <div class="messages" id="msgs-${contactId}"></div>
+        <div class="chat-input-bar">
+            <div class="chat-toolbar">
+                <button class="chat-tool-btn" onclick="sendEmoji('${contactId}','😂')">😂</button>
+                <button class="chat-tool-btn" onclick="sendEmoji('${contactId}','❤️')">❤️</button>
+                <button class="chat-tool-btn" onclick="sendEmoji('${contactId}','👍')">👍</button>
+                <button class="chat-tool-btn" onclick="sendEmoji('${contactId}','🎉')">🎉</button>
+                <button class="chat-tool-btn" onclick="attachImage('${contactId}')" title="Enviar imagem">📎 Imagem</button>
+            </div>
+            <div class="chat-row">
+                <textarea class="chat-input" id="inp-${contactId}"
+                    placeholder="Digite uma mensagem..."
+                    onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg('${contactId}');}">
+                </textarea>
+                <button class="chat-send" onclick="sendMsg('${contactId}')">Enviar</button>
+            </div>
+        </div>
+    `;
+
+    const msgBox = document.getElementById(`msgs-${contactId}`);
+    msgs.forEach(m => appendMsgEl(msgBox, m, contact));
+    msgBox.scrollTop = msgBox.scrollHeight;
+}
+
+function appendMsgEl(box, msg, contact) {
+    const isMine = msg.from === 'me';
+    const row    = document.createElement('div');
+    row.className = `msg-row ${isMine ? 'mine' : 'other'}`;
+
+    let content = '';
+    if (msg.type === 'image') {
+        content = `<img class="msg-img" src="${msg.data}" onclick="window.open(this.src)">`;
+    } else {
+        content = msg.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\n/g,'<br>');
+    }
+
+    row.innerHTML = `
+        <div class="msg-av">${isMine ? profile.avatar : contact.avatar}</div>
+        <div>
+            <div class="msg-bubble">${content}</div>
+            <div class="msg-time">${msg.time}</div>
+        </div>
+    `;
+    box.appendChild(row);
+}
+
+function sendMsg(contactId) {
+    const inp  = document.getElementById(`inp-${contactId}`);
+    const text = inp.value.trim();
+    if (!text) return;
+    inp.value = '';
+
+    const msg  = { from:'me', text, type:'text', time: new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) };
+    getMsgs(contactId).push(msg);
+    saveData();
+
+    const contact = CONTACTS.find(c => c.id === contactId);
+    const box     = document.getElementById(`msgs-${contactId}`);
+    if (box) { appendMsgEl(box, msg, contact); box.scrollTop = box.scrollHeight; }
+
+    triggerAIResponse(contactId, text);
+}
+
+function sendEmoji(contactId, emoji) {
+    const inp = document.getElementById(`inp-${contactId}`);
+    if (inp) inp.value += emoji;
+    inp?.focus();
+}
+
+function attachImage(contactId) {
+    // Build a list of images from the VFS
+    let images = [];
+    try { images = (window.parent.getFiles?.() || []).filter(f => f.type === 'image' && f.data?.src); }
+    catch {}
+
+    if (!images.length) {
+        alert('Nenhuma imagem no armazenamento.\nImporte imagens para o desktop primeiro.');
+        return;
+    }
+
+    // Simple picker overlay
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.5);
+        display:flex;align-items:center;justify-content:center;z-index:9999;`;
+    const box = document.createElement('div');
+    box.style.cssText = `background:white;padding:12px;border-radius:4px;
+        max-width:340px;width:90%;max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;`;
+    box.innerHTML = `<div style="font-size:12px;font-weight:bold;color:#003399;">📎 Escolha uma imagem</div>
+        <div id="img-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;"></div>
+        <button onclick="this.closest('div[style]').parentElement.remove()"
+            style="font-family:Tahoma;font-size:11px;padding:3px;cursor:pointer;">Cancelar</button>`;
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    const grid = box.querySelector('#img-grid');
+    images.forEach(img => {
+        const el = document.createElement('img');
+        el.src   = img.data.src;
+        el.style.cssText = 'width:100%;height:70px;object-fit:cover;cursor:pointer;border-radius:3px;border:1px solid #ccc;';
+        el.title = img.name;
+        el.onclick = () => {
+            overlay.remove();
+            sendImage(contactId, img.data.src, img.name);
+        };
+        grid.appendChild(el);
+    });
+}
+
+function sendImage(contactId, src, name) {
+    const msg = { from:'me', type:'image', data:src, text: name,
+                  time: new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) };
+    getMsgs(contactId).push(msg);
+    saveData();
+
+    const contact = CONTACTS.find(c => c.id === contactId);
+    const box     = document.getElementById(`msgs-${contactId}`);
+    if (box) { appendMsgEl(box, msg, contact); box.scrollTop = box.scrollHeight; }
+
+    // AI reacts to image
+    triggerAIResponse(contactId, `[enviou uma imagem: ${name}]`);
+}
+
+// ── AI Response ────────────────────────────────────────────────
+async function triggerAIResponse(contactId, userText) {
+    const contact = CONTACTS.find(c => c.id === contactId);
+    if (!contact || contact.status === 'offline') return;
+
+    // Show typing indicator
+    showTyping(contactId, contact);
+
+    // Build message history (last 10 for context)
+    const history = getMsgs(contactId).slice(-10).map(m => ({
+        role: m.from === 'me' ? 'user' : 'assistant',
+        content: m.type === 'image' ? `[imagem enviada: ${m.text}]` : m.text,
+    }));
+    // Ensure last message is the one just sent
+    if (history[history.length-1]?.role !== 'user') {
+        history.push({ role:'user', content: userText });
+    }
+
+    try {
+        const resp = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                model: 'claude-sonnet-4-20250514',
+                max_tokens: 200,
+                system: contact.personality +
+                    ` Você está no MSN Messenger conversando com ${profile.name || 'alguém'}. ` +
+                    `Responda de forma curta (1-3 frases no máximo), casual, sem formatação markdown.`,
+                messages: history,
+            }),
+        });
+        const data = await resp.json();
+        const text = data.content?.[0]?.text || '...';
+        hideTyping(contactId);
+        receiveMsg(contactId, text, contact);
+    } catch {
+        hideTyping(contactId);
+        // Fallback offline response
+        const fallbacks = [
+            'rsrsrs', 'verdade!', 'hm, deixa eu pensar...', 'aew!',
+            'sei lá man', 'que isso kkk', 'de boas', 'falando sério?',
+        ];
+        receiveMsg(contactId, fallbacks[Math.floor(Math.random()*fallbacks.length)], contact);
+    }
+}
+
+function receiveMsg(contactId, text, contact) {
+    const msg = { from: contactId, text, type:'text',
+                  time: new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) };
+    getMsgs(contactId).push(msg);
+
+    if (activeChat === contactId) {
+        const box = document.getElementById(`msgs-${contactId}`);
+        if (box) { appendMsgEl(box, msg, contact); box.scrollTop = box.scrollHeight; }
+    } else {
+        unread[contactId] = (unread[contactId] || 0) + 1;
+        renderContacts();
+    }
+    saveData();
+}
+
+function showTyping(contactId, contact) {
+    if (activeChat !== contactId) return;
+    const box = document.getElementById(`msgs-${contactId}`);
+    if (!box) return;
+    const row = document.createElement('div');
+    row.className = 'msg-row other typing-indicator';
+    row.id = `typing-${contactId}`;
+    row.innerHTML = `
+        <div class="msg-av">${contact.avatar}</div>
+        <div class="msg-bubble">
+            <div class="dot-typing"></div>
+            <div class="dot-typing"></div>
+            <div class="dot-typing"></div>
+        </div>`;
+    box.appendChild(row);
+    box.scrollTop = box.scrollHeight;
+}
+function hideTyping(contactId) {
+    document.getElementById(`typing-${contactId}`)?.remove();
+}
+
+// ── Profile editing ────────────────────────────────────────────
+function editMood() {
+    const mood = prompt('Nova mensagem de status:', profile.mood);
+    if (mood === null) return;
+    profile.mood = mood;
+    document.getElementById('my-mood').textContent = mood || 'Sem status';
+    saveData();
+}
+
+function cycleStatus() {
+    const statuses = ['online','away','busy','offline'];
+    const labels   = { online:'● Online', away:'◑ Ausente', busy:'⊗ Ocupado', offline:'○ Offline' };
+    const colors   = { online:'#44cc44',  away:'#ffaa00',  busy:'#cc4444',  offline:'#888' };
+    const curr     = profile.status || 'online';
+    const next     = statuses[(statuses.indexOf(curr)+1) % statuses.length];
+    profile.status = next;
+    const btn = document.getElementById('my-status');
+    btn.textContent = labels[next];
+    btn.style.background = colors[next] + '33';
+    btn.style.color      = colors[next];
+    document.getElementById('hdr-dot').style.background = colors[next];
+    document.getElementById('hdr-dot').style.boxShadow  = `0 0 6px ${colors[next]}`;
+    saveData();
+}
+
+// ── Boot ───────────────────────────────────────────────────────
+loadData();
+if (profile.name && profile.name !== 'Você') {
+    // Pre-fill login
+    document.getElementById('l-name').value = profile.name;
+    document.getElementById('l-mood').value = profile.mood;
+    // Auto-login if we have a profile
+    showMain();
+} else {
+    // Pre-fill defaults
+    document.getElementById('l-name').value = '';
+}
+</script>
+</body>
+</html>
