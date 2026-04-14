@@ -410,8 +410,6 @@ function convert() {
 
     log(`Convertendo ${n}× ${type} @ ${rate} moedas/unidade...`, 'info');
 
-    // Build the dinheiro resource
-    // Size = valor × 0.1 MB (min 0.1)
     const dinheiroSize = Math.max(0.1, parseFloat((dinheiro * 0.1).toFixed(1)));
     const dinheiroName = `${dinheiro} dinheiro`;
 
@@ -463,6 +461,9 @@ function convert() {
         onNChange();
     }
 }
+
+function action(){}
+function refresh(){}
 
 // ─── BOOT ────────────────────────────────────────────────────────
 document.getElementById('typeSelect').value = 'fish';

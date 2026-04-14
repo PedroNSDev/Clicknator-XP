@@ -1,8 +1,3 @@
-// ════════════════════════════════════════════════════════════════
-//  CLICKNATOR XP — script.js
-// ════════════════════════════════════════════════════════════════
-
-// ─── CONSTANTS & GLOBAL STATE ────────────────────────────────────
 const SAVE_KEY     = 'winxp-state';
 const UNLOCK_KEY   = 'winxp-unlocks';
 const FILE_KEY     = 'winxp-files';
@@ -18,7 +13,6 @@ let currentTargetIcon = null;
 
 window.systemInfo = { username: '', ram: 256, space: 2048, session_time: 0 };
 
-// ─── STORAGE HELPERS ─────────────────────────────────────────────
 const saveState    = d => localStorage.setItem(SAVE_KEY,     JSON.stringify(d));
 const loadState    = () => JSON.parse(localStorage.getItem(SAVE_KEY))     || {};
 const saveUnlocks  = d => localStorage.setItem(UNLOCK_KEY,  JSON.stringify(d));
@@ -32,11 +26,9 @@ window.saveFiles   = saveFiles;
 window.getUpgrades = getUpgrades;
 window.saveUpgrades = function(d) {
     saveUpgrades(d);
-    // Apply to live systemInfo immediately
     applyUpgrades();
 };
 
-// ─── DOM ─────────────────────────────────────────────────────────
 const desktop            = document.getElementById('desktop');
 const taskbarApps        = document.getElementById('taskbar-apps');
 const contextMenu        = document.getElementById('context-menu');
@@ -45,7 +37,6 @@ const startMenu          = document.getElementById('start-menu');
 const wallpaperInput     = document.getElementById('wallpaper-input');
 const changeWallpaperBtn = document.getElementById('change-wallpaper');
 
-// ─── CANVAS (connection cables) ───────────────────────────────────
 const canvas = document.getElementById('cables');
 const ctx    = canvas.getContext('2d');
 
@@ -53,16 +44,11 @@ const resizeCanvas = () => { canvas.width = window.innerWidth; canvas.height = w
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
-// ─── ICON GRID HELPER ────────────────────────────────────────────
-// Each icon gets a unique slot.  Icons are arranged in columns of
-// ~80 px rows, starting at `leftStart`.  `idx` is the sequential
-// position within that column group (0-based, no gaps).
-const ICON_ROW_H   = 82;   // row height (px) – add 2px gap so icons never overlap
-const ICON_COL_W   = 92;   // column width (px)
+const ICON_ROW_H   = 82;
+const ICON_COL_W   = 92;
 const ICON_TOP_PAD = 20;
 
-// Inject desktop selection + icon-selected styles once
-(function(){
+(function () {
     const s = document.createElement('style');
     s.textContent = `
         .icon.sel-highlight { background:rgba(49,106,197,0.18);border-radius:3px; }
@@ -97,35 +83,32 @@ function drawConnections() {
         const r2 = to.getBoundingClientRect();
         const x1 = r1.right, y1 = r1.top + r1.height / 2;
         const x2 = r2.left,  y2 = r2.top  + r2.height / 2;
-        const _cdx = Math.max(60, Math.abs(x2 - x1) * 0.5);
+        const cdx = Math.max(60, Math.abs(x2 - x1) * 0.5);
         ctx.beginPath();
         ctx.moveTo(x1, y1);
-        ctx.bezierCurveTo(x1 + _cdx, y1, x2 - _cdx, y2, x2, y2);
+        ctx.bezierCurveTo(x1 + cdx, y1, x2 - cdx, y2, x2, y2);
         ctx.strokeStyle = 'black';
         ctx.lineWidth   = 2;
         ctx.stroke();
     });
 }
 
-// ─── CLOCK ───────────────────────────────────────────────────────
 function updateClock() {
     const now = new Date();
     document.getElementById('clock').innerText =
-        `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+        `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 }
 setInterval(updateClock, 1000);
 updateClock();
 
-// ─── DRAGGABLE ───────────────────────────────────────────────────
 function makeDraggable(element, handle) {
-    let x1=0, y1=0, x2=0, y2=0;
+    let x1 = 0, y1 = 0, x2 = 0, y2 = 0;
     (handle || element).onmousedown = e => {
         e.preventDefault();
         x2 = e.clientX; y2 = e.clientY;
 
         document.onmouseup = upEvent => {
             document.onmouseup = document.onmousemove = null;
-            // Desktop file icon dropped onto an open folder window → move into folder
             if (element.classList.contains('file') && element.dataset.fileId) {
                 for (const fw of document.querySelectorAll('[id^="window-folder-"]')) {
                     const r = fw.getBoundingClientRect();
@@ -155,7 +138,6 @@ function makeDraggable(element, handle) {
     };
 }
 
-// ─── RESIZABLE ───────────────────────────────────────────────────
 function makeResizable(win) {
     const minW = 200, minH = 150;
     function initResize(e, type) {
@@ -166,23 +148,35 @@ function makeResizable(win) {
             if (type !== 'bottom') win.style.width  = Math.max(minW, sW + e.clientX - sX) + 'px';
             if (type !== 'right')  win.style.height = Math.max(minH, sH + e.clientY - sY) + 'px';
         };
-        const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+        const onUp = () => {
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+        };
         document.addEventListener('mousemove', onMove);
         document.addEventListener('mouseup', onUp);
     }
-    win.querySelector('.resize-handle.right') .onmousedown = e => initResize(e, 'right');
-    win.querySelector('.resize-handle.bottom').onmousedown = e => initResize(e, 'bottom');
-    win.querySelector('.resize-handle.corner').onmousedown = e => initResize(e, 'corner');
+    const rRight  = win.querySelector('.resize-handle.right');
+    const rBottom = win.querySelector('.resize-handle.bottom');
+    const rCorner = win.querySelector('.resize-handle.corner');
+    if (rRight)  rRight.onmousedown  = e => initResize(e, 'right');
+    if (rBottom) rBottom.onmousedown = e => initResize(e, 'bottom');
+    if (rCorner) rCorner.onmousedown = e => initResize(e, 'corner');
 }
 
-// ════════════════════════════════════════════════════════════════
-//  FILE SYSTEM
-// ════════════════════════════════════════════════════════════════
+function getWinPorts(win) {
+    try { return JSON.parse(win.dataset.ports || '[]'); } catch { return []; }
+}
+function getInputPorts(win) {
+    return getWinPorts(win).filter(p => p.dir === 'in' || p.dir === 'storage');
+}
+function getOutputPorts(win) {
+    return getWinPorts(win).filter(p => p.dir === 'out' || p.dir === 'storage');
+}
+function winAcceptsFormat(win, fmt) {
+    if (win.id.startsWith('window-folder-')) return true;
+    return getInputPorts(win).some(p => p.format === 'any' || p.format === fmt);
+}
 
-/*
- File types and their desktop behaviour.
- Add new types here to make them visible / openable on the desktop.
-*/
 const DESKTOP_FILE_TYPES = {
     text:     { icon: '📝', onDblClick: file => openNotepad(file.id)     },
     folder:   { icon: '📁', onDblClick: file => openFolder(file.id)      },
@@ -192,11 +186,8 @@ const DESKTOP_FILE_TYPES = {
     dinheiro: { icon: '💰', onDblClick: file => openDinheiroViewer(file) },
 };
 
-const TYPE_ICONS = { text:'📝', folder:'📁', fish:'🐟', app:'⚙️', image:'🖼️', shortcut:'⭐', dinheiro:'💰' };
+const TYPE_ICONS = { text: '📝', folder: '📁', fish: '🐟', app: '⚙️', image: '🖼️', shortcut: '⭐', dinheiro: '💰' };
 
-/*
- Extra cleanup when a file is permanently deleted.
-*/
 const FILE_DELETE_HANDLERS = {
     app: file => {
         const id = file.data?.appId;
@@ -207,10 +198,9 @@ const FILE_DELETE_HANDLERS = {
     },
 };
 
-// Total used space — every file counted once (children refs are just IDs, not duplicates).
 window.getUsedSpace = () => getFiles().reduce((acc, f) => acc + (f.size || 50), 0);
 
-window.addFile = function(file) {
+window.addFile = function (file) {
     const files    = getFiles();
     const fileSize = file.size || 50;
     const used     = files.reduce((acc, f) => acc + (f.size || 50), 0);
@@ -222,29 +212,18 @@ window.addFile = function(file) {
 };
 const addFile = window.addFile;
 
-/**
- * Permanently delete a file by id.
- * Correctly removes the file from every parent folder's children list
- * so storage totals stay accurate.
- */
-window.deleteFile = function(id) {
+window.deleteFile = function (id) {
     let files = getFiles();
     const file = files.find(f => f.id == id);
     if (!file) return;
-
-    // Strip this ID from every folder's children (fixes the storage bug)
     files.forEach(f => {
         if (f.type === 'folder' && Array.isArray(f.data?.children))
             f.data.children = f.data.children.filter(c => c != id);
     });
-
     FILE_DELETE_HANDLERS[file.type]?.(file);
     saveFiles(files.filter(f => f.id != id));
     renderDesktopFiles();
-
-    // Refresh every open folder window
     document.querySelectorAll('[id^="window-folder-"]').forEach(w => w.refreshFolder?.());
-    // Notify inventário iframe
     document.getElementById('window-inventario')
         ?.querySelector('iframe')
         ?.contentWindow
@@ -252,19 +231,12 @@ window.deleteFile = function(id) {
 };
 const deleteFile = window.deleteFile;
 
-/**
- * Move a VFS file into targetFolderId, or back to the desktop root (null).
- * Removes from any previous parent folder first.
- */
 function moveFileBetween(fileId, targetFolderId) {
     const files = getFiles();
-
-    // Remove from all current parents
     files.forEach(f => {
         if (f.type === 'folder' && Array.isArray(f.data?.children))
             f.data.children = f.data.children.filter(c => c != fileId);
     });
-
     if (targetFolderId != null) {
         const folder = files.find(f => f.id === targetFolderId);
         if (folder) {
@@ -272,47 +244,36 @@ function moveFileBetween(fileId, targetFolderId) {
             if (!folder.data.children.includes(fileId)) folder.data.children.push(fileId);
         }
     }
-
     saveFiles(files);
     renderDesktopFiles();
     document.querySelectorAll('[id^="window-folder-"]').forEach(w => w.refreshFolder?.());
 }
 
-// ─── DESKTOP FILE ICONS ───────────────────────────────────────────
-window.renderDesktopFiles = function() {
+window.renderDesktopFiles = function () {
     document.querySelectorAll('.icon.file').forEach(e => e.remove());
-
     const allFiles = getFiles();
-    // Files that live inside folders should not appear on the desktop
     const childIds = new Set();
     allFiles.forEach(f => {
         if (f.type === 'folder' && Array.isArray(f.data?.children))
             f.data.children.forEach(id => childIds.add(id));
     });
-
     let col = 0;
     allFiles.forEach(file => {
         if (childIds.has(file.id)) return;
         const typeDef = DESKTOP_FILE_TYPES[file.type];
         if (!typeDef) return;
-
         const icon          = document.createElement('div');
         icon.className      = 'icon file';
         icon.dataset.fileId = file.id;
-        const _fp = iconPos(col, 120);
-        icon.style.top  = _fp.top  + 'px';
-        icon.style.left = _fp.left + 'px';
-
-        // Show thumbnail for images and shortcut star
+        const fp = iconPos(col, 120);
+        icon.style.top  = fp.top  + 'px';
+        icon.style.left = fp.left + 'px';
         let iconContent = typeDef.icon;
         if (file.type === 'image' && file.data?.src) {
-            iconContent = `<img src="${file.data.src}"
-                style="width:36px;height:28px;object-fit:cover;border:1px solid #999;border-radius:2px;display:block;margin:0 auto 2px;">`;
+            iconContent = `<img src="${file.data.src}" style="width:36px;height:28px;object-fit:cover;border:1px solid #999;border-radius:2px;display:block;margin:0 auto 2px;">`;
         }
-
         icon.innerHTML = `<div class="icon-img">${iconContent}</div><span>${file.name}</span>`;
         makeDraggable(icon);
-        // HTML5 drag so file icons can be dropped into iframes (e.g. Loja carteira)
         icon.draggable = true;
         icon.addEventListener('dragstart', ev => {
             ev.dataTransfer.setData('vfs-file-id', String(file.id));
@@ -320,7 +281,10 @@ window.renderDesktopFiles = function() {
             icon.style.opacity = '0.5';
         });
         icon.addEventListener('dragend', () => { icon.style.opacity = '1'; });
-        icon.addEventListener('dblclick',    () => typeDef.onDblClick(file));
+        icon.addEventListener('dblclick', () => typeDef.onDblClick(file));
+        icon.addEventListener('click', e => {
+            if (e.ctrlKey) { e.stopPropagation(); icon.classList.toggle('sel-highlight'); }
+        });
         icon.addEventListener('contextmenu', e => {
             e.preventDefault(); e.stopPropagation();
             currentTargetIcon = icon;
@@ -332,32 +296,23 @@ window.renderDesktopFiles = function() {
 };
 const renderDesktopFiles = window.renderDesktopFiles;
 
-// ─── DESKTOP CONTEXTMENU (right-click anywhere) ─────────────────
 desktop.addEventListener('contextmenu', e => {
     e.preventDefault();
-    // If icon's handler already ran (stopPropagation was NOT called — it was), skip.
-    // Since icon handlers stopPropagation, this only fires on empty desktop.
     currentTargetIcon = null;
     showContextMenu(e.pageX, e.pageY, 'desktop');
 });
 
-// ─── RUBBER-BAND MULTI-SELECT ─────────────────────────────────
-let _rbs = null;   // {x,y} start of rubber-band
-let _rbEl = null;  // the visual rect element
-const _sel = new Set(); // currently rubber-selected icon elements
+let _rbs  = null;
+let _rbEl = null;
 
 desktop.addEventListener('mousedown', e => {
     if (e.button !== 0) return;
-    if (e.target !== desktop) return;  // only on empty desktop area
-
-    // Clear previous selection
-    document.querySelectorAll('.icon.sel-highlight').forEach(i => i.classList.remove('sel-highlight'));
-    _sel.clear();
-
+    if (e.target !== desktop) return;
+    if (!e.ctrlKey) {
+        document.querySelectorAll('.icon.sel-highlight').forEach(i => i.classList.remove('sel-highlight'));
+    }
     const dr = desktop.getBoundingClientRect();
-    _rbs = { x: e.clientX - dr.left + desktop.scrollLeft,
-             y: e.clientY - dr.top  + desktop.scrollTop };
-
+    _rbs  = { x: e.clientX - dr.left + desktop.scrollLeft, y: e.clientY - dr.top + desktop.scrollTop };
     _rbEl = document.createElement('div');
     _rbEl.id = 'sel-rubber';
     _rbEl.style.left = _rbs.x + 'px';
@@ -367,43 +322,38 @@ desktop.addEventListener('mousedown', e => {
 
 document.addEventListener('mousemove', e => {
     if (!_rbs || !_rbEl) return;
-    const dr  = desktop.getBoundingClientRect();
-    const cx  = e.clientX - dr.left + desktop.scrollLeft;
-    const cy  = e.clientY - dr.top  + desktop.scrollTop;
+    const dr   = desktop.getBoundingClientRect();
+    const cx   = e.clientX - dr.left + desktop.scrollLeft;
+    const cy   = e.clientY - dr.top  + desktop.scrollTop;
     const minX = Math.min(_rbs.x, cx), maxX = Math.max(_rbs.x, cx);
     const minY = Math.min(_rbs.y, cy), maxY = Math.max(_rbs.y, cy);
-
     _rbEl.style.left   = minX + 'px';
     _rbEl.style.top    = minY + 'px';
     _rbEl.style.width  = (maxX - minX) + 'px';
     _rbEl.style.height = (maxY - minY) + 'px';
-
     document.querySelectorAll('.icon').forEach(icon => {
         const r   = icon.getBoundingClientRect();
         const ix  = r.left - dr.left + r.width  / 2 + desktop.scrollLeft;
         const iy  = r.top  - dr.top  + r.height / 2 + desktop.scrollTop;
         const hit = ix >= minX && ix <= maxX && iy >= minY && iy <= maxY;
-        icon.classList.toggle('sel-highlight', hit);
+        if (hit) icon.classList.add('sel-highlight');
+        else if (!e.ctrlKey) icon.classList.remove('sel-highlight');
     });
 });
 
-document.addEventListener('mouseup', e => {
+document.addEventListener('mouseup', () => {
     if (!_rbs) return;
     _rbs = null;
     _rbEl?.remove(); _rbEl = null;
-    // Keep the highlights; clicking elsewhere will clear them
 });
 
-// Click on empty desktop → clear selection
 desktop.addEventListener('click', e => {
-    if (e.target === desktop) {
+    if (e.target === desktop && !e.ctrlKey) {
         document.querySelectorAll('.icon.sel-highlight').forEach(i => i.classList.remove('sel-highlight'));
     }
 });
 
-// ─── DESKTOP DROP ZONE (real OS images + folder→desktop DnD) ────
 desktop.addEventListener('dragover', e => {
-    // Allow: real image files, text, AND custom VFS drag from folder items
     if (e.dataTransfer.types.includes('Files') ||
         e.dataTransfer.types.includes('text/plain') ||
         e.dataTransfer.types.includes('vfs-file-id'))
@@ -413,7 +363,6 @@ desktop.addEventListener('drop', e => {
     e.preventDefault();
     const realImages = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/'));
     if (realImages.length) { realImages.forEach(importRealImage); return; }
-    // VFS item dragged out of a folder onto the desktop → move to root
     const vfsId = e.dataTransfer.getData('vfs-file-id');
     if (vfsId) moveFileBetween(parseInt(vfsId), null);
 });
@@ -437,36 +386,28 @@ function importImageFile() {
     input.click();
 }
 
-// ─── IMAGE VIEWER (universal) ────────────────────────────────────
-window.openImageViewer = function(file) {
+window.openImageViewer = function (file) {
     const winId   = `img-viewer-${file.id}`;
     const existing = document.getElementById(winId);
     if (existing) { existing.style.zIndex = ++zIndexCounter; return; }
-
     const win = document.createElement('div');
     win.className    = 'window';
     win.id           = winId;
     win.style.zIndex = ++zIndexCounter;
     win.style.top = '60px'; win.style.left = '80px';
     win.style.width = '540px'; win.style.height = '420px';
-
     win.innerHTML = `
         <div class="title-bar">
             <span>🖼️ ${file.name}</span>
             <button class="close-btn">X</button>
         </div>
-        <div style="width:100%;height:calc(100% - 62px);overflow:auto;background:#1a1a1a;
-                    display:flex;align-items:center;justify-content:center;">
+        <div style="width:100%;height:calc(100% - 62px);overflow:auto;background:#1a1a1a;display:flex;align-items:center;justify-content:center;">
             <img src="${file.data?.src}" alt="${file.name}"
-                 style="max-width:100%;max-height:100%;object-fit:contain;
-                        display:block;transform-origin:center;transition:transform .15s;"
+                 style="max-width:100%;max-height:100%;object-fit:contain;display:block;transform-origin:center;transition:transform .15s;"
                  id="${winId}-img">
         </div>
-        <div style="background:#d4d0c8;border-top:1px solid #999;padding:3px 8px;
-                    font-size:11px;font-family:Tahoma;display:flex;
-                    justify-content:space-between;align-items:center;height:28px;">
-            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px;"
-                  title="${file.name}">${file.name}</span>
+        <div style="background:#d4d0c8;border-top:1px solid #999;padding:3px 8px;font-size:11px;font-family:Tahoma;display:flex;justify-content:space-between;align-items:center;height:28px;">
+            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px;" title="${file.name}">${file.name}</span>
             <div style="display:flex;gap:3px;">
                 <button id="${winId}-zi" title="Zoom +">🔍+</button>
                 <button id="${winId}-zo" title="Zoom −">🔍−</button>
@@ -477,13 +418,11 @@ window.openImageViewer = function(file) {
         <div class="resize-handle bottom"></div>
         <div class="resize-handle corner"></div>
     `;
-
     desktop.appendChild(win);
-
     let zoom = 1;
     const img = document.getElementById(`${winId}-img`);
-    document.getElementById(`${winId}-zi`).onclick = () => { zoom = Math.min(5, +(zoom+0.25).toFixed(2)); img.style.transform = `scale(${zoom})`; };
-    document.getElementById(`${winId}-zo`).onclick = () => { zoom = Math.max(0.1, +(zoom-0.25).toFixed(2)); img.style.transform = `scale(${zoom})`; };
+    document.getElementById(`${winId}-zi`).onclick = () => { zoom = Math.min(5, +(zoom + 0.25).toFixed(2)); img.style.transform = `scale(${zoom})`; };
+    document.getElementById(`${winId}-zo`).onclick = () => { zoom = Math.max(0.1, +(zoom - 0.25).toFixed(2)); img.style.transform = `scale(${zoom})`; };
     document.getElementById(`${winId}-dl`).onclick = () => {
         const a = document.createElement('a'); a.href = file.data?.src; a.download = file.name; a.click();
     };
@@ -494,17 +433,13 @@ window.openImageViewer = function(file) {
 };
 const openImageViewer = window.openImageViewer;
 
-// ─── SHORTCUT FILES ───────────────────────────────────────────────
 function openShortcut(file) {
     const url = file.data?.url;
     if (!url) return;
-    // Try to open in the GoNetGo browser if it is open, otherwise open in new tab
     const browserWin = document.getElementById('window-gonetgo');
     if (browserWin) {
         browserWin.style.zIndex = ++zIndexCounter;
-        browserWin.querySelector('iframe')
-            ?.contentWindow
-            ?.postMessage({ type: 'navigate', url }, '*');
+        browserWin.querySelector('iframe')?.contentWindow?.postMessage({ type: 'navigate', url }, '*');
     } else {
         window.open(url, '_blank');
     }
@@ -512,38 +447,34 @@ function openShortcut(file) {
 
 function createShortcut(name, url) {
     if (!url) return null;
-    // Avoid duplicate shortcuts for same URL
     const existing = getFiles().find(f => f.type === 'shortcut' && f.data?.url === url);
-    if (existing) { return existing; }
+    if (existing) return existing;
     const saved = addFile({ name: name || url, type: 'shortcut', size: 1, data: { url } });
     if (saved) {
         renderDesktopFiles();
-        // Small bounce to make new icon visible
         setTimeout(() => {
             const el = document.querySelector(`.icon[data-file-id="${saved.id}"]`);
-            if (el) { el.style.transform='scale(1.3)'; setTimeout(()=>el.style.transform='',300); }
+            if (el) { el.style.transform = 'scale(1.3)'; setTimeout(() => el.style.transform = '', 300); }
         }, 50);
     }
     return saved;
 }
 window.createShortcut = createShortcut;
 
-// ─── FISH VIEWER ─────────────────────────────────────────────────
 function openFishViewer(file) {
-    const winId   = `fish-viewer-${file.id}`;
+    const winId    = `fish-viewer-${file.id}`;
     if (document.getElementById(winId)) { document.getElementById(winId).style.zIndex = ++zIndexCounter; return; }
-    const raridade  = file.data?.raridade ?? Math.random();
-    const stars     = '⭐'.repeat(Math.ceil(raridade * 5));
-    const rarLabel  = raridade > 0.9 ? '🟣 Lendário' : raridade > 0.7 ? '🔵 Raro' :
-                      raridade > 0.4 ? '🟢 Incomum'  : '⚪ Comum';
-
+    const raridade = file.data?.raridade ?? Math.random();
+    const stars    = '⭐'.repeat(Math.ceil(raridade * 5));
+    const rarLabel = raridade > 0.9 ? '🟣 Lendário' : raridade > 0.7 ? '🔵 Raro' :
+                     raridade > 0.4 ? '🟢 Incomum' : '⚪ Comum';
     const win = document.createElement('div');
     win.className = 'window'; win.id = winId; win.style.zIndex = ++zIndexCounter;
     win.style.top = '100px'; win.style.left = '160px';
     win.style.width = '240px'; win.style.height = '200px';
     win.innerHTML = `
         <div class="title-bar"><span>🐟 ${file.name}</span><button class="close-btn">X</button></div>
-        <div style="padding:14px;font-family:Tahoma;font-size:12px;background:#f0ede5;height:calc(100%-34px);display:flex;flex-direction:column;gap:6px;">
+        <div style="padding:14px;font-family:Tahoma;font-size:12px;background:#f0ede5;display:flex;flex-direction:column;gap:6px;">
             <div style="font-size:36px;text-align:center;">🐟</div>
             <div><b>Nome:</b> ${file.name}</div>
             <div><b>Tamanho:</b> ${file.size} MB</div>
@@ -559,27 +490,22 @@ function openFishViewer(file) {
     makeResizable(win);
 }
 
-// ─── DINHEIRO VIEWER ─────────────────────────────────────────────
 function openDinheiroViewer(file) {
-    const winId = `din-viewer-${file.id}`;
+    const winId  = `din-viewer-${file.id}`;
     if (document.getElementById(winId)) { document.getElementById(winId).style.zIndex = ++zIndexCounter; return; }
-    const valor  = file.data?.valor ?? 0;
+    const valor  = file.data?.valor  ?? 0;
     const origem = file.data?.origem ?? '?';
     const qtd    = file.data?.qtd    ?? '?';
     const taxa   = file.data?.taxa   ?? '?';
-
     const win = document.createElement('div');
     win.className = 'window'; win.id = winId; win.style.zIndex = ++zIndexCounter;
     win.style.top = '100px'; win.style.left = '180px';
     win.style.width = '260px'; win.style.height = '220px';
     win.innerHTML = `
         <div class="title-bar"><span>💰 ${file.name}</span><button class="close-btn">X</button></div>
-        <div style="padding:16px 14px;font-family:Tahoma;font-size:12px;background:#fffbe6;
-                    height:calc(100% - 34px);display:flex;flex-direction:column;gap:7px;">
+        <div style="padding:16px 14px;font-family:Tahoma;font-size:12px;background:#fffbe6;height:calc(100% - 34px);display:flex;flex-direction:column;gap:7px;">
             <div style="font-size:42px;text-align:center;line-height:1;">💰</div>
-            <div style="font-size:20px;font-weight:bold;text-align:center;color:#b8860b;">
-                ${valor} moedas
-            </div>
+            <div style="font-size:20px;font-weight:bold;text-align:center;color:#b8860b;">${valor} moedas</div>
             <hr style="border:none;border-top:1px solid #ddd;">
             <div style="font-size:11px;color:#555;">Origem: ${qtd}× ${TYPE_ICONS[origem] || '📄'} ${origem}</div>
             <div style="font-size:11px;color:#555;">Taxa: ${taxa} moedas/item</div>
@@ -593,7 +519,6 @@ function openDinheiroViewer(file) {
     makeResizable(win);
 }
 
-// ─── UPGRADES ────────────────────────────────────────────────────
 const BASE_RAM   = 256;
 const BASE_SPACE = 2048;
 
@@ -604,8 +529,6 @@ function applyUpgrades() {
 }
 window.applyUpgrades = applyUpgrades;
 
-
-
 async function loadApps() {
     const res = await fetch('apps.json');
     appsList  = await res.json();
@@ -614,18 +537,12 @@ async function loadApps() {
     populateStartMenu();
 }
 
-/**
- * Unlock logic:
- *   No 'unlocked' key  → system app, always visible.
- *   Has 'unlocked' key → check persisted overrides, else use the JSON default.
- */
 function isUnlocked(app) {
     if (!Object.prototype.hasOwnProperty.call(app, 'unlocked')) return true;
     const p = getUnlocks();
     return Object.prototype.hasOwnProperty.call(p, app.id) ? p[app.id] : app.unlocked;
 }
 
-/** True for apps that have an 'unlocked' key (i.e., non-system, removable). */
 const isRemovable = app => Object.prototype.hasOwnProperty.call(app, 'unlocked');
 
 function unlockApp(appId) {
@@ -642,11 +559,10 @@ function lockApp(appId) {
     const u = getUnlocks(); u[appId] = false; saveUnlocks(u);
 }
 
-/** Remove an app: delete its .exe file if it exists, lock, remove icon, update start menu. */
 function removeApp(appId) {
     const exe = getFiles().find(f => f.type === 'app' && f.data?.appId === appId);
     if (exe) {
-        deleteFile(exe.id); // handler calls lockApp + removeDesktopIcon
+        deleteFile(exe.id);
     } else {
         lockApp(appId);
         removeDesktopIcon(appId);
@@ -664,12 +580,15 @@ function buildAppIcon(app, index = 0) {
     const icon       = document.createElement('div');
     icon.className   = 'icon';
     icon.dataset.app = app.id;
-    const _ap = iconPos(index, 20);
-    icon.style.top   = _ap.top  + 'px';
-    icon.style.left  = _ap.left + 'px';
+    const ap = iconPos(index, 20);
+    icon.style.top   = ap.top  + 'px';
+    icon.style.left  = ap.left + 'px';
     icon.innerHTML   = `<div class="icon-img">${app.icone}</div><span>${app.nome}</span>`;
     makeDraggable(icon);
-    icon.addEventListener('dblclick',    () => openAppById(app.id));
+    icon.addEventListener('dblclick', () => openAppById(app.id));
+    icon.addEventListener('click', e => {
+        if (e.ctrlKey) { e.stopPropagation(); icon.classList.toggle('sel-highlight'); }
+    });
     icon.addEventListener('contextmenu', e => {
         e.preventDefault(); e.stopPropagation();
         currentTargetIcon = icon;
@@ -682,10 +601,6 @@ function removeDesktopIcon(appId) {
     document.querySelector(`.icon[data-app="${appId}"]`)?.remove();
 }
 
-// ════════════════════════════════════════════════════════════════
-//  WINDOWS
-// ════════════════════════════════════════════════════════════════
-
 window.getUsedRAM = () => usedRAM;
 window.getRAMInfo = () => `${usedRAM}/${window.systemInfo.ram} MB`;
 
@@ -696,7 +611,6 @@ function openAppById(appId) {
         alert(`RAM insuficiente!\nUsando: ${usedRAM}/${window.systemInfo.ram}MB\nPrecisa: ${app.ram || 0}MB`);
         return;
     }
-    // Instantiable apps can have multiple windows; non-instantiable focus existing
     if (!app.instantiable) {
         if (openApps.has(appId)) {
             document.getElementById(`window-${appId}`)?.style.setProperty('z-index', ++zIndexCounter);
@@ -714,36 +628,33 @@ function createWindow(app) {
     win.className    = 'window';
     win.id           = `window-${winUid}`;
     win.style.zIndex = ++zIndexCounter;
-    const _wins  = document.querySelectorAll('.window').length;
-    const offset = (_wins * 22) + 50;
+    const offset = (document.querySelectorAll('.window').length * 22) + 50;
     win.style.top    = `${offset}px`;
     win.style.left   = `${offset}px`;
-    win.dataset.conn    = app.conn    || 'none';
-    win.dataset.format  = app.format  || 'any';
-    win.dataset.appType = app.appType || '';
-    win.dataset.conn2   = app.conn2   || '';
-    win.dataset.format2 = app.format2 || 'any';
 
-    // Determine which side each connector belongs on
-    const _c1IsInput  = app.conn  === 'input'  || app.conn  === 'storage';
-    const _c2IsOutput = app.conn2 === 'output';
-    const _showLeft   = app.conn  && _c1IsInput;
-    const _showRight1 = app.conn  && !_c1IsInput; // single output on right
-    const _showRight2 = app.conn2 && _c2IsOutput;   // second output on right
+    const ports       = app.ports || [];
+    win.dataset.ports   = JSON.stringify(ports);
+    win.dataset.appType = app.appType || '';
+
+    const inputPorts  = ports.filter(p => p.dir === 'in' || p.dir === 'storage');
+    const outputPorts = ports.filter(p => p.dir === 'out');
+
+    const leftBtnsHtml = inputPorts.map(p =>
+        `<button class="connect-btn connect-btn-left" data-port-idx="${ports.indexOf(p)}"
+         title="${p.dir} (${p.format})">🔌</button>`
+    ).join('');
+
+    const rightBtnsHtml = outputPorts.map(p =>
+        `<button class="connect-btn connect-btn-right" data-port-idx="${ports.indexOf(p)}"
+         title="${p.dir} (${p.format})">🔌</button>`
+    ).join('');
 
     win.innerHTML = `
         <div class="title-bar" style="display:flex;align-items:center;padding:0 2px;">
-            <div style="display:flex;gap:1px;margin-right:3px;">
-                ${_showLeft ? `<button class="connect-btn connect-btn-left"
-                    title="Entrada (${app.conn})">🔌</button>` : ''}
-            </div>
-            <span style="flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;
-                         white-space:nowrap;">${app.nome}</span>
+            <div style="display:flex;gap:1px;margin-right:3px;">${leftBtnsHtml}</div>
+            <span style="flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${app.nome}</span>
             <div style="display:flex;gap:1px;margin-left:3px;align-items:center;">
-                ${_showRight1 ? `<button class="connect-btn connect-btn-right"
-                    title="Saída (${app.conn})">🔌</button>` : ''}
-                ${_showRight2 ? `<button class="connect-btn2 connect-btn-right"
-                    title="Saída 2 (${app.conn2})">🔌</button>` : ''}
+                ${rightBtnsHtml}
                 <button class="close-btn">X</button>
             </div>
         </div>
@@ -757,37 +668,28 @@ function createWindow(app) {
 
     desktop.appendChild(win);
 
-    // Taskbar item with close button
     const taskItem     = document.createElement('div');
     taskItem.className = 'taskbar-app active';
     taskItem.innerHTML = `<span class="taskbar-label">${app.nome}</span><button class="taskbar-close-btn" title="Fechar">✕</button>`;
     taskbarApps.appendChild(taskItem);
-    taskItem.querySelector('.taskbar-label').onclick       = () => win.style.zIndex = ++zIndexCounter;
-    taskItem.querySelector('.taskbar-close-btn').onclick = e => { e.stopPropagation(); closeWindow(win, app, taskItem); };
+    taskItem.querySelector('.taskbar-label').onclick     = () => win.style.zIndex = ++zIndexCounter;
+    taskItem.querySelector('.taskbar-close-btn').onclick = e  => { e.stopPropagation(); closeWindow(win, app, taskItem); };
 
-    win.querySelector('.connect-btn').onclick = () => {
-        if (!pendingConnection) {
-            pendingConnection = { win, type: win.dataset.conn, format: win.dataset.format, slot: 1 };
-            win.querySelector('.connect-btn').style.background = 'yellow';
-        } else {
-            tryConnect(pendingConnection, win);
-            pendingConnection = null;
-            document.querySelectorAll('.connect-btn, .connect-btn2').forEach(b => b.style.background = '');
-        }
-    };
-
-    if (win.querySelector('.connect-btn2')) {
-        win.querySelector('.connect-btn2').onclick = () => {
+    win.querySelectorAll('.connect-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const portIdx = parseInt(btn.dataset.portIdx);
+            const port    = ports[portIdx];
+            if (!port) return;
             if (!pendingConnection) {
-                pendingConnection = { win, type: win.dataset.conn2, format: win.dataset.format2, slot: 2 };
-                win.querySelector('.connect-btn2').style.background = '#ffd700';
+                pendingConnection = { win, port };
+                btn.style.background = 'yellow';
             } else {
-                tryConnect(pendingConnection, win);
+                tryConnect(pendingConnection, win, portIdx);
                 pendingConnection = null;
-                document.querySelectorAll('.connect-btn, .connect-btn2').forEach(b => b.style.background = '');
+                document.querySelectorAll('.connect-btn').forEach(b => b.style.background = '');
             }
-        };
-    }
+        });
+    });
 
     win.querySelector('.close-btn').onclick = () => closeWindow(win, app, taskItem);
     win.addEventListener('mousedown', () => win.style.zIndex = ++zIndexCounter);
@@ -803,193 +705,169 @@ function closeWindow(win, app, taskItem) {
     });
     connections = connections.filter(c => c.from !== win && c.to !== win);
     drawConnections();
-    // Only remove from openApps if non-instantiable
     if (!app.instantiable) openApps.delete(app.id);
     taskItem.remove();
     win.remove();
 }
 
-// ─── CONNECTIONS ─────────────────────────────────────────────────
-function tryConnect(a, targetWin) {
-    // Resolve b's type/format — if pending used slot2, read conn2/format2
-    const bSlot   = 0; // target always uses default connector when receiving
-    const b = {
-        win:    targetWin,
-        type:   targetWin.dataset.conn,
-        format: targetWin.dataset.format,
-    };
+function tryConnect(pending, targetWin, _targetPortIdxHint) {
+    if (pending.win === targetWin) return;
 
-    if (a.win === b.win) return;
+    const aPort  = pending.port;
+    const bPorts = getWinPorts(targetWin);
+    let   bPort  = null;
 
-    // Both storage is fine (just remove/toggle)
-    if (a.type !== 'storage' && b.type !== 'storage') {
-        if (a.type === b.type) { alert('Precisa conectar input com output'); return; }
-        if (a.format !== b.format && a.format !== 'any' && b.format !== 'any') {
-            alert(`Formato incompatível: ${a.format} ↔ ${b.format}`); return;
-        }
+    if (aPort.dir === 'out') {
+        bPort = bPorts.find(p =>
+            (p.dir === 'in' || p.dir === 'storage') &&
+            (p.format === 'any' || aPort.format === 'any' || p.format === aPort.format)
+        );
+        if (!bPort) { alert(`Sem entrada compatível com "${aPort.format}"`); return; }
+    } else if (aPort.dir === 'in') {
+        bPort = bPorts.find(p =>
+            p.dir === 'out' &&
+            (p.format === 'any' || aPort.format === 'any' || p.format === aPort.format)
+        );
+        if (!bPort) { alert(`Sem saída compatível com "${aPort.format}"`); return; }
+    } else if (aPort.dir === 'storage') {
+        bPort = bPorts.find(p =>
+            (p.dir === 'in' || p.dir === 'out') &&
+            (p.format === 'any' || aPort.format === 'any' || p.format === aPort.format)
+        );
+        if (!bPort) { alert('Sem porta compatível com storage'); return; }
     }
 
-    // Toggle: remove existing if present, else add
     const existIdx = connections.findIndex(c =>
-        (c.from === a.win && c.to === b.win) || (c.from === b.win && c.to === a.win)
+        (c.from === pending.win && c.to === targetWin) ||
+        (c.from === targetWin  && c.to === pending.win)
     );
     if (existIdx !== -1) {
         const removed = connections.splice(existIdx, 1)[0];
         if (removed.fuelInterval) clearInterval(removed.fuelInterval);
-    } else {
-        const from = a.type === 'output' ? a.win : b.win;
-        const to   = a.type === 'output' ? b.win : a.win;
-        const conn = { from, to };
-
-        // ── Storage fuel: if one side is storage, start periodic feeder ──
-        const storageWin = (a.type === 'storage') ? a.win : (b.type === 'storage') ? b.win : null;
-        const otherWin   = storageWin === a.win ? b.win : storageWin ? a.win : null;
-
-        if (storageWin && otherWin) {
-            const targetFmt = otherWin.dataset.format || 'any';
-            conn.fuelInterval = setInterval(() => {
-                storageFuelTick(storageWin, otherWin, targetFmt);
-            }, 3000);
-        }
-
-        connections.push(conn);
+        drawConnections();
+        return;
     }
+
+    let from, to, fromPort, toPort;
+    if (aPort.dir === 'out') {
+        from = pending.win; to = targetWin; fromPort = aPort; toPort = bPort;
+    } else if (aPort.dir === 'in') {
+        from = targetWin; to = pending.win; fromPort = bPort; toPort = aPort;
+    } else {
+        if (bPort.dir === 'in') { from = pending.win; to = targetWin; fromPort = aPort; toPort = bPort; }
+        else                    { from = targetWin;   to = pending.win; fromPort = bPort; toPort = aPort; }
+    }
+
+    const conn = { from, to, fromPort, toPort };
+
+    const storageWin = (aPort.dir === 'storage') ? pending.win :
+                       (bPort?.dir === 'storage') ? targetWin : null;
+    const otherWin   = storageWin ? (storageWin === pending.win ? targetWin : pending.win) : null;
+
+    if (storageWin && otherWin) {
+        const targetFmt = toPort?.format || 'any';
+        conn.fuelInterval = setInterval(() => {
+            storageFuelTick(storageWin, otherWin, targetFmt);
+        }, 3000);
+    }
+
+    connections.push(conn);
     drawConnections();
 }
 
-// Periodically pull a matching file from VFS and push it to the target window.
 function storageFuelTick(storageWin, targetWin, fmt) {
     if (!document.body.contains(storageWin) || !document.body.contains(targetWin)) return;
-
     const allFiles = getFiles();
-
-    // Build a flat list of candidates — include files inside folders
-    // when the folder is the source (storageWin is a folder window).
-    let candidates = [];
+    let candidates  = [];
 
     if (storageWin.id.startsWith('window-folder-')) {
-        // Pull from folder's children
         const folderId = parseInt(storageWin.id.replace('window-folder-', ''));
         const folder   = allFiles.find(f => f.id === folderId);
         if (folder?.data?.children?.length) {
             folder.data.children.forEach(cid => {
                 const child = allFiles.find(f => f.id === cid);
                 if (child && child.type !== 'app' && child.type !== 'folder' &&
-                    (fmt === 'any' || child.type === fmt)) {
-                    candidates.push(child);
-                }
+                    (fmt === 'any' || child.type === fmt)) candidates.push(child);
             });
         }
     } else {
-        // Pull from desktop root (not inside any folder)
         const childIds = new Set();
         allFiles.forEach(f => {
             if (f.type === 'folder' && Array.isArray(f.data?.children))
                 f.data.children.forEach(id => childIds.add(id));
         });
         candidates = allFiles.filter(f =>
-            !childIds.has(f.id) &&
-            f.type !== 'folder' && f.type !== 'app' &&
+            !childIds.has(f.id) && f.type !== 'folder' && f.type !== 'app' &&
             (fmt === 'any' || f.type === fmt)
         );
     }
 
     if (!candidates.length) return;
-
     const file     = candidates[0];
-    const resource = { name: file.name, type: file.type, size: file.size, data: { ...(file.data||{}) } };
-
-    // Deliver to target – use shared router
+    const resource = { name: file.name, type: file.type, size: file.size, data: { ...(file.data || {}) } };
     routeResourceToWindow(resource, targetWin);
-
-    // Consume the source file AFTER routing (router may have already saved a new copy)
-    // For processors (appType='processor') or loja (no addFile), delete source.
-    // For storage targets that do addFile, routeResourceToWindow already added the file,
-    // so we delete the original.
     deleteFile(file.id);
 }
 
-// Route a resource to a specific target window (folder, processor, normal app, or loja).
 function routeResourceToWindow(resource, targetWin) {
-    if (!targetWin) { const sv = addFile(resource); if (sv) renderDesktopFiles(); return; }
+    if (!targetWin) {
+        const s = addFile(resource); if (s) renderDesktopFiles(); return;
+    }
 
     if (targetWin.id.startsWith('window-folder-')) {
-        const folderId = parseInt(targetWin.id.replace('window-folder-', ''));
-        const saved    = addFile(resource);
-        if (!saved) return;
+        const fid    = parseInt(targetWin.id.replace('window-folder-', ''));
+        const saved  = addFile(resource); if (!saved) return;
         const files  = getFiles();
-        const folder = files.find(f => f.id === folderId);
+        const folder = files.find(f => f.id === fid);
         if (folder) {
             if (!folder.data.children) folder.data.children = [];
             folder.data.children.push(saved.id);
-            saveFiles(files);
-            renderDesktopFiles();
-            targetWin.refreshFolder?.();
+            saveFiles(files); renderDesktopFiles(); targetWin.refreshFolder?.();
         }
         return;
     }
 
-    // Processor: forward via postMessage only
-    if (targetWin.dataset.appType === 'processor') {
-        targetWin.querySelector('iframe')
-            ?.contentWindow?.postMessage({ type: 'resource-received', resource }, '*');
-        return;
+    if (!winAcceptsFormat(targetWin, resource.type)) {
+        const s = addFile(resource); if (s) renderDesktopFiles(); return;
     }
 
-    // Loja or any iframe with resource-received support
-    const { conn: tType, format: tFormat } = targetWin.dataset;
-    const compatible = tType === 'storage' || tType === 'input' ||
-                       tFormat === 'any'   || tFormat === resource.type;
-    if (compatible) {
-        // Notify the iframe (loja, inventario, etc.)
-        targetWin.querySelector('iframe')
-            ?.contentWindow?.postMessage({ type: 'resource-received', resource }, '*');
-        // Also persist if it's a generic storage/input
-        if (tType === 'storage' || tType === 'input') {
-            const sv = addFile(resource);
-            if (sv) renderDesktopFiles();
-        }
-    }
+    targetWin.querySelector('iframe')?.contentWindow?.postMessage({ type: 'resource-received', resource }, '*');
+
+    if (targetWin.dataset.appType === 'processor') return;
+
+    const s = addFile(resource); if (s) renderDesktopFiles();
 }
 
-window.emitResource = function(appId, resource) {
+window.emitResource = function (appId, resource) {
     const sourceWin = document.getElementById(`window-${appId}`);
     if (!sourceWin) return false;
     const conn = connections.find(c => c.from === sourceWin);
     if (!conn) { alert('Nenhuma conexão encontrada!'); return false; }
     const targetWin = conn.to;
 
-    // Folder target
     if (targetWin.id.startsWith('window-folder-')) {
         const folderId = parseInt(targetWin.id.replace('window-folder-', ''));
-        const saved    = addFile(resource);
-        if (!saved) return false;
-        const files  = getFiles();
-        const folder = files.find(f => f.id === folderId);
+        const saved    = addFile(resource); if (!saved) return false;
+        const files    = getFiles();
+        const folder   = files.find(f => f.id === folderId);
         if (!folder) return false;
         if (!folder.data.children) folder.data.children = [];
         folder.data.children.push(saved.id);
-        saveFiles(files);
-        renderDesktopFiles();
-        targetWin.refreshFolder?.();
+        saveFiles(files); renderDesktopFiles(); targetWin.refreshFolder?.();
         return true;
     }
 
-    // Processor app: forward via postMessage, skip VFS save
+    if (!winAcceptsFormat(targetWin, resource.type)) {
+        alert('Formato incompatível com o destino!'); return false;
+    }
+
     if (targetWin.dataset.appType === 'processor') {
         const iframe = targetWin.querySelector('iframe');
         if (!iframe?.contentWindow) return false;
-        if (targetWin.dataset.format !== 'any' && targetWin.dataset.format !== resource.type) {
-            alert('Formato incompatível!'); return false;
-        }
         iframe.contentWindow.postMessage({ type: 'resource-received', resource }, '*');
         return true;
     }
 
-    // Normal input / storage target
-    const { conn: tType, format: tFormat } = targetWin.dataset;
-    if (tType !== 'storage' && tType !== 'input') { alert('Destino inválido!'); return false; }
-    if (tType !== 'storage' && tFormat !== resource.type) { alert('Formato incompatível!'); return false; }
     if (!addFile(resource)) return false;
     renderDesktopFiles();
     targetWin.querySelector('iframe')?.contentWindow?.postMessage({ type: 'resource-received', resource }, '*');
@@ -1003,11 +881,6 @@ window.pescar = appId => window.emitResource(appId, {
     data: { raridade: Math.random() },
 });
 
-// ════════════════════════════════════════════════════════════════
-//  BUILT-IN FILE VIEWERS / EDITORS
-// ════════════════════════════════════════════════════════════════
-
-// ─── NOTEPAD ─────────────────────────────────────────────────────
 function createNotepadFile() {
     const saved = addFile({ name: 'Novo.txt', type: 'text', size: 1, data: { content: '' } });
     if (saved) renderDesktopFiles();
@@ -1026,9 +899,7 @@ function openNotepad(fileId) {
             <span>📝 ${file.name}</span>
             <button class="close-btn">X</button>
         </div>
-        <textarea class="notepad-area"
-                  style="width:100%;height:calc(100% - 34px);resize:none;
-                         box-sizing:border-box;padding:4px;"
+        <textarea class="notepad-area" style="width:100%;height:calc(100% - 34px);resize:none;box-sizing:border-box;padding:4px;"
         >${file.data?.content || ''}</textarea>
         <div class="resize-handle right"></div>
         <div class="resize-handle bottom"></div>
@@ -1044,11 +915,10 @@ function openNotepad(fileId) {
     makeResizable(win);
 }
 
-// ─── FOLDER ──────────────────────────────────────────────────────
 function createFolder() {
     const nome = prompt('Nome da pasta:', 'Nova Pasta');
     if (!nome) return;
-    const saved = addFile({ name: nome, type: 'folder', conn: 'storage', size: 1, data: { children: [] } });
+    const saved = addFile({ name: nome, type: 'folder', size: 1, data: { children: [] } });
     if (saved) renderDesktopFiles();
 }
 
@@ -1060,8 +930,7 @@ function openFolder(fileId) {
     win.className    = 'window';
     win.id           = `window-folder-${fileId}`;
     win.style.zIndex = ++zIndexCounter;
-    win.dataset.conn   = 'storage';
-    win.dataset.format = 'any';
+    win.dataset.ports = JSON.stringify([{ dir: 'storage', format: 'any' }]);
     win.style.top = '100px'; win.style.left = '140px';
     win.style.width = '420px'; win.style.height = '320px';
 
@@ -1069,20 +938,17 @@ function openFolder(fileId) {
         <div class="title-bar">
             <span id="folder-title-${fileId}">📁 Pasta</span>
             <div>
-                <button class="connect-btn">🔌</button>
+                <button class="connect-btn connect-btn-left" data-port-idx="0" title="storage (any)">🔌</button>
                 <button class="close-btn">X</button>
             </div>
         </div>
-        <div style="padding:5px 6px;background:#d4d0c8;border-bottom:1px solid #999;
-                    display:flex;gap:6px;align-items:center;">
+        <div style="padding:5px 6px;background:#d4d0c8;border-bottom:1px solid #999;display:flex;gap:6px;align-items:center;">
             <button id="btn-add-folder-${fileId}">➕ Adicionar</button>
             <span id="folder-info-${fileId}" style="font-size:11px;color:#555;"></span>
-            <span style="font-size:10px;color:#888;margin-left:auto;">↙ Arraste arquivos do desktop aqui</span>
+            <span style="font-size:10px;color:#888;margin-left:auto;">↙ Arraste arquivos aqui</span>
         </div>
         <div id="folder-content-${fileId}"
-             style="display:flex;flex-wrap:wrap;gap:8px;padding:10px;
-                    height:calc(100% - 70px);overflow-y:auto;background:#fff;
-                    align-content:flex-start;transition:background 0.1s;"></div>
+             style="display:flex;flex-wrap:wrap;gap:8px;padding:10px;height:calc(100% - 70px);overflow-y:auto;background:#fff;align-content:flex-start;transition:background 0.1s;"></div>
         <div class="resize-handle right"></div>
         <div class="resize-handle bottom"></div>
         <div class="resize-handle corner"></div>
@@ -1092,7 +958,6 @@ function openFolder(fileId) {
 
     const content = document.getElementById(`folder-content-${fileId}`);
 
-    // Accept HTML5 drag-drop from folder item DnD
     content.addEventListener('dragover',  e => { e.preventDefault(); content.style.background = '#d8ecff'; });
     content.addEventListener('dragleave', () => { content.style.background = '#fff'; });
     content.addEventListener('drop', e => {
@@ -1100,23 +965,18 @@ function openFolder(fileId) {
         content.style.background = '#fff';
         const vfsId = e.dataTransfer.getData('vfs-file-id');
         if (vfsId) moveFileBetween(parseInt(vfsId), fileId);
-        // Also accept real image drops into the folder
         const realImages = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/'));
         if (realImages.length) {
             realImages.forEach(f => {
                 const sizeMB = Math.max(1, Math.round(f.size / 1024 / 1024));
                 const reader = new FileReader();
                 reader.onload = ev => {
-                    const files2 = getFiles();
-                    const folder2 = files2.find(x => x.id === fileId);
-                    if (!folder2) return;
                     const saved = addFile({ name: f.name, type: 'image', size: sizeMB, data: { src: ev.target.result } });
                     if (!saved) return;
-                    const files3 = getFiles();
-                    const folder3 = files3.find(x => x.id === fileId);
+                    const files3   = getFiles();
+                    const folder3  = files3.find(x => x.id === fileId);
                     if (folder3) { folder3.data.children.push(saved.id); saveFiles(files3); }
-                    renderDesktopFiles();
-                    win.refreshFolder?.();
+                    renderDesktopFiles(); win.refreshFolder?.();
                 };
                 reader.readAsDataURL(f);
             });
@@ -1130,16 +990,18 @@ function openFolder(fileId) {
         drawConnections();
         win.remove();
     };
-    win.querySelector('.connect-btn').onclick = () => {
+
+    win.querySelector('.connect-btn').addEventListener('click', () => {
+        const port = { dir: 'storage', format: 'any' };
         if (!pendingConnection) {
-            pendingConnection = { win, type: win.dataset.conn, format: win.dataset.format, slot: 1 };
+            pendingConnection = { win, port };
             win.querySelector('.connect-btn').style.background = 'yellow';
         } else {
-            tryConnect(pendingConnection, win);
+            tryConnect(pendingConnection, win, 0);
             pendingConnection = null;
-            document.querySelectorAll('.connect-btn, .connect-btn2').forEach(b => b.style.background = '');
+            document.querySelectorAll('.connect-btn').forEach(b => b.style.background = '');
         }
-    };
+    });
 
     makeDraggable(win, win.querySelector('.title-bar'));
     makeResizable(win);
@@ -1148,39 +1010,27 @@ function openFolder(fileId) {
         const allFiles = getFiles();
         const folder   = allFiles.find(f => f.id === fileId);
         if (!folder) { win.remove(); return; }
-
         document.getElementById(`folder-title-${fileId}`).innerText = `📁 ${folder.name}`;
         const children = folder.data?.children || [];
         document.getElementById(`folder-info-${fileId}`).innerText = `${children.length} item(s)`;
         content.innerHTML = '';
-
         if (!children.length) {
             content.innerHTML = '<span style="color:#aaa;font-size:12px;padding:8px;">Pasta vazia</span>';
             return;
         }
-
         children.forEach(childId => {
             const child   = allFiles.find(f => f.id === childId);
             if (!child) return;
             const typeDef = DESKTOP_FILE_TYPES[child.type];
             const ico     = TYPE_ICONS[child.type] || '📄';
-
-            const item = document.createElement('div');
-            item.style.cssText = `text-align:center;width:68px;cursor:pointer;font-size:11px;
-                word-break:break-word;padding:4px 2px;border-radius:3px;
-                border:2px solid transparent;user-select:none;`;
+            const item    = document.createElement('div');
+            item.style.cssText = `text-align:center;width:68px;cursor:pointer;font-size:11px;word-break:break-word;padding:4px 2px;border-radius:3px;border:2px solid transparent;user-select:none;`;
             item.title = child.name;
-
             let iconHtml = `<div style="font-size:28px;line-height:1.2;">${ico}</div>`;
             if (child.type === 'image' && child.data?.src) {
-                iconHtml = `<div style="width:48px;height:36px;margin:0 auto 3px;overflow:hidden;
-                    border:1px solid #ccc;border-radius:2px;">
-                    <img src="${child.data.src}" style="width:100%;height:100%;object-fit:cover;display:block;">
-                    </div>`;
+                iconHtml = `<div style="width:48px;height:36px;margin:0 auto 3px;overflow:hidden;border:1px solid #ccc;border-radius:2px;"><img src="${child.data.src}" style="width:100%;height:100%;object-fit:cover;display:block;"></div>`;
             }
             item.innerHTML = `${iconHtml}<span>${child.name}</span>`;
-
-            // HTML5 drag-out
             item.draggable = true;
             item.addEventListener('dragstart', e => {
                 e.dataTransfer.setData('vfs-file-id',   String(child.id));
@@ -1191,19 +1041,15 @@ function openFolder(fileId) {
             item.addEventListener('dblclick', () => typeDef?.onDblClick(child));
             item.addEventListener('contextmenu', e => {
                 e.preventDefault();
-                const del = confirm(
-                    `"${child.name}"\n\nOK = Excluir permanentemente\nCancelar = Remover só desta pasta`
-                );
+                const del = confirm(`"${child.name}"\n\nOK = Excluir permanentemente\nCancelar = Remover só desta pasta`);
                 if (del) {
-                    deleteFile(child.id);   // corrects storage total
+                    deleteFile(child.id);
                 } else {
                     const fresh = getFiles();
                     const fp    = fresh.find(f => f.id === fileId);
                     if (fp) {
                         fp.data.children = fp.data.children.filter(id => id !== childId);
-                        saveFiles(fresh);
-                        renderDesktopFiles();
-                        refreshFolder();
+                        saveFiles(fresh); renderDesktopFiles(); refreshFolder();
                     }
                 }
             });
@@ -1224,17 +1070,11 @@ function openFolder(fileId) {
         const idx  = parseInt(prompt(`Escolha o arquivo:\n${opts}`));
         if (isNaN(idx) || !addable[idx]) return;
         folder.data.children.push(addable[idx].id);
-        saveFiles(allFiles);
-        renderDesktopFiles();
-        refreshFolder();
+        saveFiles(allFiles); renderDesktopFiles(); refreshFolder();
     };
 
     refreshFolder();
 }
-
-// ════════════════════════════════════════════════════════════════
-//  DOWNLOAD / INSTALL
-// ════════════════════════════════════════════════════════════════
 
 function baixar(id) {
     const app = appsList.find(a => a.id === id);
@@ -1256,12 +1096,7 @@ function baixar(id) {
 
 function baixarDireto(id) { unlockApp(id); alert('Download concluído! 🎉'); }
 
-// ════════════════════════════════════════════════════════════════
-//  CONTEXT MENU
-// ════════════════════════════════════════════════════════════════
-
-// Inject "Remover App" option once
-(function() {
+(function () {
     const item = document.createElement('div');
     item.id    = 'menu-remove-app';
     item.className = contextMenu.querySelector('div')?.className || '';
@@ -1276,23 +1111,19 @@ function baixarDireto(id) { unlockApp(id); alert('Download concluído! 🎉'); }
 })();
 
 function showContextMenu(x, y, targetType) {
-    // Keep menu on screen
     const mw = 160, mh = 180;
     const px = Math.min(x, window.innerWidth  - mw - 4);
     const py = Math.min(y, window.innerHeight - mh - 4);
     contextMenu.style.left = px + 'px';
     contextMenu.style.top  = py + 'px';
     contextMenu.classList.add('visible');
-
     const isFile    = targetType === 'file';
     const isDesktop = targetType === 'desktop';
-    const app       = targetType === 'app'
-        ? appsList.find(a => a.id === currentTargetIcon?.dataset.app) : null;
-
+    const app       = targetType === 'app' ? appsList.find(a => a.id === currentTargetIcon?.dataset.app) : null;
     document.getElementById('menu-open')      .style.display = isDesktop ? 'none' : '';
     document.getElementById('menu-rename')    .style.display = isDesktop ? 'none' : '';
     document.getElementById('menu-delete')    .style.display = isFile ? '' : 'none';
-    document.getElementById('menu-pin')       .style.display = (app) ? '' : 'none';
+    document.getElementById('menu-pin')       .style.display = app ? '' : 'none';
     document.getElementById('menu-remove-app').style.display = (app && isRemovable(app)) ? '' : 'none';
 }
 
@@ -1322,6 +1153,12 @@ document.getElementById('menu-rename').onclick = () => {
 };
 
 document.getElementById('menu-delete').onclick = () => {
+    const selected = [...document.querySelectorAll('.icon.sel-highlight[data-file-id]')];
+    if (selected.length > 1) {
+        if (!confirm(`Excluir ${selected.length} arquivos permanentemente?`)) return;
+        selected.forEach(el => deleteFile(parseInt(el.dataset.fileId)));
+        return;
+    }
     if (!currentTargetIcon?.dataset.fileId) return;
     if (!confirm('Excluir permanentemente?')) return;
     deleteFile(parseInt(currentTargetIcon.dataset.fileId));
@@ -1339,14 +1176,10 @@ document.getElementById('menu-pin').onclick = () => {
     document.getElementById('quick-launch').appendChild(quick);
 };
 
-document.getElementById('menu-unlock')    ?.addEventListener('click', () => unlockApp('pescaria'));
-document.getElementById('menu-new-notepad')?.addEventListener('click', createNotepadFile);
-document.getElementById('menu-new-folder') ?.addEventListener('click', createFolder);
-document.getElementById('menu-new-image')  ?.addEventListener('click', importImageFile);
-
-// ════════════════════════════════════════════════════════════════
-//  START MENU
-// ════════════════════════════════════════════════════════════════
+document.getElementById('menu-unlock')     ?.addEventListener('click', () => unlockApp('pescaria'));
+document.getElementById('menu-new-notepad') ?.addEventListener('click', createNotepadFile);
+document.getElementById('menu-new-folder')  ?.addEventListener('click', createFolder);
+document.getElementById('menu-new-image')   ?.addEventListener('click', importImageFile);
 
 startBtn.onclick = e => { e.stopPropagation(); startMenu.classList.toggle('visible'); };
 document.addEventListener('click', e => {
@@ -1366,13 +1199,9 @@ function populateStartMenu() {
     });
 }
 
-// ════════════════════════════════════════════════════════════════
-//  WALLPAPER & SHUTDOWN
-// ════════════════════════════════════════════════════════════════
-
 if (changeWallpaperBtn && wallpaperInput) {
     changeWallpaperBtn.onclick = () => wallpaperInput.click();
-    wallpaperInput.onchange = function() {
+    wallpaperInput.onchange = function () {
         const file = this.files[0];
         if (!file) return;
         const reader = new FileReader();
@@ -1386,27 +1215,17 @@ if (changeWallpaperBtn && wallpaperInput) {
 
 document.getElementById('shutdown-btn')?.addEventListener('click', () => {
     if (confirm('Desligar?')) {
-        document.body.innerHTML =
-            "<div style='background:black;color:white;height:100vh;display:flex;" +
-            "align-items:center;justify-content:center;font-family:sans-serif;'>" +
-            "Pode desligar com segurança.</div>";
+        document.body.innerHTML = "<div style='background:black;color:white;height:100vh;display:flex;align-items:center;justify-content:center;font-family:sans-serif;'>Pode desligar com segurança.</div>";
     }
 });
-
-// ════════════════════════════════════════════════════════════════
-//  POSTMESSAGE API  (iframe ↔ parent communication)
-// ════════════════════════════════════════════════════════════════
 
 window.addEventListener('message', event => {
     if (!event.data) return;
     const { type, appId, fileId, name, url } = event.data;
-
-    if (type === 'download-app'      && appId)          baixar(appId);
-    if (type === 'open-app'          && appId)          openAppById(appId);
-    if (type === 'delete-file'       && fileId != null) deleteFile(fileId);
-    if (type === 'create-shortcut'   && url)            createShortcut(name || url, url);
-    // App iframe emits a resource → find the source window via event.source,
-    // route to its output connection or fallback to VFS desktop.
+    if (type === 'download-app'    && appId)          baixar(appId);
+    if (type === 'open-app'        && appId)          openAppById(appId);
+    if (type === 'delete-file'     && fileId != null) deleteFile(fileId);
+    if (type === 'create-shortcut' && url)            createShortcut(name || url, url);
     if (type === 'emit-from-window') {
         let srcWin = null;
         for (const w of document.querySelectorAll('.window')) {
@@ -1418,26 +1237,19 @@ window.addEventListener('message', event => {
             if (outConn) {
                 routeResourceToWindow(res, outConn.to);
             } else {
-                const sv = addFile(res);
-                if (sv) renderDesktopFiles();
+                const sv = addFile(res); if (sv) renderDesktopFiles();
             }
         }
     }
-    // Legacy appId-based emit (keep for back-compat)
     if (type === 'emit-resource' && appId) {
         const ok = window.emitResource(appId, event.data.resource);
         if (!ok) { const sv = addFile(event.data.resource); if (sv) renderDesktopFiles(); }
     }
-    // Navigate command forwarded to an open browser window's iframe
-    if (type === 'navigate'          && url) {
+    if (type === 'navigate' && url) {
         const bw = document.getElementById('window-gonetgo');
         bw?.querySelector('iframe')?.contentWindow?.postMessage({ type: 'navigate', url }, '*');
     }
 });
-
-// ════════════════════════════════════════════════════════════════
-//  SESSION TIME
-// ════════════════════════════════════════════════════════════════
 
 function initSessionTime() {
     const state = loadState();
@@ -1448,10 +1260,6 @@ function initSessionTime() {
     }, 10000);
 }
 
-// ════════════════════════════════════════════════════════════════
-//  INIT
-// ════════════════════════════════════════════════════════════════
-
 function applySavedState() {
     const state = loadState();
     if (state.wallpaper) document.body.style.backgroundImage = `url('${state.wallpaper}')`;
@@ -1460,4 +1268,4 @@ function applySavedState() {
 applySavedState();
 applyUpgrades();
 initSessionTime();
-loadApps(); 
+loadApps();

@@ -10,9 +10,6 @@
     "nome": "Me leia.txt",
     "icone": "📝",
     "html": "apps/notas.html",
-    "type": "text",
-    "conn": "output",
-    "format": "fish",
     "instantiable": true,
     "ram": 32
   },
@@ -21,7 +18,6 @@
     "nome": "GoNetGo!",
     "icone": "🌐",
     "html": "apps/browser.html",
-    "type": "Browser",
     "ram": 32
   },
   {
@@ -29,15 +25,14 @@
     "nome": "Paint",
     "icone": "🎨",
     "html": "apps/paint.html",
-    "ram": 32,
-    "instantiable": true
+    "ram": 32
   },
   {
     "id": "dungeonclash",
-    "ram": 100,
     "nome": "DungeonClash",
     "icone": "🤺",
-    "html": "apps/dungeon.html"
+    "html": "apps/dungeon.html",
+    "ram": 100
   },
   {
     "id": "mail",
@@ -57,83 +52,74 @@
     "nome": "clicknator.exe",
     "icone": "🖱️",
     "html": "apps/clicknator.html",
-    "type": "Game",
-    "conn": "output",
-    "format": "fish",
+    "ram": 100,
     "unlocked": false,
-    "ram": 100
+    "ports": [
+      { "dir": "out", "format": "fish" }
+    ]
   },
   {
     "id": "pescaria",
     "nome": "Pescaria.exe",
     "icone": "🎣",
     "html": "apps/pescaria.html",
-    "type": "Game",
-    "conn": "output",
-    "format": "fish",
+    "ram": 50,
     "unlocked": false,
-    "ram": 50
+    "ports": [
+      { "dir": "out", "format": "fish" }
+    ]
   },
   {
     "id": "processadora",
     "nome": "Processadora.exe",
     "icone": "⚙️",
     "html": "apps/processadora.html",
-    "type": "System",
-    "conn": "input",
-    "format": "fish",
-    "conn2": "output",
-    "format2": "dinheiro",
-    "appType": "processor",
     "ram": 24,
-    "instantiable": true
+    "instantiable": true,
+    "appType": "processor",
+    "ports": [
+      { "dir": "in",  "format": "fish" },
+      { "dir": "out", "format": "dinheiro" }
+    ]
   },
   {
     "id": "loja",
     "nome": "PC Shop",
     "icone": "🛒",
     "html": "apps/loja.html",
-    "type": "System",
     "ram": 16,
-    "conn": "input",
-    "format": "dinheiro"
+    "ports": [
+      { "dir": "in", "format": "dinheiro" }
+    ]
   },
   {
     "id": "conversor",
     "nome": "Conversor.exe",
     "icone": "💱",
     "html": "apps/conversor.html",
-    "type": "System",
-    "conn": "input",
-    "format": "any",
-    "conn2": "output",
-    "format2": "dinheiro",
-    "ram": 16
+    "ram": 16,
+    "ports": [
+      { "dir": "in",  "format": "any" },
+      { "dir": "out", "format": "dinheiro" }
+    ]
   },
   {
     "id": "inventario",
     "nome": "Inventário.exe",
-    "icone": "📁",
+    "icone": "📦",
     "html": "apps/storage.html",
-    "type": "System",
-    "conn": "storage",
-    "format": "any"
+    "ports": [
+      { "dir": "storage", "format": "any" }
+    ]
   },
   {
     "id": "money",
     "nome": "getmoney.exe",
     "icone": "🤑",
     "html": "apps/clicknator.html",
-    "type": "Game",
-    "conn": "output",
-    "format": "fish",
-    "unlocked": false
-  },
-  {
-    "id": "msn",
-    "nome": "MSN Messenger",
-    "icone": "💬",
-    "html": "apps/msn.html",
-    "ram": 32
+    "unlocked": false,
+    "ports": [
+      { "dir": "out", "format": "fish" }
+    ]
   }
 ]

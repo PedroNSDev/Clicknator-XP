@@ -879,3 +879,154 @@ function applySavedState() {
 applySavedState();
 initSessionTime();
 loadApps();
+
+
+
+
+
+
+
+
+[
+  {
+    "id": "computer",
+    "nome": "Meu Computador",
+    "icone": "💻",
+    "html": "apps/computer.html",
+    "ports": []
+  },
+  {
+    "id": "notepad",
+    "nome": "Me leia.txt",
+    "icone": "📝",
+    "html": "apps/notas.html",
+    "instantiable": true,
+    "ram": 32,
+    "ports": [
+      { "dir": "out", "format": "fish" }
+    ]
+  },
+  {
+    "id": "gonetgo",
+    "nome": "GoNetGo!",
+    "icone": "🌐",
+    "html": "apps/browser.html",
+    "ram": 32,
+    "ports": []
+  },
+  {
+    "id": "paint",
+    "nome": "Paint",
+    "icone": "🎨",
+    "html": "apps/paint.html",
+    "ram": 32,
+    "instantiable": true,
+    "ports": []
+  },
+  {
+    "id": "dungeonclash",
+    "nome": "DungeonClash",
+    "icone": "🤺",
+    "html": "apps/dungeon.html",
+    "ram": 100,
+    "ports": []
+  },
+  {
+    "id": "mail",
+    "nome": "GoMailGo!",
+    "icone": "📪",
+    "html": "apps/mail.html",
+    "ports": []
+  },
+  {
+    "id": "credits",
+    "nome": "Creditos",
+    "icone": "👯",
+    "html": "https://github.com/PedroNSDev/Portfolio",
+    "ram": 1,
+    "ports": []
+  },
+  {
+    "id": "msn",
+    "nome": "MSN Messenger",
+    "icone": "💬",
+    "html": "apps/msn.html",
+    "ram": 32,
+    "ports": []
+  },
+  {
+    "id": "clicknator",
+    "nome": "clicknator.exe",
+    "icone": "🖱️",
+    "html": "apps/clicknator.html",
+    "unlocked": false,
+    "ram": 100,
+    "ports": [
+      { "dir": "out", "format": "fish" }
+    ]
+  },
+  {
+    "id": "pescaria",
+    "nome": "Pescaria.exe",
+    "icone": "🎣",
+    "html": "apps/pescaria.html",
+    "unlocked": false,
+    "ram": 50,
+    "ports": [
+      { "dir": "out", "format": "fish" }
+    ]
+  },
+  {
+    "id": "money",
+    "nome": "getmoney.exe",
+    "icone": "🤑",
+    "html": "apps/clicknator.html",
+    "unlocked": false,
+    "ports": [
+      { "dir": "out", "format": "fish" }
+    ]
+  },
+  {
+    "id": "processadora",
+    "nome": "Processadora.exe",
+    "icone": "⚙️",
+    "html": "apps/processadora.html",
+    "appType": "processor",
+    "ram": 24,
+    "instantiable": true,
+    "ports": [
+      { "dir": "in",  "format": "fish" },
+      { "dir": "out", "format": "dinheiro" }
+    ]
+  },
+  {
+    "id": "conversor",
+    "nome": "Conversor.exe",
+    "icone": "💱",
+    "html": "apps/conversor.html",
+    "ram": 16,
+    "ports": [
+      { "dir": "in",  "format": "any" },
+      { "dir": "out", "format": "dinheiro" }
+    ]
+  },
+  {
+    "id": "loja",
+    "nome": "PC Shop",
+    "icone": "🛒",
+    "html": "apps/loja.html",
+    "ram": 16,
+    "ports": [
+      { "dir": "in", "format": "dinheiro" }
+    ]
+  },
+  {
+    "id": "inventario",
+    "nome": "Inventário.exe",
+    "icone": "📦",
+    "html": "apps/storage.html",
+    "ports": [
+      { "dir": "storage", "format": "any" }
+    ]
+  }
+]
