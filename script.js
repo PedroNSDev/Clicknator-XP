@@ -21,13 +21,10 @@ const getFiles     = () => JSON.parse(localStorage.getItem(FILE_KEY))     || [];
 const saveFiles    = f  => localStorage.setItem(FILE_KEY,   JSON.stringify(f));
 const getUpgrades  = () => JSON.parse(localStorage.getItem(UPGRADES_KEY)) || { ram: 0, space: 0 };
 const saveUpgrades = d  => localStorage.setItem(UPGRADES_KEY, JSON.stringify(d));
-window.getFiles    = getFiles;
-window.saveFiles   = saveFiles;
-window.getUpgrades = getUpgrades;
-window.saveUpgrades = function(d) {
-    saveUpgrades(d);
-    applyUpgrades();
-};
+window.getFiles     = getFiles;
+window.saveFiles    = saveFiles;
+window.getUpgrades  = getUpgrades;
+window.saveUpgrades = function(d) { saveUpgrades(d); applyUpgrades(); };
 
 const desktop            = document.getElementById('desktop');
 const taskbarApps        = document.getElementById('taskbar-apps');
@@ -36,7 +33,7 @@ const startBtn           = document.getElementById('start-btn');
 const startMenu          = document.getElementById('start-menu');
 const wallpaperInput     = document.getElementById('wallpaper-input');
 const changeWallpaperBtn = document.getElementById('change-wallpaper');
-
+//wiring stuff
 const canvas = document.getElementById('cables');
 const ctx    = canvas.getContext('2d');
 
@@ -51,8 +48,8 @@ const ICON_TOP_PAD = 20;
 (function () {
     const s = document.createElement('style');
     s.textContent = `
-        .icon.sel-highlight { background:rgba(49,106,197,0.18);border-radius:3px; }
-        .icon.sel-highlight .icon-img { outline:1px solid #316ac5; }
+        .icon.sel-highlight { background:rgba(49,106,197,0.22);border-radius:3px; }
+        .icon.sel-highlight .icon-img { outline:2px solid #316ac5; }
         #sel-rubber { position:absolute;border:1px solid #316ac5;
             background:rgba(49,106,197,0.08);pointer-events:none;z-index:9998; }
         .connect-btn-left  { background:#316ac5!important;color:white!important;
@@ -67,13 +64,9 @@ function iconRows() {
     const h = (desktop.offsetHeight || window.innerHeight - 42) - ICON_TOP_PAD;
     return Math.max(1, Math.floor(h / ICON_ROW_H));
 }
-
 function iconPos(idx, leftStart) {
     const rows = iconRows();
-    return {
-        top:  ICON_TOP_PAD + (idx % rows) * ICON_ROW_H,
-        left: leftStart    + Math.floor(idx / rows) * ICON_COL_W,
-    };
+    return { top: ICON_TOP_PAD + (idx % rows) * ICON_ROW_H, left: leftStart + Math.floor(idx / rows) * ICON_COL_W };
 }
 
 function drawConnections() {
@@ -96,7 +89,7 @@ function drawConnections() {
 function updateClock() {
     const now = new Date();
     document.getElementById('clock').innerText =
-        `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 }
 setInterval(updateClock, 1000);
 updateClock();
@@ -107,6 +100,10 @@ function makeDraggable(element, handle) {
         e.preventDefault();
         x2 = e.clientX; y2 = e.clientY;
 
+        let companions = [];
+        if (element.classList.contains('icon') && element.classList.contains('sel-highlight')) {
+            companions = [...document.querySelectorAll('.icon.sel-highlight')].filter(i => i !== element);
+        }
         document.onmouseup = upEvent => {
             document.onmouseup = document.onmousemove = null;
             if (element.classList.contains('file') && element.dataset.fileId) {
@@ -114,23 +111,26 @@ function makeDraggable(element, handle) {
                     const r = fw.getBoundingClientRect();
                     if (upEvent.clientX >= r.left && upEvent.clientX <= r.right &&
                         upEvent.clientY >= r.top  && upEvent.clientY <= r.bottom) {
-                        moveFileBetween(parseInt(element.dataset.fileId),
-                                        parseInt(fw.id.replace('window-folder-', '')));
+                        const folderId = parseInt(fw.id.replace('window-folder-', ''));
+                        const toMove = [element, ...companions].filter(el => el.classList.contains('file') && el.dataset.fileId);
+                        toMove.forEach(el => moveFileBetween(parseInt(el.dataset.fileId), folderId));
                         return;
                     }
                 }
             }
         };
-
         document.onmousemove = e => {
             e.preventDefault();
             x1 = x2 - e.clientX; y1 = y2 - e.clientY;
             x2 = e.clientX;      y2 = e.clientY;
             element.style.top  = (element.offsetTop  - y1) + 'px';
             element.style.left = (element.offsetLeft - x1) + 'px';
+            companions.forEach(c => {
+                c.style.top  = (c.offsetTop  - y1) + 'px';
+                c.style.left = (c.offsetLeft - x1) + 'px';
+            });
             if (element.classList.contains('window')) drawConnections();
         };
-
         if (element.classList.contains('window')) {
             element.style.zIndex = ++zIndexCounter;
             drawConnections();
@@ -148,33 +148,28 @@ function makeResizable(win) {
             if (type !== 'bottom') win.style.width  = Math.max(minW, sW + e.clientX - sX) + 'px';
             if (type !== 'right')  win.style.height = Math.max(minH, sH + e.clientY - sY) + 'px';
         };
-        const onUp = () => {
-            document.removeEventListener('mousemove', onMove);
-            document.removeEventListener('mouseup', onUp);
-        };
+        const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
         document.addEventListener('mousemove', onMove);
         document.addEventListener('mouseup', onUp);
     }
-    const rRight  = win.querySelector('.resize-handle.right');
-    const rBottom = win.querySelector('.resize-handle.bottom');
-    const rCorner = win.querySelector('.resize-handle.corner');
-    if (rRight)  rRight.onmousedown  = e => initResize(e, 'right');
-    if (rBottom) rBottom.onmousedown = e => initResize(e, 'bottom');
-    if (rCorner) rCorner.onmousedown = e => initResize(e, 'corner');
+    const rr = win.querySelector('.resize-handle.right');
+    const rb = win.querySelector('.resize-handle.bottom');
+    const rc = win.querySelector('.resize-handle.corner');
+    if (rr) rr.onmousedown = e => initResize(e, 'right');
+    if (rb) rb.onmousedown = e => initResize(e, 'bottom');
+    if (rc) rc.onmousedown = e => initResize(e, 'corner');
 }
 
 function getWinPorts(win) {
     try { return JSON.parse(win.dataset.ports || '[]'); } catch { return []; }
 }
-function getInputPorts(win) {
-    return getWinPorts(win).filter(p => p.dir === 'in' || p.dir === 'storage');
-}
-function getOutputPorts(win) {
-    return getWinPorts(win).filter(p => p.dir === 'out' || p.dir === 'storage');
-}
+function getInputPorts(win)  { return getWinPorts(win).filter(p => p.dir === 'in' || p.dir === 'storage'); }
 function winAcceptsFormat(win, fmt) {
     if (win.id.startsWith('window-folder-')) return true;
     return getInputPorts(win).some(p => p.format === 'any' || p.format === fmt);
+}
+function winHasStoragePort(win) {
+    return getWinPorts(win).some(p => p.dir === 'storage');
 }
 
 const DESKTOP_FILE_TYPES = {
@@ -183,10 +178,10 @@ const DESKTOP_FILE_TYPES = {
     image:    { icon: '🖼️', onDblClick: file => openImageViewer(file)    },
     shortcut: { icon: '⭐', onDblClick: file => openShortcut(file)        },
     fish:     { icon: '🐟', onDblClick: file => openFishViewer(file)     },
-    dinheiro: { icon: '💰', onDblClick: file => openDinheiroViewer(file) },
+    dinheiro: { icon: '💰', onDblClick: file => openDinheiroViewer(file) }
+    // art: { icon: '💰', onDblClick: file => openDinheiroViewer(file)
 };
-
-const TYPE_ICONS = { text: '📝', folder: '📁', fish: '🐟', app: '⚙️', image: '🖼️', shortcut: '⭐', dinheiro: '💰' };
+const TYPE_ICONS = { text:'📝', folder:'📁', fish:'🐟', app:'⚙️', image:'🖼️', shortcut:'⭐', dinheiro:'💰',art:'🎨' }; // Implementar formato .art depois que e adicionar handler pra importar projetos no GoPaint PIMP
 
 const FILE_DELETE_HANDLERS = {
     app: file => {
@@ -200,7 +195,7 @@ const FILE_DELETE_HANDLERS = {
 
 window.getUsedSpace = () => getFiles().reduce((acc, f) => acc + (f.size || 50), 0);
 
-window.addFile = function (file) {
+window.addFile = function(file) {
     const files    = getFiles();
     const fileSize = file.size || 50;
     const used     = files.reduce((acc, f) => acc + (f.size || 50), 0);
@@ -212,7 +207,7 @@ window.addFile = function (file) {
 };
 const addFile = window.addFile;
 
-window.deleteFile = function (id) {
+window.deleteFile = function(id) {
     let files = getFiles();
     const file = files.find(f => f.id == id);
     if (!file) return;
@@ -224,10 +219,8 @@ window.deleteFile = function (id) {
     saveFiles(files.filter(f => f.id != id));
     renderDesktopFiles();
     document.querySelectorAll('[id^="window-folder-"]').forEach(w => w.refreshFolder?.());
-    document.getElementById('window-inventario')
-        ?.querySelector('iframe')
-        ?.contentWindow
-        ?.postMessage({ type: 'file-deleted' }, '*');
+    document.getElementById('window-inventario')?.querySelector('iframe')
+        ?.contentWindow?.postMessage({ type: 'file-deleted' }, '*');
 };
 const deleteFile = window.deleteFile;
 
@@ -249,7 +242,7 @@ function moveFileBetween(fileId, targetFolderId) {
     document.querySelectorAll('[id^="window-folder-"]').forEach(w => w.refreshFolder?.());
 }
 
-window.renderDesktopFiles = function () {
+window.renderDesktopFiles = function() {
     document.querySelectorAll('.icon.file').forEach(e => e.remove());
     const allFiles = getFiles();
     const childIds = new Set();
@@ -302,15 +295,11 @@ desktop.addEventListener('contextmenu', e => {
     showContextMenu(e.pageX, e.pageY, 'desktop');
 });
 
-let _rbs  = null;
-let _rbEl = null;
+let _rbs = null, _rbEl = null;
 
 desktop.addEventListener('mousedown', e => {
-    if (e.button !== 0) return;
-    if (e.target !== desktop) return;
-    if (!e.ctrlKey) {
-        document.querySelectorAll('.icon.sel-highlight').forEach(i => i.classList.remove('sel-highlight'));
-    }
+    if (e.button !== 0 || e.target !== desktop) return;
+    if (!e.ctrlKey) document.querySelectorAll('.icon.sel-highlight').forEach(i => i.classList.remove('sel-highlight'));
     const dr = desktop.getBoundingClientRect();
     _rbs  = { x: e.clientX - dr.left + desktop.scrollLeft, y: e.clientY - dr.top + desktop.scrollTop };
     _rbEl = document.createElement('div');
@@ -332,12 +321,10 @@ document.addEventListener('mousemove', e => {
     _rbEl.style.width  = (maxX - minX) + 'px';
     _rbEl.style.height = (maxY - minY) + 'px';
     document.querySelectorAll('.icon').forEach(icon => {
-        const r   = icon.getBoundingClientRect();
-        const ix  = r.left - dr.left + r.width  / 2 + desktop.scrollLeft;
-        const iy  = r.top  - dr.top  + r.height / 2 + desktop.scrollTop;
-        const hit = ix >= minX && ix <= maxX && iy >= minY && iy <= maxY;
-        if (hit) icon.classList.add('sel-highlight');
-        else if (!e.ctrlKey) icon.classList.remove('sel-highlight');
+        const r  = icon.getBoundingClientRect();
+        const ix = r.left - dr.left + r.width  / 2 + desktop.scrollLeft;
+        const iy = r.top  - dr.top  + r.height / 2 + desktop.scrollTop;
+        icon.classList.toggle('sel-highlight', ix >= minX && ix <= maxX && iy >= minY && iy <= maxY);
     });
 });
 
@@ -346,18 +333,15 @@ document.addEventListener('mouseup', () => {
     _rbs = null;
     _rbEl?.remove(); _rbEl = null;
 });
-
+//Blue Square forgor name FIX BUG WHERE it demands at least one app to drag PIMP
 desktop.addEventListener('click', e => {
-    if (e.target === desktop && !e.ctrlKey) {
+    if (e.target === desktop && !e.ctrlKey)
         document.querySelectorAll('.icon.sel-highlight').forEach(i => i.classList.remove('sel-highlight'));
-    }
 });
 
 desktop.addEventListener('dragover', e => {
-    if (e.dataTransfer.types.includes('Files') ||
-        e.dataTransfer.types.includes('text/plain') ||
-        e.dataTransfer.types.includes('vfs-file-id'))
-        e.preventDefault();
+    if (e.dataTransfer.types.includes('Files') || e.dataTransfer.types.includes('text/plain') ||
+        e.dataTransfer.types.includes('vfs-file-id')) e.preventDefault();
 });
 desktop.addEventListener('drop', e => {
     e.preventDefault();
@@ -376,56 +360,39 @@ function importRealImage(file) {
     };
     reader.readAsDataURL(file);
 }
-
 function importImageFile() {
-    const input    = document.createElement('input');
-    input.type     = 'file';
-    input.accept   = 'image/*';
-    input.multiple = true;
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = 'image/*'; input.multiple = true;
     input.onchange = e => [...e.target.files].forEach(importRealImage);
     input.click();
 }
 
-window.openImageViewer = function (file) {
-    const winId   = `img-viewer-${file.id}`;
+window.openImageViewer = function(file) {
+    const winId = `img-viewer-${file.id}`;
     const existing = document.getElementById(winId);
     if (existing) { existing.style.zIndex = ++zIndexCounter; return; }
     const win = document.createElement('div');
-    win.className    = 'window';
-    win.id           = winId;
-    win.style.zIndex = ++zIndexCounter;
-    win.style.top = '60px'; win.style.left = '80px';
-    win.style.width = '540px'; win.style.height = '420px';
+    win.className = 'window'; win.id = winId; win.style.zIndex = ++zIndexCounter;
+    win.style.top = '60px'; win.style.left = '80px'; win.style.width = '540px'; win.style.height = '420px';
     win.innerHTML = `
-        <div class="title-bar">
-            <span>🖼️ ${file.name}</span>
-            <button class="close-btn">X</button>
-        </div>
+        <div class="title-bar"><span>🖼️ ${file.name}</span><button class="close-btn">X</button></div>
         <div style="width:100%;height:calc(100% - 62px);overflow:auto;background:#1a1a1a;display:flex;align-items:center;justify-content:center;">
-            <img src="${file.data?.src}" alt="${file.name}"
-                 style="max-width:100%;max-height:100%;object-fit:contain;display:block;transform-origin:center;transition:transform .15s;"
-                 id="${winId}-img">
+            <img src="${file.data?.src}" alt="${file.name}" style="max-width:100%;max-height:100%;object-fit:contain;display:block;transform-origin:center;transition:transform .15s;" id="${winId}-img">
         </div>
         <div style="background:#d4d0c8;border-top:1px solid #999;padding:3px 8px;font-size:11px;font-family:Tahoma;display:flex;justify-content:space-between;align-items:center;height:28px;">
             <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px;" title="${file.name}">${file.name}</span>
             <div style="display:flex;gap:3px;">
-                <button id="${winId}-zi" title="Zoom +">🔍+</button>
-                <button id="${winId}-zo" title="Zoom −">🔍−</button>
-                <button id="${winId}-dl" title="Baixar">💾 Baixar</button>
+                <button id="${winId}-zi">🔍+</button><button id="${winId}-zo">🔍−</button>
+                <button id="${winId}-dl">💾 Baixar</button>
             </div>
         </div>
-        <div class="resize-handle right"></div>
-        <div class="resize-handle bottom"></div>
-        <div class="resize-handle corner"></div>
-    `;
+        <div class="resize-handle right"></div><div class="resize-handle bottom"></div><div class="resize-handle corner"></div>`;
     desktop.appendChild(win);
     let zoom = 1;
     const img = document.getElementById(`${winId}-img`);
-    document.getElementById(`${winId}-zi`).onclick = () => { zoom = Math.min(5, +(zoom + 0.25).toFixed(2)); img.style.transform = `scale(${zoom})`; };
-    document.getElementById(`${winId}-zo`).onclick = () => { zoom = Math.max(0.1, +(zoom - 0.25).toFixed(2)); img.style.transform = `scale(${zoom})`; };
-    document.getElementById(`${winId}-dl`).onclick = () => {
-        const a = document.createElement('a'); a.href = file.data?.src; a.download = file.name; a.click();
-    };
+    document.getElementById(`${winId}-zi`).onclick = () => { zoom = Math.min(5, +(zoom+0.25).toFixed(2)); img.style.transform = `scale(${zoom})`; };
+    document.getElementById(`${winId}-zo`).onclick = () => { zoom = Math.max(0.1, +(zoom-0.25).toFixed(2)); img.style.transform = `scale(${zoom})`; };
+    document.getElementById(`${winId}-dl`).onclick = () => { const a = document.createElement('a'); a.href = file.data?.src; a.download = file.name; a.click(); };
     win.querySelector('.close-btn').onclick = () => win.remove();
     win.addEventListener('mousedown', () => win.style.zIndex = ++zIndexCounter);
     makeDraggable(win, win.querySelector('.title-bar'));
@@ -434,17 +401,11 @@ window.openImageViewer = function (file) {
 const openImageViewer = window.openImageViewer;
 
 function openShortcut(file) {
-    const url = file.data?.url;
-    if (!url) return;
+    const url = file.data?.url; if (!url) return;
     const browserWin = document.getElementById('window-gonetgo');
-    if (browserWin) {
-        browserWin.style.zIndex = ++zIndexCounter;
-        browserWin.querySelector('iframe')?.contentWindow?.postMessage({ type: 'navigate', url }, '*');
-    } else {
-        window.open(url, '_blank');
-    }
+    if (browserWin) { browserWin.style.zIndex = ++zIndexCounter; browserWin.querySelector('iframe')?.contentWindow?.postMessage({ type: 'navigate', url }, '*'); }
+    else window.open(url, '_blank');
 }
-
 function createShortcut(name, url) {
     if (!url) return null;
     const existing = getFiles().find(f => f.type === 'shortcut' && f.data?.url === url);
@@ -461,25 +422,21 @@ function createShortcut(name, url) {
 }
 window.createShortcut = createShortcut;
 
-function openFishViewer(file) {
-    const winId    = `fish-viewer-${file.id}`;
+function openFishViewer(file) {  //Adicionar BackDoor no outro site dps pra fazer crossover  PIMP
+    const winId = `fish-viewer-${file.id}`;
     if (document.getElementById(winId)) { document.getElementById(winId).style.zIndex = ++zIndexCounter; return; }
     const raridade = file.data?.raridade ?? Math.random();
     const stars    = '⭐'.repeat(Math.ceil(raridade * 5));
-    const rarLabel = raridade > 0.9 ? '🟣 Lendário' : raridade > 0.7 ? '🔵 Raro' :
-                     raridade > 0.4 ? '🟢 Incomum' : '⚪ Comum';
+    const rarLabel = raridade > 0.9 ? '🟣 Lendário' : raridade > 0.7 ? '🔵 Raro' : raridade > 0.4 ? '🟢 Incomum' : '⚪ Comum';
     const win = document.createElement('div');
     win.className = 'window'; win.id = winId; win.style.zIndex = ++zIndexCounter;
-    win.style.top = '100px'; win.style.left = '160px';
-    win.style.width = '240px'; win.style.height = '200px';
+    win.style.top = '100px'; win.style.left = '160px'; win.style.width = '240px'; win.style.height = '200px';
     win.innerHTML = `
         <div class="title-bar"><span>🐟 ${file.name}</span><button class="close-btn">X</button></div>
         <div style="padding:14px;font-family:Tahoma;font-size:12px;background:#f0ede5;display:flex;flex-direction:column;gap:6px;">
             <div style="font-size:36px;text-align:center;">🐟</div>
-            <div><b>Nome:</b> ${file.name}</div>
-            <div><b>Tamanho:</b> ${file.size} MB</div>
-            <div><b>Raridade:</b> ${rarLabel}</div>
-            <div><b>Nota:</b> ${stars}</div>
+            <div><b>Nome:</b> ${file.name}</div><div><b>Tamanho:</b> ${file.size} MB</div>
+            <div><b>Raridade:</b> ${rarLabel}</div><div><b>Nota:</b> ${stars}</div>
             <div style="font-size:10px;color:#888;">Valor estimado: 💰 ${Math.ceil(raridade * 50)} moedas</div>
         </div>
         <div class="resize-handle right"></div><div class="resize-handle bottom"></div><div class="resize-handle corner"></div>`;
@@ -490,7 +447,7 @@ function openFishViewer(file) {
     makeResizable(win);
 }
 
-function openDinheiroViewer(file) {
+function openDinheiroViewer(file) { // criar handler dps PIMP
     const winId  = `din-viewer-${file.id}`;
     if (document.getElementById(winId)) { document.getElementById(winId).style.zIndex = ++zIndexCounter; return; }
     const valor  = file.data?.valor  ?? 0;
@@ -499,8 +456,7 @@ function openDinheiroViewer(file) {
     const taxa   = file.data?.taxa   ?? '?';
     const win = document.createElement('div');
     win.className = 'window'; win.id = winId; win.style.zIndex = ++zIndexCounter;
-    win.style.top = '100px'; win.style.left = '180px';
-    win.style.width = '260px'; win.style.height = '220px';
+    win.style.top = '100px'; win.style.left = '180px'; win.style.width = '260px'; win.style.height = '220px';
     win.innerHTML = `
         <div class="title-bar"><span>💰 ${file.name}</span><button class="close-btn">X</button></div>
         <div style="padding:16px 14px;font-family:Tahoma;font-size:12px;background:#fffbe6;height:calc(100% - 34px);display:flex;flex-direction:column;gap:7px;">
@@ -519,9 +475,7 @@ function openDinheiroViewer(file) {
     makeResizable(win);
 }
 
-const BASE_RAM   = 256;
-const BASE_SPACE = 2048;
-
+const BASE_RAM = 256, BASE_SPACE = 2048;
 function applyUpgrades() {
     const u = getUpgrades();
     window.systemInfo.ram   = BASE_RAM   + (u.ram   || 0);
@@ -542,7 +496,6 @@ function isUnlocked(app) {
     const p = getUnlocks();
     return Object.prototype.hasOwnProperty.call(p, app.id) ? p[app.id] : app.unlocked;
 }
-
 const isRemovable = app => Object.prototype.hasOwnProperty.call(app, 'unlocked');
 
 function unlockApp(appId) {
@@ -555,18 +508,11 @@ function unlockApp(appId) {
 }
 window.unlockApp = unlockApp;
 
-function lockApp(appId) {
-    const u = getUnlocks(); u[appId] = false; saveUnlocks(u);
-}
+function lockApp(appId) { const u = getUnlocks(); u[appId] = false; saveUnlocks(u); }
 
 function removeApp(appId) {
     const exe = getFiles().find(f => f.type === 'app' && f.data?.appId === appId);
-    if (exe) {
-        deleteFile(exe.id);
-    } else {
-        lockApp(appId);
-        removeDesktopIcon(appId);
-    }
+    if (exe) { deleteFile(exe.id); } else { lockApp(appId); removeDesktopIcon(appId); }
     populateStartMenu();
 }
 
@@ -577,114 +523,88 @@ function createDesktopIcons() {
 }
 
 function buildAppIcon(app, index = 0) {
-    const icon       = document.createElement('div');
-    icon.className   = 'icon';
-    icon.dataset.app = app.id;
+    const icon = document.createElement('div');
+    icon.className = 'icon'; icon.dataset.app = app.id;
     const ap = iconPos(index, 20);
-    icon.style.top   = ap.top  + 'px';
-    icon.style.left  = ap.left + 'px';
-    icon.innerHTML   = `<div class="icon-img">${app.icone}</div><span>${app.nome}</span>`;
+    icon.style.top = ap.top + 'px'; icon.style.left = ap.left + 'px';
+    icon.innerHTML = `<div class="icon-img">${app.icone}</div><span>${app.nome}</span>`;
     makeDraggable(icon);
     icon.addEventListener('dblclick', () => openAppById(app.id));
-    icon.addEventListener('click', e => {
-        if (e.ctrlKey) { e.stopPropagation(); icon.classList.toggle('sel-highlight'); }
-    });
-    icon.addEventListener('contextmenu', e => {
-        e.preventDefault(); e.stopPropagation();
-        currentTargetIcon = icon;
-        showContextMenu(e.pageX, e.pageY, 'app');
-    });
+    icon.addEventListener('click', e => { if (e.ctrlKey) { e.stopPropagation(); icon.classList.toggle('sel-highlight'); } });
+    icon.addEventListener('contextmenu', e => { e.preventDefault(); e.stopPropagation(); currentTargetIcon = icon; showContextMenu(e.pageX, e.pageY, 'app'); });
     return icon;
 }
-
-function removeDesktopIcon(appId) {
-    document.querySelector(`.icon[data-app="${appId}"]`)?.remove();
-}
+function removeDesktopIcon(appId) { document.querySelector(`.icon[data-app="${appId}"]`)?.remove(); }
 
 window.getUsedRAM = () => usedRAM;
 window.getRAMInfo = () => `${usedRAM}/${window.systemInfo.ram} MB`;
 
 function openAppById(appId) {
-    const app = appsList.find(a => a.id === appId);
-    if (!app) return;
+    const app = appsList.find(a => a.id === appId); if (!app) return;
     if (usedRAM + (app.ram || 0) > window.systemInfo.ram) {
-        alert(`RAM insuficiente!\nUsando: ${usedRAM}/${window.systemInfo.ram}MB\nPrecisa: ${app.ram || 0}MB`);
-        return;
+        alert(`RAM insuficiente!\nUsando: ${usedRAM}/${window.systemInfo.ram}MB\nPrecisa: ${app.ram || 0}MB`); return;
     }
     if (!app.instantiable) {
-        if (openApps.has(appId)) {
-            document.getElementById(`window-${appId}`)?.style.setProperty('z-index', ++zIndexCounter);
-            return;
-        }
+        if (openApps.has(appId)) { document.getElementById(`window-${appId}`)?.style.setProperty('z-index', ++zIndexCounter); return; }
         openApps.add(appId);
     }
     usedRAM += (app.ram || 0);
     return createWindow(app);
 }
-
-function createWindow(app) {
+//==================
+// WINDOW
+//+===================
+function createWindow(app) { // FWINDOW COLOCAR ATRIBUTO SIZE DPS QUE EU ESQUECI AAA, E GERAR A BOTAO FULLSCREEN PIMP 
     const winUid = app.instantiable ? `${app.id}-${Date.now()}` : app.id;
-    const win        = document.createElement('div');
-    win.className    = 'window';
-    win.id           = `window-${winUid}`;
-    win.style.zIndex = ++zIndexCounter;
+    const win    = document.createElement('div');
+    win.className = 'window'; win.id = `window-${winUid}`; win.style.zIndex = ++zIndexCounter;
     const offset = (document.querySelectorAll('.window').length * 22) + 50;
-    win.style.top    = `${offset}px`;
-    win.style.left   = `${offset}px`;
+    win.style.top = `${offset}px`; win.style.left = `${offset}px`;
 
-    const ports       = app.ports || [];
+    const ports = app.ports || [];
     win.dataset.ports   = JSON.stringify(ports);
     win.dataset.appType = app.appType || '';
 
-    const inputPorts  = ports.filter(p => p.dir === 'in' || p.dir === 'storage');
-    const outputPorts = ports.filter(p => p.dir === 'out');
+    const inPorts  = ports.filter(p => p.dir === 'in' || p.dir === 'storage');
+    const outPorts = ports.filter(p => p.dir === 'out');
 
-    const leftBtnsHtml = inputPorts.map(p =>
-        `<button class="connect-btn connect-btn-left" data-port-idx="${ports.indexOf(p)}"
-         title="${p.dir} (${p.format})">🔌</button>`
+    const leftBtns  = inPorts.map(p =>
+        `<button class="connect-btn connect-btn-left" data-port-dir="${p.dir}" data-port-fmt="${p.format}" title="${p.dir}:${p.format}">🔌</button>`
     ).join('');
-
-    const rightBtnsHtml = outputPorts.map(p =>
-        `<button class="connect-btn connect-btn-right" data-port-idx="${ports.indexOf(p)}"
-         title="${p.dir} (${p.format})">🔌</button>`
+    const rightBtns = outPorts.map(p =>
+        `<button class="connect-btn connect-btn-right" data-port-dir="${p.dir}" data-port-fmt="${p.format}" title="${p.dir}:${p.format}">🔌</button>`
     ).join('');
 
     win.innerHTML = `
         <div class="title-bar" style="display:flex;align-items:center;padding:0 2px;">
-            <div style="display:flex;gap:1px;margin-right:3px;">${leftBtnsHtml}</div>
+            <div style="display:flex;gap:1px;margin-right:3px;">${leftBtns}</div>
             <span style="flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${app.nome}</span>
-            <div style="display:flex;gap:1px;margin-left:3px;align-items:center;">
-                ${rightBtnsHtml}
-                <button class="close-btn">X</button>
-            </div>
+            <div style="display:flex;gap:1px;margin-left:3px;align-items:center;">${rightBtns}<button class="close-btn">X</button></div>
         </div>
         <div class="window-content">
             <iframe src="${app.html}" style="width:100%;height:100%;border:none;"></iframe>
         </div>
         <div class="resize-handle right"></div>
         <div class="resize-handle bottom"></div>
-        <div class="resize-handle corner"></div>
-    `;
+        <div class="resize-handle corner"></div>`;
 
     desktop.appendChild(win);
 
-    const taskItem     = document.createElement('div');
+    const taskItem = document.createElement('div');
     taskItem.className = 'taskbar-app active';
     taskItem.innerHTML = `<span class="taskbar-label">${app.nome}</span><button class="taskbar-close-btn" title="Fechar">✕</button>`;
     taskbarApps.appendChild(taskItem);
     taskItem.querySelector('.taskbar-label').onclick     = () => win.style.zIndex = ++zIndexCounter;
-    taskItem.querySelector('.taskbar-close-btn').onclick = e  => { e.stopPropagation(); closeWindow(win, app, taskItem); };
+    taskItem.querySelector('.taskbar-close-btn').onclick = e => { e.stopPropagation(); closeWindow(win, app, taskItem); };
 
     win.querySelectorAll('.connect-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            const portIdx = parseInt(btn.dataset.portIdx);
-            const port    = ports[portIdx];
-            if (!port) return;
+            const port = { dir: btn.dataset.portDir, format: btn.dataset.portFmt };
             if (!pendingConnection) {
                 pendingConnection = { win, port };
                 btn.style.background = 'yellow';
             } else {
-                tryConnect(pendingConnection, win, portIdx);
+                tryConnect(pendingConnection, win, port);
                 pendingConnection = null;
                 document.querySelectorAll('.connect-btn').forEach(b => b.style.background = '');
             }
@@ -700,86 +620,58 @@ function createWindow(app) {
 
 function closeWindow(win, app, taskItem) {
     usedRAM = Math.max(0, usedRAM - (app.ram || 0));
-    connections.filter(c => c.from === win || c.to === win).forEach(c => {
-        if (c.fuelInterval) clearInterval(c.fuelInterval);
-    });
+    connections.filter(c => c.from === win || c.to === win).forEach(c => { if (c.fuelInterval) clearInterval(c.fuelInterval); });
     connections = connections.filter(c => c.from !== win && c.to !== win);
     drawConnections();
     if (!app.instantiable) openApps.delete(app.id);
-    taskItem.remove();
-    win.remove();
+    taskItem.remove(); win.remove();
 }
 
-function tryConnect(pending, targetWin, _targetPortIdxHint) {
+function tryConnect(pending, targetWin, targetPort) {
     if (pending.win === targetWin) return;
+    const aPort = pending.port;
+    const bPort = targetPort || { dir: 'in', format: 'any' };
 
-    const aPort  = pending.port;
-    const bPorts = getWinPorts(targetWin);
-    let   bPort  = null;
+    const aIsOut = aPort.dir === 'out';
+    const bIsIn  = bPort.dir === 'in' || bPort.dir === 'storage';
+    const aIsIn  = aPort.dir === 'in' || aPort.dir === 'storage';
+    const bIsOut = bPort.dir === 'out';
 
-    if (aPort.dir === 'out') {
-        bPort = bPorts.find(p =>
-            (p.dir === 'in' || p.dir === 'storage') &&
-            (p.format === 'any' || aPort.format === 'any' || p.format === aPort.format)
-        );
-        if (!bPort) { alert(`Sem entrada compatível com "${aPort.format}"`); return; }
-    } else if (aPort.dir === 'in') {
-        bPort = bPorts.find(p =>
-            p.dir === 'out' &&
-            (p.format === 'any' || aPort.format === 'any' || p.format === aPort.format)
-        );
-        if (!bPort) { alert(`Sem saída compatível com "${aPort.format}"`); return; }
-    } else if (aPort.dir === 'storage') {
-        bPort = bPorts.find(p =>
-            (p.dir === 'in' || p.dir === 'out') &&
-            (p.format === 'any' || aPort.format === 'any' || p.format === aPort.format)
-        );
-        if (!bPort) { alert('Sem porta compatível com storage'); return; }
-    }
+    if (!((aIsOut && bIsIn) || (aIsIn && bIsOut))) { alert('Precisa conectar saída ↔ entrada'); return; }
+
+    const fmtA = aPort.format, fmtB = bPort.format;
+    if (fmtA !== 'any' && fmtB !== 'any' && fmtA !== fmtB) { alert(`Formato incompatível: ${fmtA} ↔ ${fmtB}`); return; }
 
     const existIdx = connections.findIndex(c =>
-        (c.from === pending.win && c.to === targetWin) ||
-        (c.from === targetWin  && c.to === pending.win)
+        (c.from === pending.win && c.to === targetWin) || (c.from === targetWin && c.to === pending.win)
     );
     if (existIdx !== -1) {
         const removed = connections.splice(existIdx, 1)[0];
         if (removed.fuelInterval) clearInterval(removed.fuelInterval);
-        drawConnections();
-        return;
+        drawConnections(); return;
     }
 
-    let from, to, fromPort, toPort;
-    if (aPort.dir === 'out') {
-        from = pending.win; to = targetWin; fromPort = aPort; toPort = bPort;
-    } else if (aPort.dir === 'in') {
-        from = targetWin; to = pending.win; fromPort = bPort; toPort = aPort;
-    } else {
-        if (bPort.dir === 'in') { from = pending.win; to = targetWin; fromPort = aPort; toPort = bPort; }
-        else                    { from = targetWin;   to = pending.win; fromPort = bPort; toPort = aPort; }
-    }
+    const from     = aIsOut ? pending.win : targetWin;
+    const to       = aIsOut ? targetWin   : pending.win;
+    const fromPort = aIsOut ? aPort       : bPort;
+    const toPort   = aIsOut ? bPort       : aPort;
+    const conn     = { from, to, fromPort, toPort };
 
-    const conn = { from, to, fromPort, toPort };
-
-    const storageWin = (aPort.dir === 'storage') ? pending.win :
-                       (bPort?.dir === 'storage') ? targetWin : null;
-    const otherWin   = storageWin ? (storageWin === pending.win ? targetWin : pending.win) : null;
-
-    if (storageWin && otherWin) {
-        const targetFmt = toPort?.format || 'any';
-        conn.fuelInterval = setInterval(() => {
-            storageFuelTick(storageWin, otherWin, targetFmt);
-        }, 3000);
+    if (fromPort.dir === 'storage' || toPort.dir === 'storage') {
+        const storageWin = fromPort.dir === 'storage' ? from : to;
+        const otherWin   = storageWin === from ? to : from;
+        const fmt        = (otherWin === to ? toPort : fromPort).format;
+        conn.fuelInterval = setInterval(() => storageFuelTick(storageWin, otherWin, fmt), 3000);
     }
 
     connections.push(conn);
     drawConnections();
 }
 
-function storageFuelTick(storageWin, targetWin, fmt) {
+function storageFuelTick(storageWin, targetWin, fmt) { // FAUTO ROUTE 
     if (!document.body.contains(storageWin) || !document.body.contains(targetWin)) return;
     const allFiles = getFiles();
-    let candidates  = [];
-
+    let candidates = [];
     if (storageWin.id.startsWith('window-folder-')) {
         const folderId = parseInt(storageWin.id.replace('window-folder-', ''));
         const folder   = allFiles.find(f => f.id === folderId);
@@ -792,16 +684,9 @@ function storageFuelTick(storageWin, targetWin, fmt) {
         }
     } else {
         const childIds = new Set();
-        allFiles.forEach(f => {
-            if (f.type === 'folder' && Array.isArray(f.data?.children))
-                f.data.children.forEach(id => childIds.add(id));
-        });
-        candidates = allFiles.filter(f =>
-            !childIds.has(f.id) && f.type !== 'folder' && f.type !== 'app' &&
-            (fmt === 'any' || f.type === fmt)
-        );
+        allFiles.forEach(f => { if (f.type === 'folder' && Array.isArray(f.data?.children)) f.data.children.forEach(id => childIds.add(id)); });
+        candidates = allFiles.filter(f => !childIds.has(f.id) && f.type !== 'folder' && f.type !== 'app' && (fmt === 'any' || f.type === fmt));
     }
-
     if (!candidates.length) return;
     const file     = candidates[0];
     const resource = { name: file.name, type: file.type, size: file.size, data: { ...(file.data || {}) } };
@@ -809,7 +694,7 @@ function storageFuelTick(storageWin, targetWin, fmt) {
     deleteFile(file.id);
 }
 
-function routeResourceToWindow(resource, targetWin) {
+function routeResourceToWindow(resource, targetWin) { // FSEND RESOURCE
     if (!targetWin) {
         const s = addFile(resource); if (s) renderDesktopFiles(); return;
     }
@@ -827,50 +712,29 @@ function routeResourceToWindow(resource, targetWin) {
         return;
     }
 
-    if (!winAcceptsFormat(targetWin, resource.type)) {
-        const s = addFile(resource); if (s) renderDesktopFiles(); return;
-    }
-
     targetWin.querySelector('iframe')?.contentWindow?.postMessage({ type: 'resource-received', resource }, '*');
 
     if (targetWin.dataset.appType === 'processor') return;
 
-    const s = addFile(resource); if (s) renderDesktopFiles();
+    if (winHasStoragePort(targetWin)) {
+        const s = addFile(resource); if (s) renderDesktopFiles();
+    }
 }
 
-window.emitResource = function (appId, resource) {
-    const sourceWin = document.getElementById(`window-${appId}`);
+window.emitResource = function(appId, resource) {
+    let sourceWin = document.getElementById(`window-${appId}`);
+    if (!sourceWin) {
+        for (const w of document.querySelectorAll('.window')) {
+            if (w.id.startsWith(`window-${appId}-`)) { sourceWin = w; break; }
+        }
+    }
     if (!sourceWin) return false;
+
     const conn = connections.find(c => c.from === sourceWin);
     if (!conn) { alert('Nenhuma conexão encontrada!'); return false; }
     const targetWin = conn.to;
 
-    if (targetWin.id.startsWith('window-folder-')) {
-        const folderId = parseInt(targetWin.id.replace('window-folder-', ''));
-        const saved    = addFile(resource); if (!saved) return false;
-        const files    = getFiles();
-        const folder   = files.find(f => f.id === folderId);
-        if (!folder) return false;
-        if (!folder.data.children) folder.data.children = [];
-        folder.data.children.push(saved.id);
-        saveFiles(files); renderDesktopFiles(); targetWin.refreshFolder?.();
-        return true;
-    }
-
-    if (!winAcceptsFormat(targetWin, resource.type)) {
-        alert('Formato incompatível com o destino!'); return false;
-    }
-
-    if (targetWin.dataset.appType === 'processor') {
-        const iframe = targetWin.querySelector('iframe');
-        if (!iframe?.contentWindow) return false;
-        iframe.contentWindow.postMessage({ type: 'resource-received', resource }, '*');
-        return true;
-    }
-
-    if (!addFile(resource)) return false;
-    renderDesktopFiles();
-    targetWin.querySelector('iframe')?.contentWindow?.postMessage({ type: 'resource-received', resource }, '*');
+    routeResourceToWindow(resource, targetWin);
     return true;
 };
 
@@ -881,30 +745,20 @@ window.pescar = appId => window.emitResource(appId, {
     data: { raridade: Math.random() },
 });
 
-function createNotepadFile() {
+function createNotepadFile() { // PLACEHOLDER GERAR HANDLER DE AQUIVO DPS PIMP 
     const saved = addFile({ name: 'Novo.txt', type: 'text', size: 1, data: { content: '' } });
     if (saved) renderDesktopFiles();
 }
 
 function openNotepad(fileId) {
-    const files = getFiles();
-    const file  = files.find(f => f.id === fileId);
-    if (!file) return;
+    const files = getFiles(); const file = files.find(f => f.id === fileId); if (!file) return;
     const win = document.createElement('div');
     win.className = 'window'; win.style.zIndex = ++zIndexCounter;
-    win.style.top = '120px'; win.style.left = '150px';
-    win.style.width = '320px'; win.style.height = '220px';
+    win.style.top = '120px'; win.style.left = '150px'; win.style.width = '320px'; win.style.height = '220px';
     win.innerHTML = `
-        <div class="title-bar">
-            <span>📝 ${file.name}</span>
-            <button class="close-btn">X</button>
-        </div>
-        <textarea class="notepad-area" style="width:100%;height:calc(100% - 34px);resize:none;box-sizing:border-box;padding:4px;"
-        >${file.data?.content || ''}</textarea>
-        <div class="resize-handle right"></div>
-        <div class="resize-handle bottom"></div>
-        <div class="resize-handle corner"></div>
-    `;
+        <div class="title-bar"><span>📝 ${file.name}</span><button class="close-btn">X</button></div>
+        <textarea class="notepad-area" style="width:100%;height:calc(100% - 34px);resize:none;box-sizing:border-box;padding:4px;">${file.data?.content || ''}</textarea>
+        <div class="resize-handle right"></div><div class="resize-handle bottom"></div><div class="resize-handle corner"></div>`;
     desktop.appendChild(win);
     const ta = win.querySelector('.notepad-area');
     ta.addEventListener('mousedown', e => e.stopPropagation());
@@ -916,8 +770,7 @@ function openNotepad(fileId) {
 }
 
 function createFolder() {
-    const nome = prompt('Nome da pasta:', 'Nova Pasta');
-    if (!nome) return;
+    const nome = prompt('Nome da pasta:', 'Nova Pasta'); if (!nome) return;
     const saved = addFile({ name: nome, type: 'folder', size: 1, data: { children: [] } });
     if (saved) renderDesktopFiles();
 }
@@ -925,20 +778,15 @@ function createFolder() {
 function openFolder(fileId) {
     const existing = document.getElementById(`window-folder-${fileId}`);
     if (existing) { existing.style.zIndex = ++zIndexCounter; return; }
-
     const win = document.createElement('div');
-    win.className    = 'window';
-    win.id           = `window-folder-${fileId}`;
-    win.style.zIndex = ++zIndexCounter;
+    win.className = 'window'; win.id = `window-folder-${fileId}`; win.style.zIndex = ++zIndexCounter;
     win.dataset.ports = JSON.stringify([{ dir: 'storage', format: 'any' }]);
-    win.style.top = '100px'; win.style.left = '140px';
-    win.style.width = '420px'; win.style.height = '320px';
-
+    win.style.top = '100px'; win.style.left = '140px'; win.style.width = '420px'; win.style.height = '320px';
     win.innerHTML = `
         <div class="title-bar">
             <span id="folder-title-${fileId}">📁 Pasta</span>
             <div>
-                <button class="connect-btn connect-btn-left" data-port-idx="0" title="storage (any)">🔌</button>
+                <button class="connect-btn connect-btn-left" data-port-dir="storage" data-port-fmt="any" title="storage:any">🔌</button>
                 <button class="close-btn">X</button>
             </div>
         </div>
@@ -947,48 +795,36 @@ function openFolder(fileId) {
             <span id="folder-info-${fileId}" style="font-size:11px;color:#555;"></span>
             <span style="font-size:10px;color:#888;margin-left:auto;">↙ Arraste arquivos aqui</span>
         </div>
-        <div id="folder-content-${fileId}"
-             style="display:flex;flex-wrap:wrap;gap:8px;padding:10px;height:calc(100% - 70px);overflow-y:auto;background:#fff;align-content:flex-start;transition:background 0.1s;"></div>
-        <div class="resize-handle right"></div>
-        <div class="resize-handle bottom"></div>
-        <div class="resize-handle corner"></div>
-    `;
-
+        <div id="folder-content-${fileId}" style="display:flex;flex-wrap:wrap;gap:8px;padding:10px;height:calc(100% - 70px);overflow-y:auto;background:#fff;align-content:flex-start;transition:background 0.1s;"></div>
+        <div class="resize-handle right"></div><div class="resize-handle bottom"></div><div class="resize-handle corner"></div>`;
     desktop.appendChild(win);
 
     const content = document.getElementById(`folder-content-${fileId}`);
-
     content.addEventListener('dragover',  e => { e.preventDefault(); content.style.background = '#d8ecff'; });
     content.addEventListener('dragleave', () => { content.style.background = '#fff'; });
     content.addEventListener('drop', e => {
-        e.preventDefault();
-        content.style.background = '#fff';
+        e.preventDefault(); content.style.background = '#fff';
         const vfsId = e.dataTransfer.getData('vfs-file-id');
         if (vfsId) moveFileBetween(parseInt(vfsId), fileId);
         const realImages = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/'));
-        if (realImages.length) {
-            realImages.forEach(f => {
-                const sizeMB = Math.max(1, Math.round(f.size / 1024 / 1024));
-                const reader = new FileReader();
-                reader.onload = ev => {
-                    const saved = addFile({ name: f.name, type: 'image', size: sizeMB, data: { src: ev.target.result } });
-                    if (!saved) return;
-                    const files3   = getFiles();
-                    const folder3  = files3.find(x => x.id === fileId);
-                    if (folder3) { folder3.data.children.push(saved.id); saveFiles(files3); }
-                    renderDesktopFiles(); win.refreshFolder?.();
-                };
-                reader.readAsDataURL(f);
-            });
-        }
+        realImages.forEach(f => {
+            const sizeMB = Math.max(1, Math.round(f.size / 1024 / 1024));
+            const reader = new FileReader();
+            reader.onload = ev => {
+                const saved = addFile({ name: f.name, type: 'image', size: sizeMB, data: { src: ev.target.result } });
+                if (!saved) return;
+                const files3 = getFiles(); const folder3 = files3.find(x => x.id === fileId);
+                if (folder3) { folder3.data.children.push(saved.id); saveFiles(files3); }
+                renderDesktopFiles(); win.refreshFolder?.();
+            };
+            reader.readAsDataURL(f);
+        });
     });
 
     win.querySelector('.close-btn').onclick = () => {
-        connections.filter(c => c.from === win || c.to === win)
-                   .forEach(c => { if (c.fuelInterval) clearInterval(c.fuelInterval); });
+        connections.filter(c => c.from === win || c.to === win).forEach(c => { if (c.fuelInterval) clearInterval(c.fuelInterval); });
         connections = connections.filter(c => c.from !== win && c.to !== win);
-        drawConnections();
-        win.remove();
+        drawConnections(); win.remove();
     };
 
     win.querySelector('.connect-btn').addEventListener('click', () => {
@@ -997,7 +833,7 @@ function openFolder(fileId) {
             pendingConnection = { win, port };
             win.querySelector('.connect-btn').style.background = 'yellow';
         } else {
-            tryConnect(pendingConnection, win, 0);
+            tryConnect(pendingConnection, win, port);
             pendingConnection = null;
             document.querySelectorAll('.connect-btn').forEach(b => b.style.background = '');
         }
@@ -1006,7 +842,7 @@ function openFolder(fileId) {
     makeDraggable(win, win.querySelector('.title-bar'));
     makeResizable(win);
 
-    function refreshFolder() {
+    function refreshFolder() { //FREFRESH FOLDER
         const allFiles = getFiles();
         const folder   = allFiles.find(f => f.id === fileId);
         if (!folder) { win.remove(); return; }
@@ -1014,13 +850,9 @@ function openFolder(fileId) {
         const children = folder.data?.children || [];
         document.getElementById(`folder-info-${fileId}`).innerText = `${children.length} item(s)`;
         content.innerHTML = '';
-        if (!children.length) {
-            content.innerHTML = '<span style="color:#aaa;font-size:12px;padding:8px;">Pasta vazia</span>';
-            return;
-        }
+        if (!children.length) { content.innerHTML = '<span style="color:#aaa;font-size:12px;padding:8px;">Pasta vazia</span>'; return; }
         children.forEach(childId => {
-            const child   = allFiles.find(f => f.id === childId);
-            if (!child) return;
+            const child   = allFiles.find(f => f.id === childId); if (!child) return;
             const typeDef = DESKTOP_FILE_TYPES[child.type];
             const ico     = TYPE_ICONS[child.type] || '📄';
             const item    = document.createElement('div');
@@ -1032,37 +864,24 @@ function openFolder(fileId) {
             }
             item.innerHTML = `${iconHtml}<span>${child.name}</span>`;
             item.draggable = true;
-            item.addEventListener('dragstart', e => {
-                e.dataTransfer.setData('vfs-file-id',   String(child.id));
-                e.dataTransfer.setData('source-folder', String(fileId));
-                item.style.opacity = '0.5';
-            });
+            item.addEventListener('dragstart', e => { e.dataTransfer.setData('vfs-file-id', String(child.id)); e.dataTransfer.setData('source-folder', String(fileId)); item.style.opacity = '0.5'; });
             item.addEventListener('dragend', () => { item.style.opacity = '1'; });
             item.addEventListener('dblclick', () => typeDef?.onDblClick(child));
             item.addEventListener('contextmenu', e => {
                 e.preventDefault();
                 const del = confirm(`"${child.name}"\n\nOK = Excluir permanentemente\nCancelar = Remover só desta pasta`);
-                if (del) {
-                    deleteFile(child.id);
-                } else {
-                    const fresh = getFiles();
-                    const fp    = fresh.find(f => f.id === fileId);
-                    if (fp) {
-                        fp.data.children = fp.data.children.filter(id => id !== childId);
-                        saveFiles(fresh); renderDesktopFiles(); refreshFolder();
-                    }
+                if (del) { deleteFile(child.id); } else {
+                    const fresh = getFiles(); const fp = fresh.find(f => f.id === fileId);
+                    if (fp) { fp.data.children = fp.data.children.filter(id => id !== childId); saveFiles(fresh); renderDesktopFiles(); refreshFolder(); }
                 }
             });
             content.appendChild(item);
         });
     }
-
     win.refreshFolder = refreshFolder;
 
     document.getElementById(`btn-add-folder-${fileId}`).onclick = () => {
-        const allFiles = getFiles();
-        const folder   = allFiles.find(f => f.id === fileId);
-        if (!folder) return;
+        const allFiles = getFiles(); const folder = allFiles.find(f => f.id === fileId); if (!folder) return;
         const childSet = new Set(folder.data?.children || []);
         const addable  = allFiles.filter(f => f.id !== fileId && f.type !== 'app' && !childSet.has(f.id));
         if (!addable.length) { alert('Nenhum arquivo disponível.'); return; }
@@ -1076,29 +895,21 @@ function openFolder(fileId) {
     refreshFolder();
 }
 
-function baixar(id) {
-    const app = appsList.find(a => a.id === id);
-    if (!app) return;
-    if (getFiles().some(f => f.type === 'app' && f.data?.appId === id)) {
-        alert(`${app.nome} já está instalado!`); return;
-    }
-    const appSize = app.size || 20;
-    const used    = window.getUsedSpace();
-    if (used + appSize > window.systemInfo.space) {
-        alert(`Sem espaço!\nUsado: ${used}/${window.systemInfo.space} MB\nPrecisa: ${appSize} MB`); return;
-    }
+function baixar(id) { // FDOWNLOAD
+    const app = appsList.find(a => a.id === id); if (!app) return;
+    if (getFiles().some(f => f.type === 'app' && f.data?.appId === id)) { alert(`${app.nome} já está instalado!`); return; }
+    const appSize = app.size || 20, used = window.getUsedSpace();
+    if (used + appSize > window.systemInfo.space) { alert(`Sem espaço!\nUsado: ${used}/${window.systemInfo.space} MB\nPrecisa: ${appSize} MB`); return; }
     const saved = addFile({ name: app.nome + '.exe', type: 'app', size: appSize, data: { appId: id } });
     if (!saved) return;
-    unlockApp(id);
-    alert('Download concluído! 🎉');
+    unlockApp(id); alert('Download concluído! 🎉');
     setTimeout(() => openAppById(id), 250);
 }
-
-function baixarDireto(id) { unlockApp(id); alert('Download concluído! 🎉'); }
+function baixarDireto(id) { unlockApp(id); alert('Download concluído! 🎉'); } //AUXILIAR DOWNLOAD SEM RENDER
 
 (function () {
     const item = document.createElement('div');
-    item.id    = 'menu-remove-app';
+    item.id = 'menu-remove-app';
     item.className = contextMenu.querySelector('div')?.className || '';
     item.textContent = '🗑️ Remover App';
     item.style.display = 'none';
@@ -1111,15 +922,11 @@ function baixarDireto(id) { unlockApp(id); alert('Download concluído! 🎉'); }
 })();
 
 function showContextMenu(x, y, targetType) {
-    const mw = 160, mh = 180;
-    const px = Math.min(x, window.innerWidth  - mw - 4);
-    const py = Math.min(y, window.innerHeight - mh - 4);
-    contextMenu.style.left = px + 'px';
-    contextMenu.style.top  = py + 'px';
+    contextMenu.style.left = Math.min(x, window.innerWidth  - 164) + 'px';
+    contextMenu.style.top  = Math.min(y, window.innerHeight - 184) + 'px';
     contextMenu.classList.add('visible');
-    const isFile    = targetType === 'file';
-    const isDesktop = targetType === 'desktop';
-    const app       = targetType === 'app' ? appsList.find(a => a.id === currentTargetIcon?.dataset.app) : null;
+    const isFile = targetType === 'file', isDesktop = targetType === 'desktop';
+    const app    = targetType === 'app' ? appsList.find(a => a.id === currentTargetIcon?.dataset.app) : null;
     document.getElementById('menu-open')      .style.display = isDesktop ? 'none' : '';
     document.getElementById('menu-rename')    .style.display = isDesktop ? 'none' : '';
     document.getElementById('menu-delete')    .style.display = isFile ? '' : 'none';
@@ -1134,89 +941,73 @@ document.getElementById('menu-open').onclick = () => {
     if (currentTargetIcon.dataset.fileId) {
         const file = getFiles().find(f => f.id === parseInt(currentTargetIcon.dataset.fileId));
         DESKTOP_FILE_TYPES[file?.type]?.onDblClick(file);
-    } else {
-        openAppById(currentTargetIcon.dataset.app);
-    }
+    } else openAppById(currentTargetIcon.dataset.app);
 };
-
 document.getElementById('menu-rename').onclick = () => {
     if (!currentTargetIcon) return;
     const span = currentTargetIcon.querySelector('span');
-    const novo = prompt('Novo nome:', span.innerText);
-    if (!novo) return;
+    const novo = prompt('Novo nome:', span.innerText); if (!novo) return;
     if (currentTargetIcon.dataset.fileId) {
-        const files = getFiles();
-        const file  = files.find(f => f.id === parseInt(currentTargetIcon.dataset.fileId));
+        const files = getFiles(); const file = files.find(f => f.id === parseInt(currentTargetIcon.dataset.fileId));
         if (file) { file.name = novo; saveFiles(files); }
     }
     span.innerText = novo;
 };
-
 document.getElementById('menu-delete').onclick = () => {
     const selected = [...document.querySelectorAll('.icon.sel-highlight[data-file-id]')];
     if (selected.length > 1) {
         if (!confirm(`Excluir ${selected.length} arquivos permanentemente?`)) return;
-        selected.forEach(el => deleteFile(parseInt(el.dataset.fileId)));
-        return;
+        selected.forEach(el => deleteFile(parseInt(el.dataset.fileId))); return;
     }
     if (!currentTargetIcon?.dataset.fileId) return;
     if (!confirm('Excluir permanentemente?')) return;
     deleteFile(parseInt(currentTargetIcon.dataset.fileId));
 };
-
 document.getElementById('menu-pin').onclick = () => {
     if (!currentTargetIcon) return;
     const appId = currentTargetIcon.dataset.app;
     if (!appId || document.getElementById(`quick-${appId}`)) return;
-    const quick     = document.createElement('div');
-    quick.className = 'quick-icon';
-    quick.id        = `quick-${appId}`;
+    const quick = document.createElement('div');
+    quick.className = 'quick-icon'; quick.id = `quick-${appId}`;
     quick.innerText = currentTargetIcon.querySelector('.icon-img').innerText;
-    quick.onclick   = () => openAppById(appId);
+    quick.onclick = () => openAppById(appId);
     document.getElementById('quick-launch').appendChild(quick);
 };
 
 document.getElementById('menu-unlock')     ?.addEventListener('click', () => unlockApp('pescaria'));
 document.getElementById('menu-new-notepad') ?.addEventListener('click', createNotepadFile);
 document.getElementById('menu-new-folder')  ?.addEventListener('click', createFolder);
-document.getElementById('menu-new-image')   ?.addEventListener('click', importImageFile);
+document.getElementById('menu-new-image')   ?.addEventListener('click', importImageFile); //REMOVER PIMP 
+document.getElementById('menu-new-art-project')  ?.addEventListener('click', createNewArt); //implementar arquivo formato ".art" PIMP 
 
 startBtn.onclick = e => { e.stopPropagation(); startMenu.classList.toggle('visible'); };
-document.addEventListener('click', e => {
-    if (!startMenu.contains(e.target) && e.target !== startBtn) startMenu.classList.remove('visible');
-});
+document.addEventListener('click', e => { if (!startMenu.contains(e.target) && e.target !== startBtn) startMenu.classList.remove('visible'); });
 
 function populateStartMenu() {
-    const list = document.getElementById('start-apps-list');
-    if (!list) return;
+    const list = document.getElementById('start-apps-list'); if (!list) return;
     list.innerHTML = '';
     appsList.filter(isUnlocked).forEach(app => {
-        const item     = document.createElement('div');
+        const item = document.createElement('div');
         item.className = 'menu-item-right';
         item.innerHTML = `${app.icone} ${app.nome}`;
-        item.onclick   = () => { openAppById(app.id); startMenu.classList.remove('visible'); };
+        item.onclick = () => { openAppById(app.id); startMenu.classList.remove('visible'); };
         list.appendChild(item);
     });
 }
 
 if (changeWallpaperBtn && wallpaperInput) {
     changeWallpaperBtn.onclick = () => wallpaperInput.click();
-    wallpaperInput.onchange = function () {
-        const file = this.files[0];
-        if (!file) return;
+    wallpaperInput.onchange = function() {
+        const file = this.files[0]; if (!file) return;
         const reader = new FileReader();
-        reader.onload = e => {
-            document.body.style.backgroundImage = `url('${e.target.result}')`;
-            const state = loadState(); state.wallpaper = e.target.result; saveState(state);
-        };
+        reader.onload = e => { document.body.style.backgroundImage = `url('${e.target.result}')`; const state = loadState(); state.wallpaper = e.target.result; saveState(state); };
         reader.readAsDataURL(file);
     };
 }
 
 document.getElementById('shutdown-btn')?.addEventListener('click', () => {
-    if (confirm('Desligar?')) {
+    if (confirm('Desligar?'))
         document.body.innerHTML = "<div style='background:black;color:white;height:100vh;display:flex;align-items:center;justify-content:center;font-family:sans-serif;'>Pode desligar com segurança.</div>";
-    }
 });
 
 window.addEventListener('message', event => {
@@ -1234,16 +1025,12 @@ window.addEventListener('message', event => {
         const res = event.data.resource;
         if (srcWin && res) {
             const outConn = connections.find(c => c.from === srcWin);
-            if (outConn) {
-                routeResourceToWindow(res, outConn.to);
-            } else {
-                const sv = addFile(res); if (sv) renderDesktopFiles();
-            }
+            if (outConn) routeResourceToWindow(res, outConn.to);
+            else { const sv = addFile(res); if (sv) renderDesktopFiles(); }
         }
     }
     if (type === 'emit-resource' && appId) {
-        const ok = window.emitResource(appId, event.data.resource);
-        if (!ok) { const sv = addFile(event.data.resource); if (sv) renderDesktopFiles(); }
+        window.emitResource(appId, event.data.resource);
     }
     if (type === 'navigate' && url) {
         const bw = document.getElementById('window-gonetgo');
@@ -1255,16 +1042,39 @@ function initSessionTime() {
     const state = loadState();
     window.systemInfo.session_time = state.session_time || 0;
     setInterval(() => window.systemInfo.session_time++, 1000);
-    setInterval(() => {
-        const s = loadState(); s.session_time = window.systemInfo.session_time; saveState(s);
-    }, 10000);
+    setInterval(() => { const s = loadState(); s.session_time = window.systemInfo.session_time; saveState(s); }, 10000);
 }
 
 function applySavedState() {
     const state = loadState();
     if (state.wallpaper) document.body.style.backgroundImage = `url('${state.wallpaper}')`;
 }
+//===========================
+// PAINT STUFF
+//========================
+function createNewArt() { 
+    
+}
 
+//set "favorite folder" to save drawings on it >:V PIMP
+//set folder new handler to see as a canvas diplay
+
+
+
+//====================
+//Go Music
+//==============
+
+
+//============================
+//HANDLERS PIMP
+//============================
+
+
+
+//===========================
+// INIT
+//========================
 applySavedState();
 applyUpgrades();
 initSessionTime();

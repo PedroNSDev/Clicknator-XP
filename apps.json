@@ -22,7 +22,7 @@
   },
   {
     "id": "paint",
-    "nome": "Paint",
+    "nome": "GoPaint",
     "icone": "🎨",
     "html": "apps/paint.html",
     "ram": 32

@@ -260,7 +260,7 @@ const BASE_RAM   = 256;
 const BASE_SPACE = 2048;
 
 // Upgrade catalogue
-// each tier entry: { label, ramBonus, spaceBonus, cost, maxOwned }
+// each tier entry: { label, ramBonus, spaceBonus, cost, maxOwned } // generate procedural upgrades PIMP
 const UPGRADES = {
     hardware: [
         {
@@ -310,6 +310,14 @@ const UPGRADES = {
             desc: 'Armazenamento sólido ultrarrápido +4096 MB.',
             ramBonus: 0, spaceBonus: 4096,
             cost: 350, maxOwned: 2,
+        },
+        {
+            id: 'ssd_8gb',
+            icon: '⚡⚡',
+            name: 'SSD 8GB',
+            desc: 'Armazenamento sólido ultrarrápido +4096 MB.',
+            ramBonus: 0, spaceBonus: 8192,
+            cost: 500, maxOwned: 3,
         },
     ],
     software: [
@@ -370,7 +378,7 @@ function getTotalUpgradesCount() {
     return Object.values(items).reduce((a, b) => a + b, 0);
 }
 
-// ── Spend dinheiro ────────────────────────────────────────────
+// ── Spend mony ────────────────────────────────────────────
 function spendMoedas(amount) {
     // Spend from the in-session wallet balance
     walletBalance = Math.max(0, walletBalance - amount);
@@ -413,7 +421,7 @@ function buyUpgrade(upgradeId) {
 }
 
 function showToast(msg) {
-    alert(msg); // Simple for now — could be upgraded to a non-blocking notification
+    alert(msg); // Simple for now — could be upgraded to a non-blocking notification PIMP
 }
 
 // ── Render ────────────────────────────────────────────────────
@@ -445,7 +453,7 @@ function updateStatusBar() {
     document.getElementById('st-upg').textContent = getTotalUpgradesCount();
 }
 
-function renderCards(list) {
+function renderCards(list) { // criar mais Upgrades PIMP
     const body    = document.getElementById('shop-body');
     const balance = getTotalBalance();
     body.innerHTML = '';
@@ -499,7 +507,7 @@ function renderCards(list) {
 }
 
 // ── Wallet state ──────────────────────────────────────────────
-let walletBalance = 0; // moedas depositadas na carteira (sessão)
+let walletBalance = 0; // deposited coins in current session aka sabe
 
 function renderInventory() {
     const body  = document.getElementById('shop-body');
@@ -674,7 +682,7 @@ window.deleteOne = function(id) {
 window._partialSpend = spendMoedas;
 
 // ── Auto-deposit via cable connection ─────────────────────────
-window.addEventListener('message', event => {
+window.addEventListener('message', event => { // fix bug where doesnt recognize shop as an input PIMP
     const { type, resource } = event.data || {};
     if (type !== 'resource-received' || !resource) return;
     if (resource.type === 'dinheiro') {

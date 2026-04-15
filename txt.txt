@@ -881,12 +881,6 @@ initSessionTime();
 loadApps();
 
 
-
-
-
-
-
-
 [
   {
     "id": "computer",
@@ -1022,6 +1016,7 @@ loadApps();
   },
   {
     "id": "inventario",
+
     "nome": "Inventário.exe",
     "icone": "📦",
     "html": "apps/storage.html",
