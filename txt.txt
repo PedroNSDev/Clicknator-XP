@@ -1025,3 +1025,39 @@ loadApps();
     ]
   }
 ]
+
+
+IMPLEMENTAR ATT SIZE EM APPS SML,MID BIG, FULL
+<script>
+
+const instruments{["guitar":null,]}
+
+
+
+let channels = []
+let amps = [] 
+
+function render_grid(){} 
+
+function render_notes(){}
+function set_tempo(){}
+function change_instrument(channel){
+
+    const intrument = channel.get_channel_instrument()|| null;
+    const 
+
+
+}
+get_channel_instrument(channel){}
+
+
+function exportas(file,format){
+    switch
+    case "MIDI"
+    return saveCurrentFileAs(MIDI)
+} //APRENDER MIDI PQ EU SER ANIMALERSON PIMP
+
+
+
+</script>
+    
