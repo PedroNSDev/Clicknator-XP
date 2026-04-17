@@ -352,7 +352,7 @@ const editorEl  = document.getElementById('editor');
 
 function updateLineNumbers() {
   const lines = editorEl.innerText.split('\n');
-  lineNumEl.innerHTML = lines.map((_,i) => i+1).join('\n');
+  lineNumEl.innerHTML = lines.map((_,i) => i+1).join('<br>');
   lineNumEl.scrollTop = editorEl.scrollTop;
 }
 

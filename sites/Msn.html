@@ -2,6 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
+<title>MSN Messenger - Rede Social</title>
 <style>
 * { box-sizing:border-box; margin:0; padding:0; }
 
@@ -39,7 +40,7 @@ body {
 }
 .login-box {
     background: white; border: 1px solid #aaa;
-    padding: 20px 24px; width: 260px; display: flex;
+    padding: 20px 24px; width: 280px; display: flex;
     flex-direction: column; gap: 10px;
     box-shadow: 2px 2px 8px rgba(0,0,0,0.2);
 }
@@ -54,8 +55,16 @@ body {
     color: white; border: 1px solid #002288;
     font-family: Tahoma; font-size: 12px; font-weight: bold;
     padding: 5px; cursor: pointer; border-radius: 2px;
+    margin-top: 5px;
 }
 .btn-signin:hover { background: linear-gradient(to bottom, #0077ff, #0055dd); }
+.btn-secondary {
+    background: #e4e0d8; color: #333; border: 1px solid #aaa;
+    font-family: Tahoma; font-size: 11px; padding: 4px; cursor: pointer;
+    border-radius: 2px; text-align: center; text-decoration: none;
+}
+.btn-secondary:hover { background: #d4d0c8; }
+
 .avatar-pick { display: flex; gap: 6px; flex-wrap: wrap; }
 .av-opt {
     width: 32px; height: 32px; font-size: 20px; text-align: center;
@@ -120,6 +129,30 @@ body {
     background: #0055cc; color: white;
     font-size: 9px; padding: 1px 5px; border-radius: 8px; flex-shrink: 0;
 }
+
+
+.add-contact-row {
+    display: flex; gap: 4px; padding: 5px 6px;
+    border-top: 1px solid #ddd; flex-shrink: 0;
+}
+.add-contact-row input {
+    flex: 1; font-family: Tahoma; font-size: 11px;
+    border: 1px inset #aaa; padding: 2px 4px; height: 22px;
+}
+.add-contact-row button {
+    font-family: Tahoma; font-size: 10px; font-weight: bold;
+    padding: 0 7px; cursor: pointer; height: 22px;
+    background: linear-gradient(to bottom, #0066ff, #0044cc);
+    color: white; border: 1px solid #002288; border-radius: 2px;
+}
+
+/* Botão Sair */
+.btn-logout {
+    font-family: Tahoma; font-size: 10px; color: #cc4444;
+    background: none; border: none; cursor: pointer;
+    text-decoration: underline; padding: 5px; text-align: center;
+}
+.btn-logout:hover { color: #ff0000; }
 
 /* ── Chat area ── */
 .chat-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
@@ -204,21 +237,38 @@ body {
     <span class="msn-status-dot" id="hdr-dot"></span>
 </div>
 
-<!-- Login screen -->
+
 <div id="login-screen">
-    <div class="login-box">
+    <!-- TELA DE LOGIN -->
+    <div class="login-box" id="box-login">
         <h2>💬 Entrar no MSN</h2>
-        <label>Seu nome</label>
-        <input id="l-name" type="text" placeholder="seu apelido" value="">
-        <label>Seu avatar</label>
+        <label>Nome de usuário</label>
+        <input id="l-name" type="text" placeholder="seu apelido">
+        <label>Senha</label>
+        <input id="l-pass" type="password" placeholder="sua senha">
+        <button class="btn-signin" onclick="signin()">Entrar ✔</button>
+        <div style="font-size:10px; text-align:center; color:#666; margin-top:5px;">Não tem conta?</div>
+        <button class="btn-secondary" onclick="toggleAuth('signup')">Criar nova conta</button>
+    </div>
+
+    <!-- TELA DE CADASTRO -->
+    <div class="login-box" id="box-signup" style="display:none;">
+        <h2>✨ Criar Conta no MSN</h2>
+        <label>Nome de usuário</label>
+        <input id="s-name" type="text" placeholder="ex: joao123">
+        <label>Senha</label>
+        <input id="s-pass" type="password" placeholder="escolha uma senha">
+        <label>Escolha seu avatar</label>
         <div class="avatar-pick" id="av-pick"></div>
         <label>Mensagem de status</label>
-        <input id="l-mood" type="text" placeholder="o que você está fazendo?">
-        <button class="btn-signin" onclick="signin()">Entrar no Messenger ✔</button>
+        <input id="s-mood" type="text" placeholder="o que você está fazendo?">
+        <button class="btn-signin" onclick="signup()">Cadastrar e Entrar ✔</button>
+        <div style="font-size:10px; text-align:center; color:#666; margin-top:5px;">Já tem conta?</div>
+        <button class="btn-secondary" onclick="toggleAuth('login')">Voltar para o Login</button>
     </div>
 </div>
 
-<!-- Main UI (hidden until sign-in) -->
+
 <div id="main-ui" style="display:none;">
     <div class="contacts-panel">
         <div class="my-profile">
@@ -231,74 +281,55 @@ body {
         </div>
         <div class="contacts-title">Contatos Online</div>
         <div class="contacts-list" id="contacts-list"></div>
+       
+        <div class="add-contact-row">
+            <input id="add-user" placeholder="username do contato">
+            <button onclick="handleAdd()">+ Add</button>
+        </div>
+        <button class="btn-logout" onclick="logout()">Sair da conta (Logoff)</button>
     </div>
     <div class="chat-area" id="chat-area">
         <div class="no-chat-placeholder">
             <div class="big-logo">💬</div>
             <div>Selecione um contato para conversar</div>
-            <div style="font-size:11px;color:#aaa;">Duplo-clique para abrir uma conversa</div>
+            <div style="font-size:11px;color:#aaa;">Clique para abrir uma conversa</div>
         </div>
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script>
-// ── Constants ─────────────────────────────────────────────────
+
+// ── SUPABASE CONFIG ──────────────────────────────────────
+const SUPABASE_URL = 'https://yovkdpmvibyjozomzmeg.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_csrvbJfbXwkNT-aPabDqIQ_tk4vaZY9';
+
+var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── CONSTANTES ─────────────────────────────────────────────────────
 const STORE_KEY = 'msn-data';
-const AVATARS   = ['😊','😎','🤓','😈','👻','🤩','😋','😜','🦊','🐱','🐧','🦄'];
+const AVATARS   = ['😊','😎','🤓','🫩','🫠','🫤','🤯','🤑','🤔','🤔','😈','🤠','💩','😡','👽','💀','👻','🤩','😋','😜','🦊','🐱','🐧','🦄','🐌','🦆','🐥','🦉','🦁','🐵','🐻','🦖','🪱']; //PLACEHLDER
 
-const CONTACTS = [
-    {
-        id: 'mel99', name: 'Mel Silva', avatar: '👩', status: 'online',
-        mood: 'essa música não sai da minha cabeça 🎵',
-        personality: 'Você é Mel, uma jovem animada de 22 anos, fã de música pop e jogos. '+
-                     'Você responde de forma descontraída, usa gírias brasileiras informais, '+
-                     'emojis, e às vezes manda memes em texto. Não seja formal. Converse sobre música, games, dia a dia.',
-    },
-    {
-        id: 'rodrigo_gamer', name: 'Rodrigo XP', avatar: '👾', status: 'online',
-        mood: 'no ranked, não me chame gg',
-        personality: 'Você é Rodrigo, um gamer de 25 anos, fala muito sobre games online, estratégia, e atualidades de tech. '+
-                     'Usa expressões de game como "gg", "ez", "ranked". Conversa de forma curta e direta.',
-    },
-    {
-        id: 'ana_dev', name: 'Ana Dev', avatar: '🧑‍💻', status: 'away',
-        mood: 'debugando há 3 horas... encontrei um ponto e vírgula',
-        personality: 'Você é Ana, programadora de 28 anos, apaixonada por tecnologia e código. '+
-                     'Faz piadas de programador, fala sobre linguagens, bugs engraçados. É um pouco nerd mas simpática.',
-    },
-    {
-        id: 'joao_coins', name: 'João Coins', avatar: '🤑', status: 'busy',
-        mood: 'estudando cripto, to the moon 🚀',
-        personality: 'Você é João, entusiasta de criptomoedas e investimentos, de 30 anos. '+
-                     'Fala sobre "to the moon", HODL, tecnologia blockchain. É otimista e animado com o mercado.',
-    },
-    {
-        id: 'bia_arte', name: 'Bia Arte', avatar: '👩‍🎨', status: 'online',
-        mood: 'desenhando minha nova série ✏️',
-        personality: 'Você é Bia, artista digital de 24 anos, apaixonada por arte, anime e design. '+
-                     'Fala sobre projetos artísticos, recomenda anime, compartilha entusiasmo por arte visual.',
-    },
-];
-
-// ── State ──────────────────────────────────────────────────────
-let profile    = { name: 'Você', avatar: '😊', mood: '', status: 'online' };
+// ── ESTADOS ──────────────────────────────────────────────────────────
+let profile    = null;
+let CONTACTS   = [];
 let activeChat = null;
-let unread     = {};   // contactId → count
-let typing     = {};   // contactId → bool
+let unread     = {};
+window._msgs   = {}; 
 
+// ── PERSISTÊNCIA LOCAL ─────────────────────────────────────────────
 function loadData() {
     try {
         const d = JSON.parse(localStorage.getItem(STORE_KEY)) || {};
-        if (d.profile)   profile = d.profile;
-        if (d.messages)  window._msgs = d.messages;
-        if (d.unread)    unread  = d.unread;
+        if (d.profile)  profile      = d.profile;
+        if (d.unread)   unread       = d.unread;
     } catch {}
-    window._msgs = window._msgs || {};
 }
 
 function saveData() {
     try {
-        localStorage.setItem(STORE_KEY, JSON.stringify({ profile, messages: window._msgs, unread }));
+        localStorage.setItem(STORE_KEY, JSON.stringify({ profile, unread }));
     } catch {}
 }
 
@@ -307,48 +338,291 @@ function getMsgs(contactId) {
     return window._msgs[contactId];
 }
 
-// ── Login ──────────────────────────────────────────────────────
+// ── AUTH LOGIC ─────────────────────────────────────────────────────
+function toggleAuth(mode) {
+    document.getElementById('box-login').style.display = mode === 'login' ? 'flex' : 'none';
+    document.getElementById('box-signup').style.display = mode === 'signup' ? 'flex' : 'none';
+}
+
+
 const avPick = document.getElementById('av-pick');
 AVATARS.forEach((av, i) => {
     const d = document.createElement('div');
     d.className = 'av-opt' + (i === 0 ? ' chosen' : '');
     d.textContent = av;
-    d.onclick = () => { document.querySelectorAll('.av-opt').forEach(x=>x.classList.remove('chosen')); d.classList.add('chosen'); };
+    d.onclick = () => {
+        document.querySelectorAll('.av-opt').forEach(x => x.classList.remove('chosen'));
+        d.classList.add('chosen');
+    };
     avPick.appendChild(d);
 });
 
-function signin() {
-    const name = document.getElementById('l-name').value.trim() || 'Você';
-    const av   = document.querySelector('.av-opt.chosen')?.textContent || '😊';
-    const mood = document.getElementById('l-mood').value.trim() || 'online e pronto pra conversar';
-    profile    = { name, avatar: av, mood, status: 'online' };
-    saveData();
-    showMain();
+async function signup() { //FSING
+    const username = document.getElementById('s-name').value.trim();
+    const password = document.getElementById('s-pass').value.trim();
+    const avatar   = document.querySelector('#box-signup .av-opt.chosen')?.textContent || '😊';
+    const mood     = document.getElementById('s-mood').value.trim();
+
+    if (!username || !password) { alert('Preencha usuário e senha'); return; }
+
+    try {
+        // CHECK
+        const { data: existing, error: checkError } = await supabase.from('users').select('username').eq('username', username).maybeSingle();
+        
+        if (checkError) throw checkError;
+        if (existing) {
+            alert('Este nome de usuário já está em uso. Escolha outro.');
+            return;
+        }
+
+        // Criar novo
+        const { error: insertError } = await supabase.from('users').insert({ username, password, avatar, mood });
+        if (insertError) throw insertError;
+
+        profile = { name: username, avatar, mood, status: 'online' };
+        saveData();
+        await showMain();
+        setupRealtime();
+    } catch (err) {
+        handleSupabaseError(err, 'Erro ao criar conta');
+    }
 }
 
-// ── Main UI ────────────────────────────────────────────────────
-function showMain() {
+async function signin() {
+    const username = document.getElementById('l-name').value.trim();
+    const password = document.getElementById('l-pass').value.trim();
+    if (!username || !password) { alert('Digite usuário e senha'); return; }
+
+    try {
+        const { data: user, error } = await supabase.from('users').select('*').eq('username', username).maybeSingle();
+        
+        if (error) throw error;
+        if (!user) {
+            alert('Usuário não encontrado.');
+            return;
+        }
+
+        if (user.password !== password) {
+            alert('Senha incorreta!');
+            return;
+        }
+
+        profile = { name: user.username, avatar: user.avatar, mood: user.mood, status: 'online' };
+        saveData();
+        await showMain();
+        setupRealtime();
+    } catch (err) {
+        handleSupabaseError(err, 'Erro ao entrar');
+    }
+}
+
+function logout() {
+    if (!confirm('Deseja realmente sair da conta?')) return;
+    profile = null;
+    unread = {};
+    window._msgs = {};
+    localStorage.removeItem(STORE_KEY);
+    location.reload();
+}
+
+function handleSupabaseError(err, context) {
+    console.error(err);
+    if (err.message.includes('column "password" does not exist')) {
+        alert(`${context}: A coluna "password" não existe na tabela "users". Verifique as instruções de SQL.`);
+    } else if (err.code === '42P01') {
+        alert(`${context}: A tabela não foi encontrada. Verifique se criou as tabelas "users", "contacts" e "messages".`);
+    } else {
+        alert(`${context}: ${err.message}`);
+    }
+}
+
+// ── CONTATOS E MENSAGENS───────────────────────────
+
+async function loadContacts(username) {
+    try {
+        const { data: rows, error } = await supabase
+            .from('contacts')
+            .select('*')
+            .or(`user_a.eq.${username},user_b.eq.${username}`);
+
+        if (error) throw error;
+        if (!rows) return [];
+
+        const usernames = rows.map(c => c.user_a === username ? c.user_b : c.user_a);
+        if (usernames.length === 0) return [];
+
+        const { data: users, error: usersError } = await supabase
+            .from('users')
+            .select('*')
+            .in('username', usernames);
+
+        if (usersError) throw usersError;
+        if (!users) return [];
+
+        return users.map(u => ({
+            id:     u.username,
+            name:   u.username,
+            avatar: u.avatar  || '😊',
+            mood:   u.mood    || '',
+            status: 'online' 
+        }));
+    } catch (err) {
+        console.error('Erro ao carregar contatos:', err);
+        return [];
+    }
+}
+
+async function addContact(usernameToAdd) {
+    if (!profile) return;
+    if (usernameToAdd === profile.name) {
+        alert('Você não pode adicionar você mesmo, Bobinho >:V');
+        return;
+    }
+
+    try {
+        const { data: user, error: userError } = await supabase.from('users').select('*').eq('username', usernameToAdd).maybeSingle();
+        if (userError) throw userError;
+        if (!user) {
+            alert('Usuário não encontrado');
+            return;
+        }
+
+        const { data: existing, error: existError } = await supabase
+            .from('contacts')
+            .select('id')
+            .or(`and(user_a.eq.${profile.name},user_b.eq.${usernameToAdd}),and(user_a.eq.${usernameToAdd},user_b.eq.${profile.name})`)
+            .maybeSingle();
+
+        if (existError) throw existError;
+        if (existing) {
+            alert('Este contato já foi adicionado');
+            return;
+        }
+
+        const { error: insertError } = await supabase.from('contacts').insert({ user_a: profile.name, user_b: usernameToAdd });
+        if (insertError) throw insertError;
+        
+        alert('Contato adicionado!');
+    } catch (err) {
+        handleSupabaseError(err, 'Erro ao adicionar contato');
+    }
+}
+
+async function handleAdd() {
+    const user = document.getElementById('add-user').value.trim();
+    if (!user) return;
+    await addContact(user);
+    CONTACTS = await loadContacts(profile.name);
+    renderContacts();
+    document.getElementById('add-user').value = '';
+}
+
+// ── REALTIME SUBSCRIPTION ──────────────────────────────────────────
+function setupRealtime() {
+    supabase
+        .channel('public:messages')
+        .on('postgres_changes', { event: 'INSERT', table: 'messages' }, payload => {
+            const newMsg = payload.new;
+            if (newMsg.receiver === profile.name || newMsg.sender === profile.name) {
+                const contactId = newMsg.sender === profile.name ? newMsg.receiver : newMsg.sender;
+                const msgObj = {
+                    from: newMsg.sender === profile.name ? 'me' : contactId,
+                    text: newMsg.content,
+                    type: newMsg.type || 'text',
+                    data: newMsg.data,
+                    time: new Date(newMsg.created_at).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })
+                };
+                
+                getMsgs(contactId).push(msgObj);
+                
+                if (activeChat === contactId) {
+                    const box = document.getElementById(`msgs-${contactId}`);
+                    const contact = CONTACTS.find(c => c.id === contactId);
+                    if (box) { appendMsgEl(box, msgObj, contact); box.scrollTop = box.scrollHeight; }
+                } else if (newMsg.sender !== profile.name) {
+                    unread[contactId] = (unread[contactId] || 0) + 1;
+                    renderContacts();
+                    saveData();
+                }
+            }
+        })
+        .subscribe();
+
+    supabase
+        .channel('public:users')
+        .on('postgres_changes', { event: 'UPDATE', table: 'users' }, async () => {
+            CONTACTS = await loadContacts(profile.name);
+            renderContacts();
+            if (activeChat) {
+                const contact = CONTACTS.find(c => c.id === activeChat);
+                if (contact) {
+                    const moodEl = document.querySelector('.chat-header-mood');
+                    if (moodEl) moodEl.textContent = contact.mood || '';
+                    
+                    const statusBadge = document.querySelector('.chat-header-status');
+                    if (statusBadge) {
+                        const statusColors = { online:'#006600', away:'#aa6600', busy:'#880000', offline:'#888' };
+                        const statusLabels = { online:'Online',  away:'Ausente',  busy:'Ocupado',  offline:'Offline' };
+                        statusBadge.style.color = statusColors[contact.status];
+                        statusBadge.style.background = statusColors[contact.status] + '22';
+                        statusBadge.textContent = `● ${statusLabels[contact.status]}`;
+                    }
+                }
+            }
+        })
+        .subscribe();
+}
+
+async function fetchHistory(contactId) {
+    try {
+        const { data: msgs, error } = await supabase
+            .from('messages')
+            .select('*')
+            .or(`and(sender.eq.${profile.name},receiver.eq.${contactId}),and(sender.eq.${contactId},receiver.eq.${profile.name})`)
+            .order('created_at', { ascending: true });
+
+        if (error) throw error;
+        if (msgs) {
+            window._msgs[contactId] = msgs.map(m => ({
+                from: m.sender === profile.name ? 'me' : contactId,
+                text: m.content,
+                type: m.type || 'text',
+                data: m.data,
+                time: new Date(m.created_at).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })
+            }));
+        }
+    } catch (err) {
+        console.error('Erro ao buscar histórico:', err);
+    }
+}
+
+// ── UI LOGIC ───────────────────────────────────────────────────────
+async function showMain() {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('main-ui').style.display      = 'flex';
     document.getElementById('my-av').textContent   = profile.avatar;
     document.getElementById('my-name').textContent  = profile.name;
     document.getElementById('my-mood').textContent  = profile.mood || 'Clique para editar...';
+    CONTACTS = await loadContacts(profile.name);
     renderContacts();
 }
 
 function renderContacts() {
     const list = document.getElementById('contacts-list');
+    if (!list) return;
     list.innerHTML = '';
+    if (CONTACTS.length === 0) {
+        list.innerHTML = '<div style="padding:10px;font-size:11px;color:#aaa;text-align:center;">Nenhum contato ainda</div>';
+        return;
+    }
     CONTACTS.forEach(c => {
         const div = document.createElement('div');
-        div.className = 'contact-item' +
-            (activeChat === c.id ? ' active' : '') +
-            (unread[c.id] ? ' unread' : '');
+        div.className = 'contact-item' + (activeChat === c.id ? ' active' : '') + (unread[c.id] ? ' unread' : '');
         div.innerHTML = `
             <div class="ct-av">${c.avatar}<span class="ct-dot dot-${c.status}"></span></div>
             <div class="ct-info">
                 <div class="ct-name">${c.name}</div>
-                <div class="ct-mood">${c.mood}</div>
+                <div class="ct-mood">${c.mood || ''}</div>
             </div>
             ${unread[c.id] ? `<div class="ct-unread-badge">${unread[c.id]}</div>` : ''}
         `;
@@ -357,32 +631,31 @@ function renderContacts() {
     });
 }
 
-// ── Chat ───────────────────────────────────────────────────────
-function openChat(contactId) {
+async function openChat(contactId) {
     activeChat = contactId;
     unread[contactId] = 0;
     saveData();
     renderContacts();
+    await fetchHistory(contactId);
     renderChat(contactId);
 }
 
 function renderChat(contactId) {
     const contact = CONTACTS.find(c => c.id === contactId);
-    const msgs    = getMsgs(contactId);
-    const area    = document.getElementById('chat-area');
-
+    if (!contact) return;
+    const msgs = getMsgs(contactId);
+    const area = document.getElementById('chat-area');
     const statusColors = { online:'#006600', away:'#aa6600', busy:'#880000', offline:'#888' };
-    const statusLabels = { online:'Online', away:'Ausente', busy:'Ocupado', offline:'Offline' };
+    const statusLabels = { online:'Online',  away:'Ausente',  busy:'Ocupado',  offline:'Offline' };
 
     area.innerHTML = `
         <div class="chat-header">
             <div class="chat-header-av">${contact.avatar}</div>
             <div class="chat-header-info">
                 <div class="chat-header-name">${contact.name}</div>
-                <div class="chat-header-mood">${contact.mood}</div>
+                <div class="chat-header-mood">${contact.mood || ''}</div>
             </div>
-            <span class="chat-header-status"
-                  style="color:${statusColors[contact.status]};background:${statusColors[contact.status]}22;">
+            <span class="chat-header-status" style="color:${statusColors[contact.status]};background:${statusColors[contact.status]}22;">
                 ● ${statusLabels[contact.status]}
             </span>
         </div>
@@ -393,18 +666,14 @@ function renderChat(contactId) {
                 <button class="chat-tool-btn" onclick="sendEmoji('${contactId}','❤️')">❤️</button>
                 <button class="chat-tool-btn" onclick="sendEmoji('${contactId}','👍')">👍</button>
                 <button class="chat-tool-btn" onclick="sendEmoji('${contactId}','🎉')">🎉</button>
-                <button class="chat-tool-btn" onclick="attachImage('${contactId}')" title="Enviar imagem">📎 Imagem</button>
             </div>
             <div class="chat-row">
-                <textarea class="chat-input" id="inp-${contactId}"
-                    placeholder="Digite uma mensagem..."
-                    onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg('${contactId}');}">
-                </textarea>
+                <textarea class="chat-input" id="inp-${contactId}" placeholder="Digite uma mensagem..."
+                    onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg('${contactId}');}"></textarea>
                 <button class="chat-send" onclick="sendMsg('${contactId}')">Enviar</button>
             </div>
         </div>
     `;
-
     const msgBox = document.getElementById(`msgs-${contactId}`);
     msgs.forEach(m => appendMsgEl(msgBox, m, contact));
     msgBox.scrollTop = msgBox.scrollHeight;
@@ -414,14 +683,8 @@ function appendMsgEl(box, msg, contact) {
     const isMine = msg.from === 'me';
     const row    = document.createElement('div');
     row.className = `msg-row ${isMine ? 'mine' : 'other'}`;
-
-    let content = '';
-    if (msg.type === 'image') {
-        content = `<img class="msg-img" src="${msg.data}" onclick="window.open(this.src)">`;
-    } else {
-        content = msg.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\n/g,'<br>');
-    }
-
+    let content = msg.type === 'image' ? `<img class="msg-img" src="${msg.data}" onclick="window.open(this.src)">` : 
+                  msg.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\n/g, '<br>');
     row.innerHTML = `
         <div class="msg-av">${isMine ? profile.avatar : contact.avatar}</div>
         <div>
@@ -432,200 +695,66 @@ function appendMsgEl(box, msg, contact) {
     box.appendChild(row);
 }
 
-function sendMsg(contactId) {
+async function sendMsg(contactId) {
     const inp  = document.getElementById(`inp-${contactId}`);
     const text = inp.value.trim();
     if (!text) return;
     inp.value = '';
-
-    const msg  = { from:'me', text, type:'text', time: new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) };
-    getMsgs(contactId).push(msg);
-    saveData();
-
-    const contact = CONTACTS.find(c => c.id === contactId);
-    const box     = document.getElementById(`msgs-${contactId}`);
-    if (box) { appendMsgEl(box, msg, contact); box.scrollTop = box.scrollHeight; }
-
-    triggerAIResponse(contactId, text);
+    
+    try {
+        const { error } = await supabase.from('messages').insert({
+            sender: profile.name,
+            receiver: contactId,
+            content: text,
+            type: 'text'
+        });
+        if (error) throw error;
+    } catch (err) {
+        handleSupabaseError(err, 'Erro ao enviar mensagem');
+    }
 }
 
 function sendEmoji(contactId, emoji) {
     const inp = document.getElementById(`inp-${contactId}`);
-    if (inp) inp.value += emoji;
-    inp?.focus();
+    if (inp) { inp.value += emoji; inp.focus(); }
 }
 
-function attachImage(contactId) {
-    // Build a list of images from the VFS
-    let images = [];
-    try { images = (window.parent.getFiles?.() || []).filter(f => f.type === 'image' && f.data?.src); }
-    catch {}
-
-    if (!images.length) {
-        alert('Nenhuma imagem no armazenamento.\nImporte imagens para o desktop primeiro.');
-        return;
-    }
-
-    // Simple picker overlay
-    const overlay = document.createElement('div');
-    overlay.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.5);
-        display:flex;align-items:center;justify-content:center;z-index:9999;`;
-    const box = document.createElement('div');
-    box.style.cssText = `background:white;padding:12px;border-radius:4px;
-        max-width:340px;width:90%;max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;`;
-    box.innerHTML = `<div style="font-size:12px;font-weight:bold;color:#003399;">📎 Escolha uma imagem</div>
-        <div id="img-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;"></div>
-        <button onclick="this.closest('div[style]').parentElement.remove()"
-            style="font-family:Tahoma;font-size:11px;padding:3px;cursor:pointer;">Cancelar</button>`;
-    overlay.appendChild(box);
-    document.body.appendChild(overlay);
-
-    const grid = box.querySelector('#img-grid');
-    images.forEach(img => {
-        const el = document.createElement('img');
-        el.src   = img.data.src;
-        el.style.cssText = 'width:100%;height:70px;object-fit:cover;cursor:pointer;border-radius:3px;border:1px solid #ccc;';
-        el.title = img.name;
-        el.onclick = () => {
-            overlay.remove();
-            sendImage(contactId, img.data.src, img.name);
-        };
-        grid.appendChild(el);
-    });
-}
-
-function sendImage(contactId, src, name) {
-    const msg = { from:'me', type:'image', data:src, text: name,
-                  time: new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) };
-    getMsgs(contactId).push(msg);
-    saveData();
-
-    const contact = CONTACTS.find(c => c.id === contactId);
-    const box     = document.getElementById(`msgs-${contactId}`);
-    if (box) { appendMsgEl(box, msg, contact); box.scrollTop = box.scrollHeight; }
-
-    // AI reacts to image
-    triggerAIResponse(contactId, `[enviou uma imagem: ${name}]`);
-}
-
-// ── AI Response ────────────────────────────────────────────────
-async function triggerAIResponse(contactId, userText) {
-    const contact = CONTACTS.find(c => c.id === contactId);
-    if (!contact || contact.status === 'offline') return;
-
-    // Show typing indicator
-    showTyping(contactId, contact);
-
-    // Build message history (last 10 for context)
-    const history = getMsgs(contactId).slice(-10).map(m => ({
-        role: m.from === 'me' ? 'user' : 'assistant',
-        content: m.type === 'image' ? `[imagem enviada: ${m.text}]` : m.text,
-    }));
-    // Ensure last message is the one just sent
-    if (history[history.length-1]?.role !== 'user') {
-        history.push({ role:'user', content: userText });
-    }
-
-    try {
-        const resp = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                model: 'claude-sonnet-4-20250514',
-                max_tokens: 200,
-                system: contact.personality +
-                    ` Você está no MSN Messenger conversando com ${profile.name || 'alguém'}. ` +
-                    `Responda de forma curta (1-3 frases no máximo), casual, sem formatação markdown.`,
-                messages: history,
-            }),
-        });
-        const data = await resp.json();
-        const text = data.content?.[0]?.text || '...';
-        hideTyping(contactId);
-        receiveMsg(contactId, text, contact);
-    } catch {
-        hideTyping(contactId);
-        // Fallback offline response
-        const fallbacks = [
-            'rsrsrs', 'verdade!', 'hm, deixa eu pensar...', 'aew!',
-            'sei lá man', 'que isso kkk', 'de boas', 'falando sério?',
-        ];
-        receiveMsg(contactId, fallbacks[Math.floor(Math.random()*fallbacks.length)], contact);
-    }
-}
-
-function receiveMsg(contactId, text, contact) {
-    const msg = { from: contactId, text, type:'text',
-                  time: new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) };
-    getMsgs(contactId).push(msg);
-
-    if (activeChat === contactId) {
-        const box = document.getElementById(`msgs-${contactId}`);
-        if (box) { appendMsgEl(box, msg, contact); box.scrollTop = box.scrollHeight; }
-    } else {
-        unread[contactId] = (unread[contactId] || 0) + 1;
-        renderContacts();
-    }
-    saveData();
-}
-
-function showTyping(contactId, contact) {
-    if (activeChat !== contactId) return;
-    const box = document.getElementById(`msgs-${contactId}`);
-    if (!box) return;
-    const row = document.createElement('div');
-    row.className = 'msg-row other typing-indicator';
-    row.id = `typing-${contactId}`;
-    row.innerHTML = `
-        <div class="msg-av">${contact.avatar}</div>
-        <div class="msg-bubble">
-            <div class="dot-typing"></div>
-            <div class="dot-typing"></div>
-            <div class="dot-typing"></div>
-        </div>`;
-    box.appendChild(row);
-    box.scrollTop = box.scrollHeight;
-}
-function hideTyping(contactId) {
-    document.getElementById(`typing-${contactId}`)?.remove();
-}
-
-// ── Profile editing ────────────────────────────────────────────
-function editMood() {
-    const mood = prompt('Nova mensagem de status:', profile.mood);
+// ── PERFIL ─────────────────────────────────────────────────────────
+async function editMood() {
+    const mood = prompt('Nova mensagem de status:', profile.mood || '');
     if (mood === null) return;
     profile.mood = mood;
     document.getElementById('my-mood').textContent = mood || 'Sem status';
-    saveData();
+    try {
+        const { error } = await supabase.from('users').update({ mood }).eq('username', profile.name);
+        if (error) throw error;
+        saveData();
+    } catch (err) {
+        handleSupabaseError(err, 'Erro ao atualizar status');
+    }
 }
 
-function cycleStatus() {
-    const statuses = ['online','away','busy','offline'];
+async function cycleStatus() {
+    const statuses = ['online', 'away', 'busy', 'offline'];
     const labels   = { online:'● Online', away:'◑ Ausente', busy:'⊗ Ocupado', offline:'○ Offline' };
-    const colors   = { online:'#44cc44',  away:'#ffaa00',  busy:'#cc4444',  offline:'#888' };
+    const colors   = { online:'#44cc44',  away:'#ffaa00',   busy:'#cc4444',   offline:'#888' };
     const curr     = profile.status || 'online';
-    const next     = statuses[(statuses.indexOf(curr)+1) % statuses.length];
+    const next     = statuses[(statuses.indexOf(curr) + 1) % statuses.length];
     profile.status = next;
     const btn = document.getElementById('my-status');
     btn.textContent = labels[next];
     btn.style.background = colors[next] + '33';
-    btn.style.color      = colors[next];
+    btn.style.color = colors[next];
     document.getElementById('hdr-dot').style.background = colors[next];
-    document.getElementById('hdr-dot').style.boxShadow  = `0 0 6px ${colors[next]}`;
+    document.getElementById('hdr-dot').style.boxShadow = `0 0 6px ${colors[next]}`;
     saveData();
 }
 
-// ── Boot ───────────────────────────────────────────────────────
+// ── BOOT ───────────────────────────────────────────────────────────
 loadData();
-if (profile.name && profile.name !== 'Você') {
-    // Pre-fill login
-    document.getElementById('l-name').value = profile.name;
-    document.getElementById('l-mood').value = profile.mood;
-    // Auto-login if we have a profile
+if (profile && profile.name) {
     showMain();
-} else {
-    // Pre-fill defaults
-    document.getElementById('l-name').value = '';
+    setupRealtime();
 }
 </script>
 </body>
