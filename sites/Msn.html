@@ -363,7 +363,7 @@ var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const STORE_KEY = 'msn-data';
 const AVATARS   = ['😊','😎','🤓','🫩','🫠','🫤','🤯','🤑','🤔','🤔','😈','🤠','💩','😡','👽','💀','👻','🤩','😋','😜','🦊','🐱','🐧','🦄','🐌','🦆','🐥','🦉','🦁','🐵','🐻','🦖','🪱'];
 
-// ── ESTADOS ──────────────────────────────────────────────────────────
+// ── STATS ──────────────────────────────────────────────────────────
 let profile    = null;
 let CONTACTS   = [];
 let activeChat = null;
@@ -727,7 +727,6 @@ function setupRealtime() {
         .channel('public:requests')
         .on('postgres_changes', { event: '*', table: 'requests' }, async (payload) => {
             await refreshRequests();
-            // Se uma solicitação foi aceita e eu sou o remetente, recarrega contatos
             if (payload.eventType === 'UPDATE' && payload.new.status === 'accepted' && payload.new.sender === profile.name) {
                 CONTACTS = await loadContacts(profile.name);
                 renderContacts();
