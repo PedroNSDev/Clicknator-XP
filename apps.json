@@ -121,5 +121,20 @@
     "ports": [
       { "dir": "out", "format": "fish" }
     ]
+  },
+    {
+    "id": "compiler",
+    "nome": "GOGOcompiler!.exe",
+    "icone": "⌨",
+    "html": "apps/compiler.html",
+    "unlocked": true
+  },
+   {
+    "id": "music",
+    "nome": "TYR4N.exe",
+    "icone": "⌨",
+    "html": "apps/music.html",
+    "unlocked": true
   }
 ]
+  

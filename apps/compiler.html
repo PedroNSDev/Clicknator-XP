@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>GOGO Compiler</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #0d0f14;
+    --panel:     #13161d;
+    --bar:       #1a1d26;
+    --border:    #2a2f3f;
+    --accent:    #00e5ff;
+    --accent2:   #ff4081;
+    --green:     #00ff9d;
+    --purple:    #b26cff;
+    --yellow:    #ffd740;
+    --red:       #ff5252;
+    --dim:       #4a5070;
+    --text:      #cdd6f4;
+    --font:      'JetBrains Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    background: var(--bar);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .topbar-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    letter-spacing: 3px;
+    margin-right: 10px;
+    text-shadow: 0 0 10px var(--accent);
+  }
+
+  .topbar-sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
+
+  .btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 12px;
+    padding: 5px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all .15s;
+  }
+  .btn:hover { background: var(--border); color: #fff; }
+  .btn.run  { border-color: var(--green);  color: var(--green); }
+  .btn.run:hover  { background: var(--green);  color: #000; box-shadow: 0 0 12px var(--green); }
+  .btn.clr  { border-color: var(--red);    color: var(--red); }
+  .btn.clr:hover  { background: var(--red);    color: #fff; box-shadow: 0 0 12px var(--red); }
+  .btn.save { border-color: var(--accent); color: var(--accent); }
+  .btn.save:hover { background: var(--accent); color: #000; box-shadow: 0 0 12px var(--accent); }
+  .btn.load { border-color: var(--yellow); color: var(--yellow); }
+  .btn.load:hover { background: var(--yellow); color: #000; box-shadow: 0 0 12px var(--yellow); }
+
+  .status-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--dim); margin-left: auto;
+    transition: background .3s, box-shadow .3s;
+  }
+  .status-dot.ok  { background: var(--green);  box-shadow: 0 0 8px var(--green); }
+  .status-dot.err { background: var(--red);    box-shadow: 0 0 8px var(--red); }
+  .status-label { font-size: 11px; color: var(--dim); }
+
+  /* ── MAIN LAYOUT ── */
+  .workspace {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .editor-wrap {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Line numbers */
+  #line-numbers {
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    padding: 12px 10px 12px 6px;
+    text-align: right;
+    color: var(--dim);
+    font-size: 13px;
+    line-height: 1.6;
+    user-select: none;
+    min-width: 44px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  #editor {
+    flex: 1;
+    background: var(--panel);
+    color: var(--text);
+    padding: 12px 14px;
+    outline: none;
+    overflow: auto;
+    white-space: pre;
+    font-family: var(--font);
+    font-size: 13px;
+    line-height: 1.6;
+    tab-size: 2;
+    caret-color: var(--accent);
+  }
+
+  /* Scrollbar */
+  #editor::-webkit-scrollbar { width: 6px; height: 6px; }
+  #editor::-webkit-scrollbar-track { background: transparent; }
+  #editor::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ── CONSOLE ── */
+  .console-header {
+    background: var(--bar);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 4px 14px;
+    font-size: 11px;
+    color: var(--dim);
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .console-header span { color: var(--accent); }
+
+  #console {
+    height: 170px;
+    background: #080a0f;
+    color: var(--green);
+    padding: 10px 14px;
+    overflow-y: auto;
+    font-size: 12.5px;
+    line-height: 1.7;
+    flex-shrink: 0;
+  }
+  #console::-webkit-scrollbar { width: 4px; }
+  #console::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .console-line { display: block; }
+  .console-line.err { color: var(--red); }
+  .console-line.info { color: var(--dim); font-style: italic; }
+  .console-prompt { color: var(--accent2); }
+
+  /* ── SYNTAX COLORS ── */
+  .tok-kw     { color: var(--purple); font-weight: bold; }
+  .tok-fn     { color: var(--accent); }
+  .tok-num    { color: var(--yellow); }
+  .tok-str    { color: var(--green); }
+  .tok-op     { color: var(--accent2); }
+  .tok-builtin{ color: #ff9d00; }
+  .tok-cmt    { color: var(--dim); font-style: italic; }
+
+  /* hidden file input */
+  #file-input { display: none; }
+
+  /* Scanline overlay */
+  body::after {
+    content: '';
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,.06) 2px,
+      rgba(0,0,0,.06) 4px
+    );
+    z-index: 999;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-title">GOGO COMPILER</div>
+  <div class="topbar-sep"></div>
+  <button class="btn run" onclick="runCode()">▶ Executar</button>
+  <button class="btn clr" onclick="clearConsole()">✕ Limpar</button>
+  <button class="btn save" onclick="salvarComo()">↓ Salvar</button>
+  <button class="btn load" onclick="document.getElementById('file-input').click()">↑ Importar</button>
+  <input type="file" id="file-input" accept=".gogo,.txt" onchange="importarCodigo(event)">
+  <div class="topbar-sep"></div>
+  <div class="status-dot" id="status-dot"></div>
+  <div class="status-label" id="status-label">pronto</div>
+</div>
+
+<div class="workspace">
+  <div class="editor-wrap">
+    <div id="line-numbers">1</div>
+    <div id="editor" contenteditable="true" spellcheck="false"></div>
+  </div>
+
+  <div class="console-header">
+    <span>▸ CONSOLE</span> 
+  </div>
+  <div id="console">
+    <span class="console-line info">// Execute um programa para ver a saída aqui.</span>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  HIGHLIGHT
+// ═══════════════════════════════════════════════
+const KEYWORDS  = ['para','enquanto','de','ate','retorna','se','senao'];
+const BUILTINS  = ['mostre','abrir','fechar','listar_janelas','fechar_todas','contar','novo'];
+
+function escapeHtml(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function highlightLine(line) {
+  const tokens = [];
+  let i = 0;
+  const raw = line;
+
+  while (i < raw.length) {
+    // comment
+    if (raw[i] === '#') {
+      tokens.push({ type:'cmt', val: raw.slice(i) });
+      break;
+    }
+    // STR
+    if (raw[i] === '"' || raw[i] === "'") {
+      const q = raw[i];
+      let j = i + 1;
+      while (j < raw.length && raw[j] !== q) j++;
+      tokens.push({ type:'str', val: raw.slice(i, j+1) });
+      i = j + 1;
+      continue;
+    }
+    // NUMBER
+    if (/\d/.test(raw[i]) || (raw[i] === '-' && /\d/.test(raw[i+1]||''))) {
+      let j = i + 1;
+      while (j < raw.length && /[\d.]/.test(raw[j])) j++;
+      tokens.push({ type:'num', val: raw.slice(i, j) });
+      i = j;
+      continue;
+    }
+    // WORD
+    if (/[a-zA-Z_\u00C0-\u017E]/.test(raw[i])) {
+      let j = i + 1;
+      while (j < raw.length && /[\w\u00C0-\u017E]/.test(raw[j])) j++;
+      const word = raw.slice(i, j);
+      const isCall = raw[j] === '(';
+      if (KEYWORDS.includes(word))       tokens.push({ type:'kw',      val: word });
+      else if (BUILTINS.includes(word))  tokens.push({ type:'builtin', val: word });
+      else if (isCall)                   tokens.push({ type:'fn',      val: word });
+      else                               tokens.push({ type:'text',    val: word });
+      i = j;
+      continue;
+    }
+    //OPERATOR LOGIC
+    if (/[+\-*\/=<>!%^]/.test(raw[i])) {
+      tokens.push({ type:'op', val: raw[i] });
+    } else {
+      tokens.push({ type:'text', val: raw[i] });
+    }
+    i++;
+  }
+
+  return tokens.map(t => {
+    const v = escapeHtml(t.val);
+    switch(t.type) {
+      case 'kw':      return `<span class="tok-kw">${v}</span>`;
+      case 'builtin': return `<span class="tok-builtin">${v}</span>`;
+      case 'fn':      return `<span class="tok-fn">${v}</span>`;
+      case 'num':     return `<span class="tok-num">${v}</span>`;
+      case 'str':     return `<span class="tok-str">${v}</span>`;
+      case 'op':      return `<span class="tok-op">${v}</span>`;
+      case 'cmt':     return `<span class="tok-cmt">${v}</span>`;
+      default:        return v;
+    }
+  }).join('');
+}
+
+function highlight(code) {
+  return code.split('\n').map(highlightLine).join('\n');
+}
+
+// ═══════════════════════════════════════════════
+//  CURSOR HELPERS
+// ═══════════════════════════════════════════════
+function getCursorOffset(el) {
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return 0;
+  const r = sel.getRangeAt(0).cloneRange();
+  r.selectNodeContents(el);
+  r.setEnd(sel.getRangeAt(0).startContainer, sel.getRangeAt(0).startOffset);
+  return r.toString().length;
+}
+
+function setCursorOffset(el, offset) {
+  const sel = window.getSelection();
+  const range = document.createRange();
+  let cur = 0;
+  function walk(node) {
+    if (node.nodeType === 3) {
+      const next = cur + node.length;
+      if (offset <= next) {
+        range.setStart(node, offset - cur);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+        throw 'done';
+      }
+      cur = next;
+    } else {
+      for (const c of node.childNodes) walk(c);
+    }
+  }
+  try { walk(el); } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════
+//  LINE NUMBERS
+// ═══════════════════════════════════════════════
+const lineNumEl = document.getElementById('line-numbers');
+const editorEl  = document.getElementById('editor');
+
+function updateLineNumbers() {
+  const lines = editorEl.innerText.split('\n');
+  lineNumEl.innerHTML = lines.map((_,i) => i+1).join('\n');
+  lineNumEl.scrollTop = editorEl.scrollTop;
+}
+
+editorEl.addEventListener('scroll', () => {
+  lineNumEl.scrollTop = editorEl.scrollTop;
+});
+
+// ═══════════════════════════════════════════════
+//  EDITOR EVENTS
+// ═══════════════════════════════════════════════
+editorEl.addEventListener('input', () => {
+  const pos  = getCursorOffset(editorEl);
+  const text = editorEl.innerText;
+  editorEl.innerHTML = highlight(text);
+  setCursorOffset(editorEl, pos);
+  updateLineNumbers();
+});
+
+editorEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const pos  = getCursorOffset(editorEl);
+    const text = editorEl.innerText;
+    const before = text.substring(0, pos);
+    const lines  = before.split('\n');
+    const curLine = lines[lines.length - 1];
+    let insert = '\n';
+    if (curLine.trim().endsWith(':')) {
+      const indent = curLine.match(/^[ \t]*/)[0];
+      insert += indent + '  ';
+    } else {
+      //SET CORRECT IDENTATION 
+      const indent = curLine.match(/^[ \t]*/)[0];
+      insert += indent;
+    }
+    document.execCommand('insertText', false, insert);
+  }
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    document.execCommand('insertText', false, '  ');
+  }
+  // RUN SHORTCUT (CTRL + ENTER)
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    runCode();
+  }
+});
+
+// initial line numbers
+updateLineNumbers();
+
+// ═══════════════════════════════════════════════
+//  COMPILER
+// ═══════════════════════════════════════════════
+class GogoCompiler {
+  constructor(outputEl) {
+    this.vars   = {};
+    this.funcs  = {};
+    this.outEl  = outputEl;
+  }
+
+  log(msg) {
+    const span = document.createElement('span');
+    span.className = 'console-line';
+    span.innerHTML = '&gt; ' + escapeHtml(String(msg));
+    this.outEl.appendChild(span);
+  }
+
+  splitAssign(line) {
+    const m = line.match(/^([a-zA-Z_\u00C0-\u017E][\w\u00C0-\u017E]*)\s*=(?!=)\s*(.+)$/);
+    return m ? [m[1].trim(), m[2].trim()] : null;
+  }
+
+  collectBody(lines, i) {
+    const body = [];
+    while (i < lines.length) {
+      const raw = lines[i];
+      if (raw.trim() === '') { i++; continue; }
+      if (/^[ \t]/.test(raw)) {
+        body.push(raw.trim());
+        i++;
+      } else {
+        break;
+      }
+    }
+    return { body, nextI: i };
+  }
+
+  run(code) {
+    const lines = code.split('\n');
+    let i = 0;
+
+    //COLETA VAR
+    while (i < lines.length) {
+      const line = lines[i].trim();
+      const fnDef = line.match(/^f\s+(\w+)\s*\((.*?)\)\s*:$/);
+      if (fnDef) {
+        const name   = fnDef[1];
+        const params = fnDef[2].split(',').map(s => s.trim()).filter(Boolean);
+        i++;
+        const { body, nextI } = this.collectBody(lines, i);
+        i = nextI;
+        this.funcs[name] = { params, body };
+        continue;
+      }
+      i++;
+    }
+    i = 0;
+    while (i < lines.length) {
+      const raw  = lines[i];
+      const line = raw.trim();
+
+      if (!line || line.startsWith('#')) { i++; continue; }
+      if (line.match(/^f\s+\w+\s*\(.*?\)\s*:$/)) {
+        i++;
+        const { nextI } = this.collectBody(lines, i);
+        i = nextI;
+        continue;
+      }
+
+      //LOOR FOR NOMECLATURA: ( DE (parametro) em INICIO ate FINAL )
+      if (line.match(/^para\s+\w+\s+de\s+.+\s+ate\s+.+\s*:/)) {
+        const m = line.match(/^para\s+(\w+)\s+de\s+(.+?)\s+ate\s+(.+?)\s*:$/);
+        if (!m) throw new Error("Sintaxe inválida no 'para': use  para VARIAVEL de INICIO ate FIM:");
+        const varName = m[1];
+        const start   = Number(this.evalExpr(m[2]));
+        const end     = Number(this.evalExpr(m[3]));
+        i++;
+        const { body, nextI } = this.collectBody(lines, i);
+        i = nextI;
+        for (let v = start; v <= end; v++) {
+          this.vars[varName] = v;
+          this.execBody(body);
+        }
+        continue;
+      }
+
+      //  ENQUANTO COND REPEAT FIOTE
+      if (line.match(/^enquanto\s+.+\s*:/)) {
+        const condRaw = line.replace(/^enquanto\s+/, '').replace(/\s*:\s*$/, '').trim();
+        i++;
+        const { body, nextI } = this.collectBody(lines, i);
+        i = nextI;
+        let safety = 0;
+        while (this.evalExpr(condRaw)) {
+          this.execBody(body);
+          if (++safety > 100000) throw new Error("Loop infinito detectado (limite: 100000 iterações)");
+        }
+        continue;
+      }
+
+      // IF:GET COND
+      if (line.match(/^se\s+.+\s*:/)) {
+        const condRaw = line.replace(/^se\s+/, '').replace(/\s*:\s*$/, '').trim();
+        i++;
+        const { body, nextI } = this.collectBody(lines, i);
+        i = nextI;
+        if (this.evalExpr(condRaw)) this.execBody(body);
+        continue;
+      }
+
+      // STATEMENT
+      const assign = this.splitAssign(line);
+      if (assign) {
+        this.vars[assign[0]] = this.evalExpr(assign[1]);
+        i++;
+        continue;
+      }
+
+      // GET EXPRESSION 
+      this.evalExpr(line);
+      i++;
+    }
+  }
+
+  execBody(body) {
+    for (const line of body) {
+      if (!line || line.startsWith('#')) continue;
+      const assign = this.splitAssign(line);
+      if (assign) {
+        this.vars[assign[0]] = this.evalExpr(assign[1]);
+      } else {
+        this.evalExpr(line);
+      }
+    }
+  }
+
+  evalExpr(expr) {
+    expr = expr.trim();
+    if (!expr) return undefined;
+
+    // MOSTRE
+    if (expr.startsWith('mostre(')) {
+      const inner = this.extractArgs(expr, 'mostre')[0];
+      const val   = this.evalExpr(inner);
+      this.log(val);
+      return val;
+    }
+
+    //====================
+    // API COM O GO OS
+    //====================
+    if (expr.startsWith('abrir(')) {
+      const app = this.extractArgs(expr,'abrir')[0].replace(/['"]/g,'');
+      window.top?.openAppById?.(app);
+      return null;
+    }
+    if (expr.startsWith('listar_janelas()'))  return window.top?.getOpenWindows?.() || [];
+    if (expr.startsWith('fechar_todas()'))    { (window.getOpenWindows?.() || []).forEach(w => window.closeWindowById?.(w.id)); return null; }
+    if (expr.startsWith('fechar(')) {
+      const arg = this.extractArgs(expr,'fechar')[0].trim();
+      if (arg.startsWith('"') || arg.startsWith("'")) {
+        window.closeWindowById?.(arg.replace(/['"]/g,''));
+      } else {
+        this.vars[arg]?.querySelector?.('.close-btn')?.click();
+      }
+      return null;
+    }
+    if (expr.startsWith('contar(')) {
+      const type = this.extractArgs(expr,'contar')[0].replace(/['"]/g,'');
+      return window.getFiles?.().filter(f => f.type === type).length || 0;
+    }
+    const fnCall = expr.match(/^(\w+)\((.*)\)$/s);
+    if (fnCall) {
+      const name = fnCall[1];
+      const fn   = this.funcs[name];
+      if (fn) {
+        const rawArgs = this.splitArgs(fnCall[2]);
+        const args    = rawArgs.map(a => this.evalExpr(a.trim()));
+        const saved = { ...this.vars };
+        fn.params.forEach((p, idx) => { this.vars[p] = args[idx]; });
+        let result = undefined;
+        for (const l of fn.body) {
+          if (l.startsWith('retorna')) {
+            result = this.evalExpr(l.replace(/^retorna\s*/, '').trim());
+            break;
+          }
+          const assign = this.splitAssign(l);
+          if (assign) this.vars[assign[0]] = this.evalExpr(assign[1]);
+          else this.evalExpr(l);
+        }
+        this.vars = saved;
+        return result;
+      }
+    }
+    return this.jsEval(expr);
+  }
+
+  // JAVA SCRIPT AAA SUBSTITUTO :V
+  jsEval(expr) {
+    const sortedVars = Object.keys(this.vars).sort((a,b) => b.length - a.length);
+    let e = expr;
+    for (const v of sortedVars) {
+      const val = this.vars[v];
+      const sub = typeof val === 'string' ? `"${val}"` : String(val);
+      e = e.replace(new RegExp(`\\b${v}\\b`, 'g'), sub);
+    }
+    e = e.replace(/\be\b/g,'&&').replace(/\bou\b/g,'||').replace(/\bnao\b/g,'!');
+    try { return eval(e); }
+    catch { return expr; }
+  }
+
+
+  extractArgs(expr, fnName) {
+    const inner = expr.slice(fnName.length + 1, -1);
+    return this.splitArgs(inner);
+  }
+  splitArgs(str) {
+    const args = [];
+    let depth = 0, cur = '', inStr = false, q = '';
+    for (const ch of str) {
+      if (inStr) {
+        cur += ch;
+        if (ch === q) inStr = false;
+      } else if (ch === '"' || ch === "'") {
+        inStr = true; q = ch; cur += ch;
+      } else if (ch === '(') {
+        depth++; cur += ch;
+      } else if (ch === ')') {
+        depth--; cur += ch;
+      } else if (ch === ',' && depth === 0) {
+        args.push(cur.trim()); cur = '';
+      } else {
+        cur += ch;
+      }
+    }
+    if (cur.trim()) args.push(cur.trim());
+    return args;
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  UI
+// ═══════════════════════════════════════════════
+const consoleEl  = document.getElementById('console');
+const statusDot  = document.getElementById('status-dot');
+const statusLbl  = document.getElementById('status-label');
+
+function setStatus(state, msg) {
+  statusDot.className = 'status-dot ' + state;
+  statusLbl.textContent = msg;
+}
+
+function runCode() {
+  const code = editorEl.innerText;
+  consoleEl.innerHTML = '';
+  const compiler = new GogoCompiler(consoleEl);
+  setStatus('', 'executando…');
+  try {
+    compiler.run(code);
+    setStatus('ok', 'concluído');
+  } catch(e) {
+    const span = document.createElement('span');
+    span.className = 'console-line err';
+    span.textContent = '✖ Erro: ' + e.message;
+    consoleEl.appendChild(span);
+    setStatus('err', 'erro');
+  }
+  consoleEl.scrollTop = consoleEl.scrollHeight;
+}
+
+function clearConsole() {
+  consoleEl.innerHTML = '<span class="console-line info">// Console limpo.</span>';
+  setStatus('', 'pronto');
+}
+
+function salvarComo() {
+  const code = editorEl.innerText;
+  const blob = new Blob([code], { type: 'text/plain' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = 'programa.gogo';
+  a.click();
+}
+
+function importarCodigo(event) {
+  const file   = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const text = e.target.result;
+    editorEl.innerHTML = highlight(text);
+    updateLineNumbers();
+    //\MAQUINA DE ESCREVER CATINX
+    const range = document.createRange();
+    range.selectNodeContents(editorEl);
+    range.collapse(false);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+//USAR COMO NA FUNC DE IMPORT DEPOIS PIMP
+const exemplo = `# Exemplo GOGO — edite e pressione ▶ Executar
+
+x = 1
+y = 10
+
+mostre("Contando de 1 a 5:")
+para i de 1 ate 5:
+  mostre(i)
+
+mostre("Fatorial de 5:")
+resultado = 1
+n = 5
+enquanto n > 0:
+  resultado = resultado * n
+  n = n - 1
+
+mostre(resultado)
+
+f saudacao(nome):
+  retorna "Ola, " + nome + "!"
+
+mostre(saudacao("Mundo"))
+`;
+
+editorEl.innerHTML = highlight(exemplo);
+updateLineNumbers();
+</script>
+</body>
+</html>

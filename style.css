@@ -331,9 +331,19 @@ body {
     height: 10px;
     cursor: nwse-resize;
 }
-.connect-btn {
-    margin-right: 5px;
-    cursor: pointer;
+.connect-btn-left {
+    background: #1976d2 !important; /* azul */
+    color: white !important;
+}
+
+.connect-btn-right {
+    background: #d32f2f !important; /* vermelho */
+    color: white !important;
+}
+
+.connect-btn-storage {
+    background: #7b1fa2 !important; /* roxo */
+    color: white !important;
 }
 #cables {
     position: absolute;

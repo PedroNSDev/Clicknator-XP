@@ -180,6 +180,8 @@ const DESKTOP_FILE_TYPES = {
     fish:     { icon: '🐟', onDblClick: file => openFishViewer(file)     },
     dinheiro: { icon: '💰', onDblClick: file => openDinheiroViewer(file) }
     // art: { icon: '💰', onDblClick: file => openDinheiroViewer(file)
+      // msc: { icon: '💰', onDblClick: file => openDinheiroViewer(file)
+        // exe: { icon: '💰', onDblClick: file => openDinheiroViewer(file)
 };
 const TYPE_ICONS = { text:'📝', folder:'📁', fish:'🐟', app:'⚙️', image:'🖼️', shortcut:'⭐', dinheiro:'💰',art:'🎨' }; // Implementar formato .art depois que e adicionar handler pra importar projetos no GoPaint PIMP
 
@@ -333,7 +335,7 @@ document.addEventListener('mouseup', () => {
     _rbs = null;
     _rbEl?.remove(); _rbEl = null;
 });
-//Blue Square forgor name FIX BUG WHERE it demands at least one app to drag PIMP
+//Blue Square forgor name FIX BUG WHERE it demands at least one app or holding ctrl to drag PIMP
 desktop.addEventListener('click', e => {
     if (e.target === desktop && !e.ctrlKey)
         document.querySelectorAll('.icon.sel-highlight').forEach(i => i.classList.remove('sel-highlight'));
@@ -341,7 +343,7 @@ desktop.addEventListener('click', e => {
 
 desktop.addEventListener('dragover', e => {
     if (e.dataTransfer.types.includes('Files') || e.dataTransfer.types.includes('text/plain') ||
-        e.dataTransfer.types.includes('vfs-file-id')) e.preventDefault();
+        e.dataTransfer.types.includes('vfs-file-id')) e.preventDefault();   
 });
 desktop.addEventListener('drop', e => {
     e.preventDefault();
@@ -539,7 +541,7 @@ function removeDesktopIcon(appId) { document.querySelector(`.icon[data-app="${ap
 window.getUsedRAM = () => usedRAM;
 window.getRAMInfo = () => `${usedRAM}/${window.systemInfo.ram} MB`;
 
-function openAppById(appId) {
+function openAppById(appId) { //FOPEN
     const app = appsList.find(a => a.id === appId); if (!app) return;
     if (usedRAM + (app.ram || 0) > window.systemInfo.ram) {
         alert(`RAM insuficiente!\nUsando: ${usedRAM}/${window.systemInfo.ram}MB\nPrecisa: ${app.ram || 0}MB`); return;
@@ -548,6 +550,7 @@ function openAppById(appId) {
         if (openApps.has(appId)) { document.getElementById(`window-${appId}`)?.style.setProperty('z-index', ++zIndexCounter); return; }
         openApps.add(appId);
     }
+    
     usedRAM += (app.ram || 0);
     return createWindow(app);
 }
@@ -663,6 +666,7 @@ function tryConnect(pending, targetWin, targetPort) {
         const fmt        = (otherWin === to ? toPort : fromPort).format;
         conn.fuelInterval = setInterval(() => storageFuelTick(storageWin, otherWin, fmt), 3000);
     }
+    
 
     connections.push(conn);
     drawConnections();
@@ -723,6 +727,11 @@ function routeResourceToWindow(resource, targetWin) { // FSEND RESOURCE
 
 window.emitResource = function(appId, resource) {
     let sourceWin = document.getElementById(`window-${appId}`);
+
+    // FOLDER
+    if (!sourceWin && String(appId).startsWith('folder-')) {
+        sourceWin = document.getElementById(`window-folder-${appId.replace('folder-','')}`);
+    }
     if (!sourceWin) {
         for (const w of document.querySelectorAll('.window')) {
             if (w.id.startsWith(`window-${appId}-`)) { sourceWin = w; break; }
@@ -774,19 +783,53 @@ function createFolder() {
     const saved = addFile({ name: nome, type: 'folder', size: 1, data: { children: [] } });
     if (saved) renderDesktopFiles();
 }
+function emitFromFolder(folderWin, targetWin, fmt = 'any') {
+    const folderId = parseInt(folderWin.id.replace('window-folder-', ''));
+    const files = getFiles();
+    const folder = files.find(f => f.id === folderId);
 
+    if (!folder?.data?.children?.length) return;
+
+    const candidates = folder.data.children
+        .map(id => files.find(f => f.id === id))
+        .filter(f => f && f.type !== 'folder' && (fmt === 'any' || f.type === fmt));
+
+    if (!candidates.length) return;
+
+    const file = candidates[0];
+
+    const resource = {
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        data: { ...(file.data || {}) }
+    };
+
+    routeResourceToWindow(resource, targetWin);
+    deleteFile(file.id);
+}
 function openFolder(fileId) {
     const existing = document.getElementById(`window-folder-${fileId}`);
     if (existing) { existing.style.zIndex = ++zIndexCounter; return; }
     const win = document.createElement('div');
     win.className = 'window'; win.id = `window-folder-${fileId}`; win.style.zIndex = ++zIndexCounter;
-    win.dataset.ports = JSON.stringify([{ dir: 'storage', format: 'any' }]);
+    win.dataset.ports = JSON.stringify([
+    { dir: 'in', format: 'any' },
+    { dir: 'out', format: 'any' },
+    { dir: 'storage', format: 'any' }
+    ]);
     win.style.top = '100px'; win.style.left = '140px'; win.style.width = '420px'; win.style.height = '320px';
     win.innerHTML = `
-        <div class="title-bar">
-            <span id="folder-title-${fileId}">📁 Pasta</span>
-            <div>
-                <button class="connect-btn connect-btn-left" data-port-dir="storage" data-port-fmt="any" title="storage:any">🔌</button>
+        <div class="title-bar" style="display:flex;align-items:center;padding:0 2px;">
+            <div style="display:flex;gap:1px;">
+                <button class="connect-btn connect-btn-left" data-port-dir="in" data-port-fmt="any" title="in:any">🔌</button>
+                <button class="connect-btn connect-btn-left" data-port-dir="storage" data-port-fmt="any" title="storage:any">📦</button>
+            </div>
+
+            <span id="folder-title-${fileId}" style="flex:1;text-align:center;">📁 Pasta</span>
+
+            <div style="display:flex;gap:1px;">
+                <button class="connect-btn connect-btn-right" data-port-dir="out" data-port-fmt="any" title="out:any">🔌</button>
                 <button class="close-btn">X</button>
             </div>
         </div>
@@ -827,17 +870,23 @@ function openFolder(fileId) {
         drawConnections(); win.remove();
     };
 
-    win.querySelector('.connect-btn').addEventListener('click', () => {
-        const port = { dir: 'storage', format: 'any' };
+    win.querySelectorAll('.connect-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const port = {
+            dir: btn.dataset.portDir,
+            format: btn.dataset.portFmt
+        };
+
         if (!pendingConnection) {
             pendingConnection = { win, port };
-            win.querySelector('.connect-btn').style.background = 'yellow';
+            btn.style.background = 'yellow';
         } else {
             tryConnect(pendingConnection, win, port);
             pendingConnection = null;
             document.querySelectorAll('.connect-btn').forEach(b => b.style.background = '');
         }
     });
+});
 
     makeDraggable(win, win.querySelector('.title-bar'));
     makeResizable(win);
@@ -1060,14 +1109,38 @@ function createNewArt() {
 //set folder new handler to see as a canvas diplay
 
 
+//====================
+//COMMAND API HANDLER  STUFF GOGOCOMPILER O MAI GAAAH
+//==============
 
+window.getOpenWindows = function() {
+    return [...document.querySelectorAll('.window')].map(win => ({
+        id: win.id,
+        app: win.dataset.appType || win.id,
+        element: win
+    }));
+};  
+window.OpenWindow = function(id) {
+    openAppById(id)
+}
+window.closeWindowById = function(id) {
+    const win = document.getElementById(id);
+    if (!win) return false;
+    const closeBtn = win.querySelector('.close-btn');
+    if (closeBtn) {
+        closeBtn.click(); 
+        return true;
+    }
+    win.remove();
+    return true;
+};
 //====================
 //Go Music
 //==============
 
 
 //============================
-//HANDLERS PIMP
+//HANDLERS PIMP handler de criar arquivo depois faz a função novo pra api >:V
 //============================
 
 
@@ -1075,7 +1148,10 @@ function createNewArt() {
 //===========================
 // INIT
 //========================
+
+// PIMP somar render de desktopicons a partir de uma unica array >:V    apps + files
 applySavedState();
 applyUpgrades();
 initSessionTime();
 loadApps();
+
