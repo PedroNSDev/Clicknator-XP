@@ -630,15 +630,18 @@ function closeWindow(win, app, taskItem) {
     taskItem.remove(); win.remove();
 }
 
+// ─── REPLACE tryConnect ────────────────────────────────────────────────────
+
 function tryConnect(pending, targetWin, targetPort) {
     if (pending.win === targetWin) return;
     const aPort = pending.port;
     const bPort = targetPort || { dir: 'in', format: 'any' };
 
-    const aIsOut = aPort.dir === 'out';
-    const bIsIn  = bPort.dir === 'in' || bPort.dir === 'storage';
-    const aIsIn  = aPort.dir === 'in' || aPort.dir === 'storage';
-    const bIsOut = bPort.dir === 'out';
+    // storage age como out (alimenta) E como in (recebe) dependendo da posição
+    const aIsOut = aPort.dir === 'out' || aPort.dir === 'storage';
+    const bIsIn  = bPort.dir === 'in'  || bPort.dir === 'storage';
+    const aIsIn  = aPort.dir === 'in'  || aPort.dir === 'storage';
+    const bIsOut = bPort.dir === 'out' || bPort.dir === 'storage';
 
     if (!((aIsOut && bIsIn) || (aIsIn && bIsOut))) { alert('Precisa conectar saída ↔ entrada'); return; }
 
@@ -660,17 +663,68 @@ function tryConnect(pending, targetWin, targetPort) {
     const toPort   = aIsOut ? bPort       : aPort;
     const conn     = { from, to, fromPort, toPort };
 
-    if (fromPort.dir === 'storage' || toPort.dir === 'storage') {
-        const storageWin = fromPort.dir === 'storage' ? from : to;
-        const otherWin   = storageWin === from ? to : from;
-        const fmt        = (otherWin === to ? toPort : fromPort).format;
-        conn.fuelInterval = setInterval(() => storageFuelTick(storageWin, otherWin, fmt), 3000);
+    // fuelInterval só dispara quando FROM é storage (pasta alimentando destino)
+    if (fromPort.dir === 'storage') {
+        conn.fuelInterval = setInterval(() => storageFuelTick(from, to, toPort.format), 3000);
     }
-    
 
     connections.push(conn);
     drawConnections();
 }
+
+// ─── REPLACE routeResourceToWindow ─────────────────────────────────────────
+
+function routeResourceToWindow(resource, targetWin) { // FSEND RESOURCE
+    if (!targetWin) {
+        const s = addFile(resource); if (s) renderDesktopFiles(); return;
+    }
+
+    if (targetWin.id.startsWith('window-folder-')) {
+        const fid    = parseInt(targetWin.id.replace('window-folder-', ''));
+        const saved  = addFile(resource); if (!saved) return;
+        const files  = getFiles();
+        const folder = files.find(f => f.id === fid);
+        if (folder) {
+            if (!folder.data.children) folder.data.children = [];
+            folder.data.children.push(saved.id);
+            saveFiles(files); renderDesktopFiles(); targetWin.refreshFolder?.();
+        }
+        return;
+    }
+
+    targetWin.querySelector('iframe')?.contentWindow?.postMessage({ type: 'resource-received', resource }, '*');
+
+    // processadores consomem o recurso e emitem o resultado — não salva no desktop
+    if (targetWin.dataset.appType === 'processor') return;
+
+    if (winHasStoragePort(targetWin)) {
+        const s = addFile(resource); if (s) renderDesktopFiles();
+    }
+}
+
+// ─── REPLACE window.emitResource ───────────────────────────────────────────
+
+window.emitResource = function(appId, resource) {
+    let sourceWin = document.getElementById(`window-${appId}`);
+
+    // FOLDER
+    if (!sourceWin && String(appId).startsWith('folder-')) {
+        sourceWin = document.getElementById(`window-folder-${appId.replace('folder-', '')}`);
+    }
+    if (!sourceWin) {
+        for (const w of document.querySelectorAll('.window')) {
+            if (w.id.startsWith(`window-${appId}-`)) { sourceWin = w; break; }
+        }
+    }
+    if (!sourceWin) return false;
+
+    const conn = connections.find(c => c.from === sourceWin);
+    if (!conn) { alert('Nenhuma conexão encontrada!'); return false; }
+
+    routeResourceToWindow(resource, conn.to);
+    return true;
+};
+
 
 function storageFuelTick(storageWin, targetWin, fmt) { // FAUTO ROUTE 
     if (!document.body.contains(storageWin) || !document.body.contains(targetWin)) return;
@@ -698,54 +752,6 @@ function storageFuelTick(storageWin, targetWin, fmt) { // FAUTO ROUTE
     deleteFile(file.id);
 }
 
-function routeResourceToWindow(resource, targetWin) { // FSEND RESOURCE
-    if (!targetWin) {
-        const s = addFile(resource); if (s) renderDesktopFiles(); return;
-    }
-
-    if (targetWin.id.startsWith('window-folder-')) {
-        const fid    = parseInt(targetWin.id.replace('window-folder-', ''));
-        const saved  = addFile(resource); if (!saved) return;
-        const files  = getFiles();
-        const folder = files.find(f => f.id === fid);
-        if (folder) {
-            if (!folder.data.children) folder.data.children = [];
-            folder.data.children.push(saved.id);
-            saveFiles(files); renderDesktopFiles(); targetWin.refreshFolder?.();
-        }
-        return;
-    }
-
-    targetWin.querySelector('iframe')?.contentWindow?.postMessage({ type: 'resource-received', resource }, '*');
-
-    if (targetWin.dataset.appType === 'processor') return;
-
-    if (winHasStoragePort(targetWin)) {
-        const s = addFile(resource); if (s) renderDesktopFiles();
-    }
-}
-
-window.emitResource = function(appId, resource) {
-    let sourceWin = document.getElementById(`window-${appId}`);
-
-    // FOLDER
-    if (!sourceWin && String(appId).startsWith('folder-')) {
-        sourceWin = document.getElementById(`window-folder-${appId.replace('folder-','')}`);
-    }
-    if (!sourceWin) {
-        for (const w of document.querySelectorAll('.window')) {
-            if (w.id.startsWith(`window-${appId}-`)) { sourceWin = w; break; }
-        }
-    }
-    if (!sourceWin) return false;
-
-    const conn = connections.find(c => c.from === sourceWin);
-    if (!conn) { alert('Nenhuma conexão encontrada!'); return false; }
-    const targetWin = conn.to;
-
-    routeResourceToWindow(resource, targetWin);
-    return true;
-};
 
 window.pescar = appId => window.emitResource(appId, {
     name: 'Peixe_' + Math.floor(Math.random() * 100),
