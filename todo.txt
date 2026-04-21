@@ -9,3 +9,7 @@ implementarr fruitgear aero
 
 
 pqp esse farmy ta horrivel crl
+
+
+gerar loading falso 
+gerar mensagem de popup ao inves de usar o alert

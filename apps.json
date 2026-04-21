@@ -22,6 +22,7 @@
   },
   {
     "id": "paint",
+    "size": "fullscreen",
     "nome": "GoPaint",
     "icone": "🎨",
     "html": "apps/paint.html",
@@ -98,6 +99,7 @@
     "icone": "💱",
     "html": "apps/conversor.html",
     "ram": 16,
+    "size": "Medium",
     "ports": [
       { "dir": "in",  "format": "any" },
       { "dir": "out", "format": "dinheiro" }
@@ -117,6 +119,7 @@
     "nome": "getmoney.exe",
     "icone": "🤑",
     "html": "apps/clicknator.html",
+    "size": "fullscreen",
     "unlocked": false,
     "ports": [
       { "dir": "out", "format": "fish" }
@@ -125,6 +128,7 @@
     {
     "id": "compiler",
     "nome": "GOGOcompiler!.exe",
+    "size": "fullscreen",
     "icone": "⌨",
     "html": "apps/compiler.html",
     "unlocked": true
@@ -132,6 +136,7 @@
    {
     "id": "music",
     "nome": "TYR4N.exe",
+    "size": "fullscreen",
     "icone": "⌨",
     "html": "apps/music.html",
     "unlocked": true

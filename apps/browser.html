@@ -3,151 +3,171 @@
 <head>
 <meta charset="utf-8">
 <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-    body {
-        font-family: Tahoma, sans-serif;
-        display: flex;
-        flex-direction: column;
-        height: 100vh;
-        overflow: hidden;
-        background: #ece9d8;
-    }
+body {
+    font-family: Tahoma, sans-serif;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    background: #ece9d8;
+}
 
-    
-    .tab-bar {
-        background: #d4d0c8;
-        display: flex;
-        align-items: flex-end;
-        gap: 2px;
-        padding: 4px 4px 0;
-        border-bottom: 2px solid #999;
-        overflow-x: auto;
-        min-height: 30px;
-        scrollbar-width: none;
-    }
-    .tab-bar::-webkit-scrollbar { display: none; }
+.tab-bar {
+    background: #d4d0c8;
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    padding: 4px 4px 0;
+    border-bottom: 2px solid #999;
+    overflow-x: auto;
+    min-height: 30px;
+    scrollbar-width: none;
+}
+.tab-bar::-webkit-scrollbar { display: none; }
 
-    .tab {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        padding: 3px 8px 3px 10px;
-        background: #bab5a8;
-        border: 1px solid #999;
-        border-bottom: none;
-        border-radius: 4px 4px 0 0;
-        cursor: pointer;
-        font-size: 11px;
-        max-width: 160px;
-        flex-shrink: 0;
-        user-select: none;
-    }
-    .tab.active {
-        background: #ece9d8;
-        border-bottom: 2px solid #ece9d8;
-        margin-bottom: -2px;
-        font-weight: bold;
-    }
-    .tab-title {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 110px;
-    }
-    .tab-close {
-        background: none;
-        border: none;
-        cursor: pointer;
-        font-size: 11px;
-        padding: 0 2px;
-        color: #666;
-        line-height: 1;
-        flex-shrink: 0;
-        border-radius: 2px;
-    }
-    .tab-close:hover { background: #c0392b; color: white; }
+.tab {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px 3px 10px;
+    background: #bab5a8;
+    border: 1px solid #999;
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+    cursor: pointer;
+    font-size: 11px;
+    max-width: 160px;
+    flex-shrink: 0;
+    user-select: none;
+}
+.tab.active {
+    background: #ece9d8;
+    border-bottom: 2px solid #ece9d8;
+    margin-bottom: -2px;
+    font-weight: bold;
+}
+.tab-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 110px;
+}
+.tab-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 11px;
+    padding: 0 2px;
+    color: #666;
+    line-height: 1;
+    flex-shrink: 0;
+    border-radius: 2px;
+}
+.tab-close:hover { background: #c0392b; color: white; }
 
-    .tab-new-btn {
-        padding: 3px 10px;
-        background: none;
-        border: 1px solid transparent;
-        border-radius: 4px 4px 0 0;
-        cursor: pointer;
-        font-size: 16px;
-        color: #555;
-        flex-shrink: 0;
-        align-self: flex-end;
-        margin-bottom: 1px;
-        line-height: 1;
-    }
-    .tab-new-btn:hover { background: #c9c5bc; border-color: #999; }
+.tab-new-btn {
+    padding: 3px 10px;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 4px 4px 0 0;
+    cursor: pointer;
+    font-size: 16px;
+    color: #555;
+    flex-shrink: 0;
+    align-self: flex-end;
+    margin-bottom: 1px;
+    line-height: 1;
+}
+.tab-new-btn:hover { background: #c9c5bc; border-color: #999; }
 
-    /* ── Nav Bar ── */
-    .nav-bar {
-        background: #d4d0c8;
-        padding: 4px 6px;
-        display: flex;
-        gap: 4px;
-        align-items: center;
-        border-bottom: 1px solid #aaa;
-    }
-    .nav-bar input {
-        flex: 1;
-        padding: 3px 7px;
-        font-family: Tahoma;
-        font-size: 12px;
-        border: 1px solid #999;
-        border-radius: 2px;
-    }
-    .nav-bar button {
-        font-family: Tahoma;
-        font-size: 11px;
-        padding: 3px 9px;
-        cursor: pointer;
-    }
-    .bookmark-btn {
-        background: #f0ede5;
-        border: 1px solid #999;
-        border-radius: 2px;
-        font-size: 11px;
-        padding: 3px 7px;
-        cursor: pointer;
-        white-space: nowrap;
-    }
-    .bookmark-btn:hover { background: #ddd; }
+.nav-bar {
+    background: #d4d0c8;
+    padding: 4px 6px;
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    border-bottom: 1px solid #aaa;
+}
+.nav-bar input {
+    flex: 1;
+    padding: 3px 7px;
+    font-family: Tahoma;
+    font-size: 12px;
+    border: 1px solid #999;
+    border-radius: 2px;
+}
+.nav-bar button {
+    font-family: Tahoma;
+    font-size: 11px;
+    padding: 3px 9px;
+    cursor: pointer;
+}
+.bookmark-btn {
+    background: #f0ede5;
+    border: 1px solid #999;
+    border-radius: 2px;
+    font-size: 11px;
+    padding: 3px 7px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.bookmark-btn:hover { background: #ddd; }
 
-    /* ── Frames ── */
-    .frames-container {
-        flex: 1;
-        position: relative;
-        overflow: hidden;
-    }
-    .tab-frame {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        border: none;
-        display: none;
-        background: white;
-    }
-    .tab-frame.active { display: block; }
+.favorites-bar {
+    background: #e6e2d3;
+    border-bottom: 1px solid #aaa;
+    padding: 4px 6px;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.favorites-bar::-webkit-scrollbar { display: none; }
 
-    /* ── Empty tab placeholder ── */
-    .tab-placeholder {
-        position: absolute;
-        inset: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        background: #f5f3ee;
-        color: #888;
-        font-size: 13px;
-    }
-    .tab-placeholder .logo { font-size: 40px; }
+.favorite-item {
+    background: #f5f3ee;
+    border: 1px solid #999;
+    border-radius: 3px;
+    padding: 2px 8px;
+    font-size: 11px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.favorite-item:hover {
+    background: #ddd;
+}
+
+.frames-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+.tab-frame {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: none;
+    background: white;
+}
+.tab-frame.active { display: block; }
+
+.tab-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: #f5f3ee;
+    color: #888;
+    font-size: 13px;
+}
+.tab-placeholder .logo { font-size: 40px; }
 </style>
 </head>
 <body>
@@ -159,8 +179,10 @@
     <input id="url-input" placeholder="Digite uma URL ou domínio .gogo"
            onkeydown="if(event.key==='Enter') navigate()">
     <button onclick="navigate()">Ir</button>
-    <button class="bookmark-btn" onclick="navigate('bloggy.gogo')">🌐 BLOGGY.gogo</button>
+    <button class="bookmark-btn" onclick="openSettings()">⚙️</button>
 </div>
+
+<div class="favorites-bar" id="favorites-bar"></div>
 
 <div class="frames-container" id="frames-container"></div>
 
@@ -168,6 +190,8 @@
 let tabs       = [];
 let activeId   = null;
 let tabCounter = 0;
+
+let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
 
 function newTab(url) {
     const id      = ++tabCounter;
@@ -228,7 +252,7 @@ function renderTabs() {
     addBtn.className  = 'tab-new-btn';
     addBtn.title      = 'Nova aba';
     addBtn.textContent = '+';
-    addBtn.onclick    = () => newTab();
+    addBtn.onclick    = () => newTab("gosearch.gogo");
     bar.appendChild(addBtn);
 }
 
@@ -279,8 +303,36 @@ async function navigate(customUrl) {
     loadUrl(activeId, raw);
 }
 
+function renderFavorites() {
+    const bar = document.getElementById('favorites-bar');
+    bar.innerHTML = '';
 
-newTab();
+    favorites.forEach(fav => {
+        const el = document.createElement('div');
+        el.className = 'favorite-item';
+        el.textContent = fav;
+        el.onclick = () => navigate(fav);
+        bar.appendChild(el);
+    });
+}
+
+function favoriteCurrent() {
+    const input = document.getElementById('url-input').value.trim();
+    if (!input) return;
+
+    if (!favorites.includes(input)) {
+        favorites.push(input);
+        localStorage.setItem('favorites', JSON.stringify(favorites));
+        renderFavorites();
+    }
+}
+
+function openSettings() {
+    alert("tem nada aqui nao, doido");
+}
+
+newTab("gosearch.gogo");
+renderFavorites();
 </script>
 </body>
 </html>

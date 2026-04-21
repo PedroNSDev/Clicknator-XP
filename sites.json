@@ -28,6 +28,11 @@
     "nome": "farmy",
     "html":"../sites/Farmy.html",
     "desc": "Cuide de sua fazenda virtual, plante e colha recursos para ganhar dinheiro!"
+  },
+  {
+    "nome": "GoSearch",
+    "html":"../sites/GoSearch.html",
+    "desc": "Ferramenta de PEsquisa do GOGO os"
   }
 
 

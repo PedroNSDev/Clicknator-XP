@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GoSearch</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+
+body{
+  font-family: Tahoma, Verdana, sans-serif;
+  background: linear-gradient(to bottom, #e6f2ff, #cfe6ff);
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+}
+
+.logo{
+  font-size:48px;
+  margin-top:80px;
+  margin-bottom:20px;
+  font-weight:bold;
+  color:#2b579a;
+  text-shadow: 0  6px 10px #404040;
+}
+
+.top-right-button{
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  padding: 10px 15px;
+  border-radius: 20px;
+  border: 1px solid #7aa7d9;
+  background: linear-gradient(to bottom, #eaf4ff, #c6def7);
+  cursor: pointer;
+   box-shadow: 0  7px 12px #9e9e9e;}
+
+.search-box{
+  width:500px;
+  display:flex;
+  gap:10px;
+ 
+}
+
+input{
+  flex:1;
+  padding:10px;
+  border-radius:20px;
+  border:1px solid #a7c3e0;
+  outline:none;
+  box-shadow: 0  7px 12px #9e9e9e;
+  
+}
+
+button{
+  padding:10px 15px;
+  border-radius:20px;
+  border:1px solid #7aa7d9;
+  background: linear-gradient(to bottom, #eaf4ff, #c6def7);
+  cursor:pointer;
+   box-shadow: 0  7px 12px #9e9e9e;
+}
+
+button:hover{
+  background: linear-gradient(to bottom, #f5faff, #d6eaff);
+}
+
+.results{
+  width:600px;
+  margin-top:30px;
+}
+
+.result{
+  padding:10px;
+  border-bottom:1px solid #c3d9f5;
+  cursor:pointer;
+}
+
+.result:hover{
+  background:#eef5ff;
+}
+
+.name{
+  color:#1a0dab;
+  font-size:16px;
+}
+
+.desc{
+  font-size:12px;
+  color:#555;
+}
+</style>
+</head>
+
+<body>
+<div class="top-right-button" onclick="window.location.href='bloggy.html'">Bloggy</div>    
+<div class="logo">Go<span style="color: rgb(255, 0, 0);">Search</span></div>
+
+<div class="search-box">
+  <input type="text" id="search" placeholder="Pesquisar no Go OS">
+  <button onclick="buscar()">Buscar</button>
+</div>
+
+<div class="results" id="results"></div>
+
+<script>
+let sites = [];
+
+async function carregarSites(){
+  try{
+    const res = await fetch('../sites.json', { cache: 'no-store' });
+    if(!res.ok) throw new Error('Falha ao carregar JSON');
+    sites = await res.json();
+  }catch(err){
+    console.error(err);
+    const resultsDiv = document.getElementById('results');
+    resultsDiv.innerHTML = '<div class="result" style="cursor:default"><div class="desc">Erro ao carregar sites.json</div></div>';
+  }
+}
+
+function buscar(){
+  const value = document.getElementById('search').value.toLowerCase().trim();
+  const resultsDiv = document.getElementById('results');
+
+  resultsDiv.innerHTML = '';
+
+  if(!sites || sites.length === 0){
+    resultsDiv.innerHTML = '<div class="result" style="cursor:default"><div class="desc">Carregando dados...</div></div>';
+    return;
+  }
+
+  const filtrados = sites.filter(site =>
+    (site.nome && site.nome.toLowerCase().includes(value)) ||
+    (site.desc && site.desc.toLowerCase().includes(value))
+  );
+
+  if(filtrados.length === 0){
+    const empty = document.createElement('div');
+    empty.className = 'result';
+    empty.style.cursor = 'default';
+    empty.innerHTML = `<div class="desc">Nenhum resultado para pesquisa</div>`;
+    resultsDiv.appendChild(empty);
+    return;
+  }
+
+  filtrados.forEach(site => {
+    const div = document.createElement('div');
+    div.className = 'result';
+
+    div.innerHTML = `
+      <div class="name">${site.nome}</div>
+      <div class="desc">${site.desc || 'Sem descrição'}</div>
+    `;
+
+    div.onclick = () => {
+      window.location.href = site.html;
+    };
+
+    resultsDiv.appendChild(div);
+  });
+}
+//INIT
+document.getElementById('search').addEventListener('keypress', function(e){
+  if(e.key === 'Enter') buscar();
+});
+
+carregarSites(); //IMPLEMENTAR DEPOIS UM DUPLICATE PRA EVITAR FETCH TODA HORA >:V
+</script>
+
+</body>
+</html>

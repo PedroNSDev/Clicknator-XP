@@ -1,177 +1,804 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fellow Farmy</title>
-<style>
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #87CEEB;
-}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🌾 Fazendinha v2.0 — Deluxe Edition</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --wood-deep:  #160b04;
+      --wood-dark:  #2a1508;
+      --wood-mid:   #4a2c12;
+      --wood-rim:   #7a4e28;
+      --green-hi:   #2ecc71;
+      --green-dk:   #1a5a30;
+      --gold:       #f1c40f;
+      --red:        #e74c3c;
+      --blue:       #3498db;
+      --sky-bg:     rgb(225, 233, 225);
+      --game-background: linear-gradient(180deg, #a3dcfe 0%, #280f06 40%, #d89066 100%);
+    }
 
-#game {
-    display: grid;
-    grid-template-columns: repeat(6, 80px);
-    gap: 6px;
-    justify-content: center;
-    margin-top: 40px;
-}
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
-.plot {
-    width: 80px;
-    height: 80px;
-    background: #6b4f2a;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    color: white;
-    font-size: 10px;
-    text-align: center;
-}
+    body {
+      background: var(--sky-bg);
+      background-image: radial-gradient(ellipse 80% 60% at 50% 0%, #1a3a1a 0%, transparent 60%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: 'Press Start 2P', monospace;
+      overflow: hidden;
+    }
 
-.locked {
-    background: #333;
-}
-.watered {
-    outline: 3px solid #4aa3ff;
-}
-#ui {
-    text-align: center;
-    margin-top: 20px;
-}
+    #game-wrapper {
+      display: flex;
+      flex-direction: column;
+      border: 3px solid var(--wood-rim);
+      box-shadow: 0 0 0 1px #000, 0 0 60px rgba(46,204,113,.15), 0 0 120px rgba(0,0,0,.8);
+    }
 
-button {
-    margin: 5px;
-    padding: 10px;
-}
-</style>
+    #title-bar {
+      width: 900px;
+      height: 36px;
+      background: linear-gradient(90deg, #1a0d04, #2a1508, #1a0d04);
+      border-bottom: 2px solid var(--wood-mid);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    #title-bar span {
+      font-size: 10px;
+      color: var(--wood-rim);
+      letter-spacing: 4px;
+    }
+    #title-bar em {
+      font-style: normal;
+      font-size: 10px;
+      color: var(--green-hi);
+      text-shadow: 0 0 8px rgba(46,204,113,.5);
+      letter-spacing: 3px;
+    }
+
+    #top-bar {
+      width: 900px;
+      height: 44px;
+      background: var(--wood-dark);
+      border-bottom: 3px solid var(--wood-mid);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 18px;
+    }
+    #mony-display {
+      color: var(--gold);
+      font-size: 12px;
+      text-shadow: 0 0 10px rgba(241,196,15,.4);
+      min-width: 120px;
+    }
+    #tool-label {
+      font-size: 8px;
+      color: var(--green-hi);
+      letter-spacing: 1px;
+    }
+    #msg-display {
+      margin-left: auto;
+      font-size: 7px;
+      color: var(--red);
+      transition: opacity .3s;
+      max-width: 340px;
+      text-align: right;
+    }
+
+    #canvas-container {
+      position: relative;
+      width: 900px;
+      height: 480px;
+      overflow: hidden;
+      background: var(--game-background);
+    }
+    canvas { display: block; image-rendering: pixelated; }
+
+    #toast {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,.92);
+      border: 1px solid #555;
+      color: #eee;
+      padding: 7px 14px;
+      font-size: 8px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .3s;
+      white-space: nowrap;
+      z-index: 20;
+      border-radius: 2px;
+    }
+
+    #hotbar {
+      width: 900px;
+      height: 148px;
+      background:
+        repeating-linear-gradient(90deg, rgba(0,0,0,.07) 0, rgba(0,0,0,.07) 1px, transparent 1px, transparent 48px),
+        repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0, rgba(255,255,255,.025) 1px, transparent 1px, transparent 18px),
+        linear-gradient(180deg, #1c0e06 0%, #280f06 40%, #1c0e06 100%);
+      border-top: 3px solid var(--wood-rim);
+      display: flex;
+      align-items: center;
+      padding: 8px 12px;
+      gap: 8px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      flex-shrink: 0;
+    }
+    #hotbar::-webkit-scrollbar { height: 3px; }
+    #hotbar::-webkit-scrollbar-track { background: #0d0804; }
+    #hotbar::-webkit-scrollbar-thumb { background: var(--wood-mid); border-radius: 2px; }
+
+    .tool-btn {
+      min-width: 62px; width: 62px;
+      height: 124px;
+      background: linear-gradient(180deg, #1a0d06 0%, #120908 100%);
+      border: 2px solid var(--wood-mid);
+      border-radius: 3px;
+      color: #888;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 6px;
+      cursor: pointer;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 5px;
+      transition: all .12s;
+      flex-shrink: 0;
+      letter-spacing: .5px;
+    }
+    .tool-btn span:first-child { font-size: 24px; line-height: 1; }
+    .tool-btn:hover  { border-color: var(--wood-rim); color: #ccc; background: #220e06; }
+    .tool-btn.active {
+      background: linear-gradient(180deg, #0a2d0a 0%, #061806 100%);
+      border-color: var(--green-hi);
+      color: var(--green-hi);
+      box-shadow: 0 0 10px rgba(46,204,113,.3), inset 0 0 8px rgba(46,204,113,.05);
+    }
+
+    .hbar-div {
+      width: 2px; height: 108px;
+      background: linear-gradient(180deg, transparent, var(--wood-mid), transparent);
+      flex-shrink: 0;
+    }
+
+    .hbar-cat {
+      writing-mode: vertical-lr;
+      font-size: 5px;
+      color: var(--wood-rim);
+      letter-spacing: 3px;
+      padding: 6px 3px;
+      flex-shrink: 0;
+      opacity: .75;
+    }
+
+    .plant-card {
+      min-width: 62px; width: 62px;
+      height: 124px;
+      border-radius: 5px 5px 3px 3px;
+      border: 2px solid #274827;
+      display: flex; flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      transition: transform .15s, box-shadow .15s, border-color .15s;
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+      background: linear-gradient(180deg, #1a4020 0%, #0d2412 100%);
+      user-select: none;
+    }
+    .pc-art {
+      width: 100%; height: 62px;
+      background: linear-gradient(180deg, #1e5a28 0%, #133d18 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; flex-shrink: 0;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      transition: background .15s;
+    }
+    .pc-name {
+      font-size: 5px; color: #8de88d;
+      text-align: center; padding: 4px 3px 2px;
+      line-height: 1.6; flex: 1;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .pc-cost {
+      font-size: 7px; color: var(--gold);
+      padding: 3px; width: 100%; text-align: center;
+      background: rgba(0,0,0,.45);
+      border-top: 1px solid rgba(255,255,255,.07);
+    }
+
+    .plant-card:hover:not(.locked) { transform: translateY(-4px); box-shadow: 0 8px 18px rgba(0,0,0,.5); }
+
+    .plant-card.selected {
+      transform: translateY(-10px);
+      border-color: var(--gold);
+      box-shadow: 0 0 16px rgba(241,196,15,.45), 0 12px 24px rgba(0,0,0,.65);
+    }
+    .plant-card.selected .pc-art {
+      background: linear-gradient(180deg, #266632 0%, #184422 100%);
+    }
+    .plant-card.selected .pc-cost { color: #fff; background: rgba(241,196,15,.2); }
+
+    .plant-card.locked { filter: brightness(.45) saturate(.3); border-color: #333; }
+    .plant-card.locked:hover { filter: brightness(.6) saturate(.4); transform: translateY(-2px); }
+
+    .lock-ov {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: rgba(0,0,0,.55);
+      gap: 4px; pointer-events: none;
+    }
+    .lock-ov span:first-child { font-size: 18px; }
+    .lock-ov span:last-child  { font-size: 6px; color: var(--gold); }
+
+    .slot-group { display: flex; gap: 7px; align-items: center; }
+  </style>
 </head>
 <body>
 
-<div id="ui">
-    <div>💰 Money: <span id="money">100</span></div>
-    <button onclick="setMode('plant')">🌱 Plantar</button>
-    <button onclick="setMode('water')">💧 Regar</button>
-    <button onclick="setMode('harvest')">🌾 Colher</button>
+<div id="game-wrapper">
+  <div id="title-bar">
+    <span>⟦</span>
+    <em>FARMY</em>
+    <span style="color:#4a8a4a;font-size:8px">v0.3</span>
+    <span>⟧</span>
+  </div>
+
+  <div id="top-bar">
+    <div id="mony-display">💰 $<span id="mony-val">150</span></div>
+    <div id="tool-label">🌱 PLANTAR</div>
+    <div id="msg-display"></div>
+  </div>
+
+  <div id="canvas-container">
+    <canvas id="gameCanvas" width="900" height="480"></canvas>
+    <div id="toast"></div>
+  </div>
+
+  <div id="hotbar">
+    <button class="tool-btn active" id="btn-plant" onclick="setTool('plant')">
+      <span>🌱</span><span>PLANTAR</span>
+    </button>
+    <button class="tool-btn" id="btn-water" onclick="setTool('water')">
+      <span>💧</span><span>REGAR</span>
+    </button>
+    <button class="tool-btn" id="btn-harvest" onclick="setTool('harvest')">
+      <span>✂️</span><span>COLHER</span>
+    </button>
+
+    <div class="hbar-div"></div>
+
+    <div class="hbar-cat">VEGETAIS</div>
+    <div class="slot-group" id="crop-slots"></div>
+
+    <div class="hbar-div"></div>
+
+    <div class="hbar-cat">ÁRVORES</div>
+    <div class="slot-group" id="tree-slots"></div>
+  </div>
 </div>
 
-<div id="game"></div>
-
 <script>
-const GRID_SIZE = 36;
-const COLS = 6;
+let PLANTS_DATA = {};
+const GRID_ROWS = 6;
+const GRID_COLS = 6;
+const TILE_W = 100;
+const TILE_H = 50;
+const TILE_D = 12;
+const OFFSET_X = 450;
+const OFFSET_Y = 100;
 
-let money = 100;
-let mode = 'plant';
+let player = { mony: 150 };
+let grid = [];
+let currentTool = 'plant';
+let selectedPlantId = 'milho';
+let hoveredCell = null;
 
-const plants = {
-    cenoura: { cost: 10, reward: 25, growth: 3 }
-};
+async function loadPlants() {
+  try {
+    const response = await fetch('plants.json');
+    PLANTS_DATA = await response.json();
+    loadGame();
+    buildHotbar();
+    updateUI();
+    draw();
+  } catch (error) {
+    console.error('Erro ao carregar plantas:', error);
+    showToast('Erro ao carregar dados das plantas!', 'error');
+  }
+}
 
-let plots = [];
-
-function createPlots() {
-    const game = document.getElementById('game');
-
-    for (let i = 0; i < GRID_SIZE; i++) {
-        const plot = {
-            id: i,
-            locked: i > 5,
-            planted: null,
-            growth: 0,
-            watered: false
-        };
-
-        plots.push(plot);
-
-        const div = document.createElement('div');
-        div.className = 'plot' + (plot.locked ? ' locked' : '');
-        div.onclick = () => handleClick(plot, div);
-
-        game.appendChild(div);
+function initGrid() {
+  grid = [];
+  for (let r = 0; r < GRID_ROWS; r++) {
+    grid[r] = [];
+    for (let c = 0; c < GRID_COLS; c++) {
+      const isLocked = (r >= 3 || c >= 3);
+      grid[r][c] = {
+        locked: isLocked,
+        buyPrice: (r + c) * 50 + 50,
+        planted: null,
+        stage: null,
+        timer: 0,
+        watered: false,
+        mutations: []
+      };
     }
+  }
+}
+
+function saveGame() {
+  const gameState = {
+    player,
+    grid,
+    selectedPlantId,
+    unlockedPlants: Object.keys(PLANTS_DATA).filter(id => PLANTS_DATA[id].unlocked)
+  };
+  localStorage.setItem('farmy_save', JSON.stringify(gameState));
+}
+
+function loadGame() {
+  const saved = localStorage.getItem('farmy_save');
+  if (saved) {
+    try {
+      const state = JSON.parse(saved);
+      player = state.player;
+      grid = state.grid;
+      selectedPlantId = state.selectedPlantId;
+      if (state.unlockedPlants) {
+        state.unlockedPlants.forEach(id => {
+          if (PLANTS_DATA[id]) PLANTS_DATA[id].unlocked = true;
+        });
+      }
+    } catch (e) {
+      console.error('Erro ao carregar save:', e);
+      initGrid();
+    }
+  } else {
+    initGrid();
+  }
+}
+
+function getEffectiveAttr(plot, attrName) {
+  const plant = PLANTS_DATA[plot.planted];
+  let val = plant.attributes[attrName];
+  plot.mutations.forEach(m => {
+    if (m.stat === attrName) val *= m.value;
+  });
+  return val;
+}
+
+function can_plant(plot) {
+  if (plot.locked) return { ok: false, msg: 'PLOT BLOQUEADO! 🔒' };
+  if (plot.watered && plot.planted) return { ok: false, msg: 'TA MOIADO! 💧' };
+  if (plot.planted) return { ok: false, msg: 'JÁ TEM PLANTA AQUI!' };
+  const plant = PLANTS_DATA[selectedPlantId];
+  if (!plant.unlocked) return { ok: false, msg: 'DESBLOQUEIE PRIMEIRO 🔒' };
+  if (player.mony < plant.cost) return { ok: false, msg: `SEM MONY! 💸 (falta $${plant.cost - player.mony})` };
+  return { ok: true };
+}
+
+function can_water(plot) {
+  if (!plot.planted) return { ok: false, msg: 'NADA PRA REGAR! 🤷' };
+  if (plot.watered) return { ok: false, msg: 'JÁ FOI REGADO! 💧' };
+  if (plot.stage === 'full_grown') return { ok: false, msg: 'JÁ CRESCEU TOTALMENTE!' };
+  return { ok: true };
+}
+
+function can_harvest(plot) {
+  if (!plot.planted) return { ok: false, msg: 'NADA PRA COLHER! 🤷' };
+  const STAGE_ORD = ['tiny', 'medium', 'full_grown'];
+  const plant = PLANTS_DATA[plot.planted];
+  if (STAGE_ORD.indexOf(plot.stage) < STAGE_ORD.indexOf(plant.harvest_stage))
+    return { ok: false, msg: `AGUARDA... (${plot.stage}) ⏳` };
+  return { ok: true };
+}
+
+function can_buy(plot) {
+  if (!plot.locked) return { ok: false, msg: 'JÁ DESBLOQUEADO!' };
+  if (player.mony < plot.buyPrice)
+    return { ok: false, msg: `EM DIMDIMS 💸 (falta $${plot.buyPrice - player.mony})` };
+  return { ok: true };
+}
+
+function doPlant(r, c) {
+  const plot = grid[r][c];
+  const check = can_plant(plot);
+  if (!check.ok) { showToast(check.msg, 'error'); return; }
+  const plant = PLANTS_DATA[selectedPlantId];
+  player.mony -= plant.cost;
+  plot.planted = selectedPlantId;
+  plot.stage = 'tiny';
+  plot.timer = 0;
+  plot.watered = false;
+  plot.mutations = [];
+  if (Math.random() < 0.05) {
+    plot.mutations.push({ stat: 'size', value: 2.5 });
+    showToast('✨ MUTAÇÃO GIGANTE! ×2.5', 'success');
+  } else {
+    showToast(`${plant.image} ${plant.name} plantado!`, 'info');
+  }
+  saveGame();
+  updateUI();
+  draw();
+}
+
+function doWater(r, c) {
+  const plot = grid[r][c];
+  const check = can_water(plot);
+  if (!check.ok) { showToast(check.msg, 'error'); return; }
+  plot.watered = true;
+  showToast('💧 REGADO! Crescimento ×2', 'success');
+  saveGame();
+  draw();
+}
+
+function doHarvest(r, c) {
+  const plot = grid[r][c];
+  const check = can_harvest(plot);
+  if (!check.ok) { showToast(check.msg, 'error'); return; }
+  const plant = PLANTS_DATA[plot.planted];
+  const mutBonus = plot.mutations.length > 0 ? 2 : 1;
+  const earned = plant.reward * mutBonus;
+  player.mony += earned;
+  showToast(`+$${earned} ${plant.image}`, 'success');
+  plot.planted = null;
+  plot.stage = null;
+  plot.timer = 0;
+  plot.watered = false;
+  plot.mutations = [];
+  saveGame();
+  updateUI();
+  draw();
+}
+
+function doBuyPlot(r, c) {
+  const plot = grid[r][c];
+  const check = can_buy(plot);
+  if (!check.ok) { showToast(check.msg, 'error'); return; }
+  player.mony -= plot.buyPrice;
+  plot.locked = false;
+  showToast(`🔓 PLOT DESBLOQUEADO! -$${plot.buyPrice}`, 'success');
+  saveGame();
+  updateUI();
+  draw();
+}
+
+function toScreen(c, r) {
+  return {
+    x: (c - r) * (TILE_W / 2) + OFFSET_X,
+    y: (c + r) * (TILE_H / 2) + OFFSET_Y,
+  };
+}
+
+function toMap(sx, sy) {
+  const adjX = sx - OFFSET_X;
+  const adjY = sy - OFFSET_Y;
+  const c = (adjX / (TILE_W / 2) + adjY / (TILE_H / 2)) / 2;
+  const r = (adjY / (TILE_H / 2) - adjX / (TILE_W / 2)) / 2;
+  return { r: Math.floor(r), c: Math.floor(c) };
+}
+
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const STAGE_SCALE = { tiny: 0.44, medium: 0.70, full_grown: 1.0 };
+const STAGES = ['tiny', 'medium', 'full_grown'];
+
+function drawDiamond(cx, cy, w, h) {
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + w/2, cy + h/2);
+  ctx.lineTo(cx, cy + h);
+  ctx.lineTo(cx - w/2, cy + h/2);
+  ctx.closePath();
+}
+
+function drawTile(c, r) {
+  const pos = toScreen(c, r);
+  const plot = grid[r][c];
+  const hov = hoveredCell && hoveredCell.r === r && hoveredCell.c === c;
+  let top, lft, rgt, str;
+  if (plot.locked) {
+    top = '#191210'; lft = '#0f0b08'; rgt = '#0c0906'; str = '#2a1e14';
+  } else if (plot.explodido) {
+    top = '#3a1a06'; lft = '#280e02'; rgt = '#1c0800'; str = '#6a2a00';
+  } else if (plot.watered && plot.planted) {
+    top = '#3d5c3d'; lft = '#2a4028'; rgt = '#1c2c1c'; str = '#4a6a4a';
+  } else {
+    top = '#8b6040'; lft = '#6a3e1a'; rgt = '#4a2a0a'; str = '#5a3416';
+  }
+  if (hov && !plot.locked) {
+    top = '#a07850'; lft = '#7a4e2a'; rgt = '#5a3a1a'; str = '#8a6030';
+  }
+  drawDiamond(pos.x, pos.y, TILE_W, TILE_H);
+  ctx.fillStyle = top;
+  ctx.fill();
+  ctx.strokeStyle = str;
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(pos.x - TILE_W/2, pos.y + TILE_H/2);
+  ctx.lineTo(pos.x, pos.y + TILE_H);
+  ctx.lineTo(pos.x, pos.y + TILE_H + TILE_D);
+  ctx.lineTo(pos.x - TILE_W/2, pos.y + TILE_H/2 + TILE_D);
+  ctx.closePath();
+  ctx.fillStyle = lft;
+  ctx.fill();
+  ctx.strokeStyle = '#2a1208';
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(pos.x + TILE_W/2, pos.y + TILE_H/2);
+  ctx.lineTo(pos.x, pos.y + TILE_H);
+  ctx.lineTo(pos.x, pos.y + TILE_H + TILE_D);
+  ctx.lineTo(pos.x + TILE_W/2, pos.y + TILE_H/2 + TILE_D);
+  ctx.closePath();
+  ctx.fillStyle = rgt;
+  ctx.fill();
+  ctx.strokeStyle = '#1a0c04';
+  ctx.stroke();
+  if (plot.watered && !plot.locked) {
+    ctx.save();
+    drawDiamond(pos.x, pos.y, TILE_W, TILE_H);
+    ctx.clip();
+    ctx.strokeStyle = 'rgba(60,120,200,.18)';
+    ctx.lineWidth = 1.5;
+    for (let i = -TILE_W; i < TILE_W; i += 10) {
+      ctx.beginPath();
+      ctx.moveTo(pos.x + i, pos.y);
+      ctx.lineTo(pos.x + i + TILE_H, pos.y + TILE_H);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
+function drawPlant(c, r) {
+  const pos = toScreen(c, r);
+  const plot = grid[r][c];
+  const cx = pos.x;
+  const cy = pos.y + TILE_H/2 + 4;
+  if (plot.locked) {
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '13px serif';
+    ctx.fillText('🔒', cx, cy - 6);
+    ctx.font = '6px "Press Start 2P"';
+    ctx.fillStyle = '#f1c40f';
+    ctx.textBaseline = 'top';
+    ctx.fillText(`$${plot.buyPrice}`, cx, cy + 4);
+    return;
+  }
+  if (!plot.planted) return;
+  const plant = PLANTS_DATA[plot.planted];
+  const effSize = getEffectiveAttr(plot, 'size');
+  const stageScale = STAGE_SCALE[plot.stage] ?? 0.44;
+  const emojiPx = Math.max(10, Math.round(22 * stageScale * effSize));
+  if (plot.mutations.length > 0) {
+    ctx.shadowColor = '#f1c40f';
+    ctx.shadowBlur = 14;
+  }
+  ctx.font = `${emojiPx}px serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText(plant.image, cx, cy);
+  ctx.shadowBlur = 0;
+  if (plot.watered && plot.stage !== 'full_grown') {
+    ctx.font = '8px serif';
+    ctx.fillText('💧', cx + emojiPx/2 + 2, cy - emojiPx - 2);
+  }
+  const harvestIdx = STAGES.indexOf(plant.harvest_stage);
+  const stageIdx = STAGES.indexOf(plot.stage);
+  if (stageIdx >= harvestIdx) {
+    ctx.font = '9px serif';
+    ctx.fillText('⭐', cx - emojiPx/2 - 2, cy - emojiPx);
+  }
+}
+
+function drawTooltip(c, r) {
+  const plot = grid[r][c];
+  const pos = toScreen(c, r);
+  let tip = null;
+  if (plot.locked) {
+    tip = `COMPRAR $${plot.buyPrice}`;
+  } else if (currentTool === 'plant' && !plot.planted) {
+    const pl = PLANTS_DATA[selectedPlantId];
+    tip = `${pl.image} PLANTAR ($${pl.cost})`;
+  } else if (currentTool === 'water') {
+    const w = can_water(plot);
+    tip = w.ok ? '💧 REGAR' : w.msg;
+  } else if (currentTool === 'harvest' && plot.planted) {
+    const plant = PLANTS_DATA[plot.planted];
+    const ready = STAGES.indexOf(plot.stage) >= STAGES.indexOf(plant.harvest_stage);
+    tip = ready ? `✂️ COLHER +$${plant.reward}` : `⏳ ${plot.stage}`;
+  }
+  if (!tip) return;
+  ctx.font = '6px "Press Start 2P"';
+  const tw = ctx.measureText(tip).width;
+  const tx = pos.x - tw/2 - 9;
+  const ty = pos.y - 26;
+  ctx.fillStyle = 'rgba(10,10,10,.9)';
+  ctx.strokeStyle = '#3a3a3a';
+  ctx.lineWidth = 1;
+  const rx = tx, ry = ty, rw = tw + 18, rh = 17, rad = 3;
+  ctx.beginPath();
+  ctx.moveTo(rx + rad, ry);
+  ctx.lineTo(rx + rw -rad, ry); ctx.arcTo(rx + rw, ry, rx + rw, ry + rad, rad);
+  ctx.lineTo(rx + rw,ry + rh - rad); ctx.arcTo(rx + rw, ry + rh, rx + rw - rad, ry + rh, rad);
+  ctx.lineTo(rx +rad, ry + rh); ctx.arcTo(rx, ry + rh, rx, ry + rh - rad, rad);
+  ctx.lineTo(rx, ry + rad); ctx.arcTo(rx, ry, rx + rad, ry, rad);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#2ecc71';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(tip, tx + 9, ty + 5);
+}
+
+function draw() {// BACKGROUND  
+  const bg = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  bg.addColorStop(0.8, '#87CEEB');  
+  bg.addColorStop(0.2, '#5FB6FF');
+  bg.addColorStop(0, '#2A7BD6');   
+
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  for (let r = 0; r < GRID_ROWS; r++)
+    for (let c = 0; c < GRID_COLS; c++)
+      drawTile(c, r);
+  for (let r = 0; r < GRID_ROWS; r++)
+    for (let c = 0; c < GRID_COLS; c++)
+      drawPlant(c, r);
+  if (hoveredCell) {
+    const { r, c } = hoveredCell;
+    if (r >= 0 && r < GRID_ROWS && c >= 0 && c < GRID_COLS)
+      drawTooltip(c, r);
+  }
+}
+
+canvas.addEventListener('click', e => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
+  const my = (e.clientY - rect.top) * (canvas.height / rect.height);
+  const { r, c } = toMap(mx, my);
+  if (r < 0 || r >= GRID_ROWS || c < 0 || c >= GRID_COLS) return;
+  const plot = grid[r][c];
+  if (plot.locked) { doBuyPlot(r, c); return; }
+  if (currentTool === 'plant') doPlant(r, c);
+  else if (currentTool === 'water') doWater(r, c);
+  else if (currentTool === 'harvest') doHarvest(r, c);
+});
+
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
+  const my = (e.clientY - rect.top) * (canvas.height / rect.height);
+  const { r, c } = toMap(mx, my);
+  const valid = r >= 0 && r < GRID_ROWS && c >= 0 && c < GRID_COLS;
+  const newHover = valid ? { r, c } : null;
+  const changed = (!hoveredCell !== !newHover) || (newHover && hoveredCell && (newHover.r !== hoveredCell.r || newHover.c !== hoveredCell.c));
+  if (changed) { hoveredCell = newHover; draw(); }
+});
+
+canvas.addEventListener('mouseleave', () => { hoveredCell = null; draw(); });
+
+function setTool(tool) {
+  currentTool = tool;
+  ['plant', 'water', 'harvest'].forEach(t =>
+    document.getElementById(`btn-${t}`).classList.toggle('active', t === tool));
+  const icons = { plant: '🌱 PLANTAR', water: '💧 REGAR', harvest: '✂️ COLHER' };
+  document.getElementById('tool-label').textContent = icons[tool];
+}
+
+function buildHotbar() {
+  const cropEl = document.getElementById('crop-slots');
+  const treeEl = document.getElementById('tree-slots');
+  cropEl.innerHTML = '';
+  treeEl.innerHTML = '';
+  Object.entries(PLANTS_DATA).forEach(([plantId, plant]) => {
+    const card = document.createElement('div');
+    card.className = [
+      'plant-card',
+      plant.unlocked ? '' : 'locked',
+      selectedPlantId === plantId ? 'selected' : '',
+    ].join(' ').trim();
+    card.id = `card-${plantId}`;
+    card.title = plant.unlocked ? `${plant.name} | $${plant.cost}` : `Desbloquear: $${plant.unlock_price}`;
+    card.innerHTML = `
+      <div class="pc-art">${plant.image}</div>
+      <div class="pc-name">${plant.name}</div>
+      <div class="pc-cost">💰${plant.cost}</div>
+      ${!plant.unlocked ? `<div class="lock-ov"><span>🔒</span><span>$${plant.unlock_price}</span></div>` : ''}
+    `;
+    card.addEventListener('click', () => handleCardClick(plantId));
+    (plant.isTree ? treeEl : cropEl).appendChild(card);
+  });
+}
+
+function handleCardClick(plantId) {
+  const plant = PLANTS_DATA[plantId];
+  if (!plant.unlocked) {
+    if (player.mony >= plant.unlock_price) {
+      player.mony -= plant.unlock_price;
+      plant.unlocked = true;
+      saveGame();
+      updateUI();
+      buildHotbar();
+      selectCard(plantId);
+      showToast(`✅ ${plant.image} ${plant.name} desbloqueado!`, 'success');
+    } else {
+      showToast(`EM DIMDIMS 💸 falta $${plant.unlock_price - player.mony}`, 'error');
+    }
+    return;
+  }
+  selectCard(plantId);
+  setTool('plant');
+}
+
+function selectCard(plantId) {
+  document.querySelectorAll('.plant-card').forEach(c => c.classList.remove('selected'));
+  const el = document.getElementById(`card-${plantId}`);
+  if (el) el.classList.add('selected');
+  selectedPlantId = plantId;
+  saveGame();
+}
+
+let _toastTimer = null;
+function showToast(msg, type = 'info') {
+  const colors = { error: '#e74c3c', success: '#2ecc71', info: '#3498db' };
+  const col = colors[type] || '#aaa';
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.style.borderColor = col;
+  toast.style.color = type === 'success' ? col : '#eee';
+  toast.style.opacity = '1';
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { toast.style.opacity = '0'; }, 2600);
+  const msgEl = document.getElementById('msg-display');
+  msgEl.style.color = col;
+  msgEl.textContent = msg;
+  setTimeout(() => { if (msgEl.textContent === msg) msgEl.textContent = ''; }, 2600);
 }
 
 function updateUI() {
-    document.getElementById('money').innerText = money;
+  document.getElementById('mony-val').textContent = player.mony;
 }
 
-function setMode(m) {
-    mode = m;
-}
-
-function canPlant(plot) {
-    if (plot.locked) return false;
-    if (plot.planted) return false;
-    return money >= plants.cenoura.cost;
-}
-
-function canWater(plot) {
-    return plot.planted && !plot.watered;
-}
-
-function canHarvest(plot) {
-    return plot.planted && plot.growth >= plants.cenoura.growth;
-}
-
-function handleClick(plot, div) {
-    if (plot.locked) {
-        if (money >= 20) {
-            money -= 20;
-            plot.locked = false;
-            div.classList.remove('locked');
-        }
-        updateUI();
-        return;
+function growthTick() {
+  let changed = false;
+  for (let r = 0; r < GRID_ROWS; r++) {
+    for (let c = 0; c < GRID_COLS; c++) {
+      const plot = grid[r][c];
+      if (!plot.planted || plot.stage === 'full_grown') continue;
+      const plant = PLANTS_DATA[plot.planted];
+      const rate = plot.watered ? 2 : 1;
+      plot.timer += rate;
+      const g = plant.growth;
+      const prevStage = plot.stage;
+      if (plot.timer >= g) plot.stage = 'full_grown';
+      else if (plot.timer >= g * 0.5) plot.stage = 'medium';
+      if (plot.stage !== prevStage) {
+        changed = true;
+        saveGame();
+      }
     }
-
-    if (mode === 'plant' && canPlant(plot)) {
-        plot.planted = 'cenoura';
-        plot.growth = 0;
-        plot.watered = false;
-        money -= plants.cenoura.cost;
-    }
-
-    else if (mode === 'water' && canWater(plot)) {
-        plot.watered = true;
-        div.classList.add('watered');
-
-        setTimeout(() => {
-            plot.growth++;
-            plot.watered = false;
-            div.classList.remove('watered');
-            renderPlot(plot, div);
-        }, 1000);
-    }
-
-    else if (mode === 'harvest' && canHarvest(plot)) {
-        money += plants.cenoura.reward;
-        plot.planted = null;
-        plot.growth = 0;
-        div.innerText = '';
-    }
-
-    renderPlot(plot, div);
-    updateUI();
+  }
+  if (changed) draw();
 }
 
-function renderPlot(plot, div) {
-    if (!plot.planted) {
-        div.innerText = '';
-        return;
-    }
-
-    const stages = ['🌱','🥕','🥕🥕'];
-    div.innerText = stages[plot.growth] || '🥕🥕🥕';
-}
-
-createPlots();
-updateUI();
+loadPlants();
+setInterval(growthTick, 1000);
 </script>
-
 </body>
 </html>

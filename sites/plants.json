@@ -1,0 +1,80 @@
+{
+  "milho": {
+    "image": "🌽",
+    "name": "Milho",
+    "cost": 15,
+    "reward": 50,
+    "growth": 10,
+    "harvest_stage": "full_grown",
+    "attributes": { "size": 1.0, "color": [241, 196, 15] },
+    "mutations": [],
+    "unlocked": true,
+    "unlock_price": 0,
+    "isTree": false
+  },
+  "tomate": {
+    "image": "🍅",
+    "name": "Tomate",
+    "cost": 25,
+    "reward": 85,
+    "growth": 15,
+    "harvest_stage": "full_grown",
+    "attributes": { "size": 1.0, "color": [231, 76, 60] },
+    "mutations": [],
+    "unlocked": true,
+    "unlock_price": 0,
+    "isTree": false
+  },
+  "berinjela": {
+    "image": "🍆",
+    "name": "Berinjela",
+    "cost": 40,
+    "reward": 140,
+    "growth": 22,
+    "harvest_stage": "full_grown",
+    "attributes": { "size": 1.0, "color": [155, 89, 182] },
+    "mutations": [],
+    "unlocked": false,
+    "unlock_price": 200,
+    "isTree": false
+  },
+  "brocolis": {
+    "image": "🥦",
+    "name": "Brócolis",
+    "cost": 60,
+    "reward": 220,
+    "growth": 30,
+    "harvest_stage": "full_grown",
+    "attributes": { "size": 1.0, "color": [46, 204, 113] },
+    "mutations": [],
+    "unlocked": false,
+    "unlock_price": 500,
+    "isTree": false
+  },
+  "maca": {
+    "image": "🍎",
+    "name": "Maçã",
+    "cost": 100,
+    "reward": 400,
+    "growth": 60,
+    "harvest_stage": "full_grown",
+    "attributes": { "size": 1.2, "color": [255, 50, 50] },
+    "mutations": [],
+    "unlocked": false,
+    "unlock_price": 1000,
+    "isTree": true
+  },
+  "laranja": {
+    "image": "🍊",
+    "name": "Laranja",
+    "cost": 150,
+    "reward": 650,
+    "growth": 80,
+    "harvest_stage": "full_grown",
+    "attributes": { "size": 1.2, "color": [255, 165, 0] },
+    "mutations": [],
+    "unlocked": false,
+    "unlock_price": 2500,
+    "isTree": true
+  }
+}

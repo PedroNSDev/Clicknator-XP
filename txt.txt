@@ -1127,3 +1127,8 @@ can_plant(plot) set handlers if plot.wattered == true return ta moiado/ if plot.
 can_water(plant) 
 can_harvest(plant)
 can_buy(plot) if locked == true continue, if mony not enough return "POBRE KKKKK"
+
+
+
+
+catapimbers dai pra dar render era so fazer algo tipo urr X = (mapX - mapY) *(tileWidth/2) FAAAAAAAAAAAH 
