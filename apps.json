@@ -44,7 +44,7 @@
     "id": "credits",
     "nome": "Creditos",
     "icone": "👯",
-    "html": "https://github.com/PedroNSDev/Portfolio",
+    "html": "apps/creditos.html",
     "ram": 1
   },
   {

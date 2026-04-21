@@ -9,19 +9,27 @@
   },
     {
     "nome": "bloggy",
-    "html":"../sites/Bloggy.html"
+    "html":"../sites/Bloggy.html",
+    "desc": "Portal De Noticias Oficial do Go OS"
   },
   {
     "nome": "godownloader",
      "html":"../sites/GoDownloader.html"
   },{
     "nome": "MSN",
-    "html":"../sites/Msn.html"
+    "html":"../sites/Msn.html",
+    "desc": "Crie conexões e converse com seus amigos"
   },
   {
     "nome": "gocode",
     "html":"../sites/GoCode.html"
+  },
+   {
+    "nome": "farmy",
+    "html":"../sites/Farmy.html",
+    "desc": "Cuide de sua fazenda virtual, plante e colha recursos para ganhar dinheiro!"
   }
+
 
 
 

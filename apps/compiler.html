@@ -384,7 +384,7 @@ editorEl.addEventListener('keydown', e => {
       const indent = curLine.match(/^[ \t]*/)[0];
       insert += indent + '  ';
     } else {
-      //SET CORRECT IDENTATION 
+      //SET CORRECT IDENTATION - FINDENT AUTO
       const indent = curLine.match(/^[ \t]*/)[0];
       insert += indent;
     }
@@ -407,6 +407,10 @@ updateLineNumbers();
 // ═══════════════════════════════════════════════
 //  COMPILER
 // ═══════════════════════════════════════════════
+
+// Sinal de retorno para quebrar execução de função via throw/catch
+class ReturnSignal { constructor(v) { this.value = v; } }
+
 class GogoCompiler {
   constructor(outputEl) {
     this.vars   = {};
@@ -426,26 +430,31 @@ class GogoCompiler {
     return m ? [m[1].trim(), m[2].trim()] : null;
   }
 
-  collectBody(lines, i) {
+  
+  // STRCUT FETCH CODE "BODY " CONTENT
+   collectBody(lines, i) {
     const body = [];
+    let baseIndent = null;
     while (i < lines.length) {
       const raw = lines[i];
       if (raw.trim() === '') { i++; continue; }
-      if (/^[ \t]/.test(raw)) {
-        body.push(raw.trim());
-        i++;
-      } else {
-        break;
+      if (!/^[ \t]/.test(raw)) break;
+      if (baseIndent === null) {
+        baseIndent = raw.match(/^([ \t]+)/)[1];
       }
+      // STRIP GEnerico
+      const stripped = raw.startsWith(baseIndent) ? raw.slice(baseIndent.length) : raw.trimStart();
+      body.push(stripped);
+      i++;
     }
     return { body, nextI: i };
   }
 
   run(code) {
     const lines = code.split('\n');
-    let i = 0;
 
-    //COLETA VAR
+    //COLETA FUNÇÕES PRIMEIRO
+    let i = 0;
     while (i < lines.length) {
       const line = lines[i].trim();
       const fnDef = line.match(/^f\s+(\w+)\s*\((.*?)\)\s*:$/);
@@ -460,84 +469,105 @@ class GogoCompiler {
       }
       i++;
     }
-    i = 0;
+
+    this.runLines(lines);
+  }
+
+  runLines(lines) {
+    let i = 0;
     while (i < lines.length) {
-      const raw  = lines[i];
-      const line = raw.trim();
-
-      if (!line || line.startsWith('#')) { i++; continue; }
-      if (line.match(/^f\s+\w+\s*\(.*?\)\s*:$/)) {
-        i++;
-        const { nextI } = this.collectBody(lines, i);
-        i = nextI;
-        continue;
-      }
-
-      //LOOR FOR NOMECLATURA: ( DE (parametro) em INICIO ate FINAL )
-      if (line.match(/^para\s+\w+\s+de\s+.+\s+ate\s+.+\s*:/)) {
-        const m = line.match(/^para\s+(\w+)\s+de\s+(.+?)\s+ate\s+(.+?)\s*:$/);
-        if (!m) throw new Error("Sintaxe inválida no 'para': use  para VARIAVEL de INICIO ate FIM:");
-        const varName = m[1];
-        const start   = Number(this.evalExpr(m[2]));
-        const end     = Number(this.evalExpr(m[3]));
-        i++;
-        const { body, nextI } = this.collectBody(lines, i);
-        i = nextI;
-        for (let v = start; v <= end; v++) {
-          this.vars[varName] = v;
-          this.execBody(body);
-        }
-        continue;
-      }
-
-      //  ENQUANTO COND REPEAT FIOTE
-      if (line.match(/^enquanto\s+.+\s*:/)) {
-        const condRaw = line.replace(/^enquanto\s+/, '').replace(/\s*:\s*$/, '').trim();
-        i++;
-        const { body, nextI } = this.collectBody(lines, i);
-        i = nextI;
-        let safety = 0;
-        while (this.evalExpr(condRaw)) {
-          this.execBody(body);
-          if (++safety > 100000) throw new Error("Loop infinito detectado (limite: 100000 iterações)");
-        }
-        continue;
-      }
-
-      // IF:GET COND
-      if (line.match(/^se\s+.+\s*:/)) {
-        const condRaw = line.replace(/^se\s+/, '').replace(/\s*:\s*$/, '').trim();
-        i++;
-        const { body, nextI } = this.collectBody(lines, i);
-        i = nextI;
-        if (this.evalExpr(condRaw)) this.execBody(body);
-        continue;
-      }
-
-      // STATEMENT
-      const assign = this.splitAssign(line);
-      if (assign) {
-        this.vars[assign[0]] = this.evalExpr(assign[1]);
-        i++;
-        continue;
-      }
-
-      // GET EXPRESSION 
-      this.evalExpr(line);
-      i++;
+      i = this.execLine(lines, i);
     }
   }
 
-  execBody(body) {
-    for (const line of body) {
-      if (!line || line.startsWith('#')) continue;
-      const assign = this.splitAssign(line);
-      if (assign) {
-        this.vars[assign[0]] = this.evalExpr(assign[1]);
-      } else {
-        this.evalExpr(line);
-      }
+  // BUILT IN I
+  execLine(lines, i) {
+    const raw  = lines[i];
+    const line = raw.trim();
+
+    if (!line || line.startsWith('#')) return i + 1;
+
+    if (line.match(/^f\s+\w+\s*\(.*?\)\s*:$/)) {
+      i++;
+      const { nextI } = this.collectBody(lines, i);
+      return nextI;
     }
+
+    //LOOR FOR NOMECLATURA: ( DE (parametro) em INICIO ate FINAL )
+    if (line.match(/^para\s+\w+\s+de\s+.+\s+ate\s+.+\s*:/)) {
+      const m = line.match(/^para\s+(\w+)\s+de\s+(.+?)\s+ate\s+(.+?)\s*:$/);
+      if (!m) throw new Error("Sintaxe inválida no 'para': use  para VARIAVEL de INICIO ate FIM:");
+      const varName = m[1];
+      const start   = Number(this.evalExpr(m[2]));
+      const end     = Number(this.evalExpr(m[3]));
+      i++;
+      const { body, nextI } = this.collectBody(lines, i);
+      for (let v = start; v <= end; v++) {
+        this.vars[varName] = v;
+        this.runLines(body); 
+      }
+      return nextI;
+    }
+
+    // ENQUANTO
+    if (line.match(/^enquanto\s+.+\s*:/)) {
+      const condRaw = line.replace(/^enquanto\s+/, '').replace(/\s*:\s*$/, '').trim();
+      i++;
+      const { body, nextI } = this.collectBody(lines, i);
+      let safety = 0;
+      while (this.evalExpr(condRaw)) {
+        this.runLines(body);
+        if (++safety > 100000) throw new Error("Loop infinito detectado (limite: 100000 iterações)");
+      }
+      return nextI;
+    }
+
+    if (line.match(/^se\s+.+\s*:/)) {
+      const condRaw = line.replace(/^se\s+/, '').replace(/\s*:\s*$/, '').trim();
+      i++;
+      const { body: ifBody, nextI } = this.collectBody(lines, i);
+      i = nextI;
+
+      // ChECK: IF ELSE
+      let elseBody = null;
+      if (i < lines.length) {
+        const nextLine = lines[i].trim();
+
+        if (nextLine === 'senao:') {
+          // senao com bloco indentado
+          i++;
+          const { body: eb, nextI: ni } = this.collectBody(lines, i);
+          elseBody = eb;
+          i = ni;
+        } else if (nextLine.startsWith('senao ') && !nextLine.endsWith(':')) {
+          elseBody = [ nextLine.slice(6).trim() ];
+          i++;
+        }
+      }
+      if (this.evalExpr(condRaw)) {
+        this.runLines(ifBody);
+      } else if (elseBody) {
+        this.runLines(elseBody);
+      }
+      return i;
+    }
+
+    if (line.startsWith('senao')) return i + 1;
+
+    if (line.startsWith('retorna')) {
+      throw new ReturnSignal(this.evalExpr(line.replace(/^retorna\s*/, '').trim()));
+    }
+
+    // STATEMENT 
+    const assign = this.splitAssign(line);
+    if (assign) {
+      this.vars[assign[0]] = this.evalExpr(assign[1]);
+      return i + 1;
+    }
+
+    // GET EXPRESSION
+    this.evalExpr(line);
+    return i + 1;
   }
 
   evalExpr(expr) {
@@ -546,62 +576,74 @@ class GogoCompiler {
 
     // MOSTRE
     if (expr.startsWith('mostre(')) {
-      const inner = this.extractArgs(expr, 'mostre')[0];
-      const val   = this.evalExpr(inner);
+      const args = this.extractArgs(expr, 'mostre');
+      const val  = args.map(a => this.evalExpr(a)).join(' ');
       this.log(val);
       return val;
     }
 
     //====================
-    // API COM O GO OS
+    // API COM  GO OS
     //====================
     if (expr.startsWith('abrir(')) {
       const app = this.extractArgs(expr,'abrir')[0].replace(/['"]/g,'');
-      window.top?.openAppById?.(app);
+      window.top?.OpenWindow?.(app);
       return null;
     }
     if (expr.startsWith('listar_janelas()'))  return window.top?.getOpenWindows?.() || [];
-    if (expr.startsWith('fechar_todas()'))    { (window.getOpenWindows?.() || []).forEach(w => window.closeWindowById?.(w.id)); return null; }
+    if (expr.startsWith('fechar_todas()')) {
+      (window.top?.getOpenWindows?.() || []).forEach(w => window.top?.closeWindowById?.(w.id));
+      return null;
+    }
     if (expr.startsWith('fechar(')) {
-      const arg = this.extractArgs(expr,'fechar')[0].trim();
-      if (arg.startsWith('"') || arg.startsWith("'")) {
-        window.closeWindowById?.(arg.replace(/['"]/g,''));
-      } else {
-        this.vars[arg]?.querySelector?.('.close-btn')?.click();
-      }
+      const arg = this.extractArgs(expr,'fechar')[0].trim().replace(/['"]/g,'');
+      window.top?.closeWindowById?.(arg);
       return null;
     }
     if (expr.startsWith('contar(')) {
       const type = this.extractArgs(expr,'contar')[0].replace(/['"]/g,'');
-      return window.getFiles?.().filter(f => f.type === type).length || 0;
+      return window.top?.getFiles?.().filter(f => f.type === type).length || 0;
     }
-    const fnCall = expr.match(/^(\w+)\((.*)\)$/s);
+
+    // FNOVO : novo(tipo, nome, dados?) 
+    if (expr.startsWith('novo(')) {
+      const args  = this.extractArgs(expr, 'novo');
+      const tipo  = args[0] ? String(this.evalExpr(args[0])).replace(/['"]/g,'') : 'text';
+      const nome  = args[1] ? String(this.evalExpr(args[1])).replace(/['"]/g,'') : 'novo_arquivo';
+      const dados = args[2] ? this.evalExpr(args[2]) : {};
+      const result = window.top?.createNewFile?.(tipo, nome, dados || {});
+      if (result) this.log(`[novo] Arquivo criado: "${nome}" (${tipo})`);
+      else        this.log(`[novo] Falha ao criar "${nome}" — tipo inválido ou sem espaço`);
+      return result || null;
+    }
+
+    // Fetch FUNC
+    const fnCall = expr.match(/^([a-zA-Z_\u00C0-\u017E][\w\u00C0-\u017E]*)\((.*)\)$/s);
     if (fnCall) {
       const name = fnCall[1];
       const fn   = this.funcs[name];
       if (fn) {
         const rawArgs = this.splitArgs(fnCall[2]);
         const args    = rawArgs.map(a => this.evalExpr(a.trim()));
-        const saved = { ...this.vars };
+        const savedVars = { ...this.vars };
         fn.params.forEach((p, idx) => { this.vars[p] = args[idx]; });
         let result = undefined;
-        for (const l of fn.body) {
-          if (l.startsWith('retorna')) {
-            result = this.evalExpr(l.replace(/^retorna\s*/, '').trim());
-            break;
-          }
-          const assign = this.splitAssign(l);
-          if (assign) this.vars[assign[0]] = this.evalExpr(assign[1]);
-          else this.evalExpr(l);
+        try {
+          // PROPAGUE  
+          this.runLines(fn.body);
+        } catch(e) {
+          if (e instanceof ReturnSignal) result = e.value;
+          else throw e;
         }
-        this.vars = saved;
+        this.vars = savedVars;
         return result;
       }
     }
+
     return this.jsEval(expr);
   }
 
-  // JAVA SCRIPT AAA SUBSTITUTO :V
+  //JAVA SCRIPT AAA SUBSTITUTO :V
   jsEval(expr) {
     const sortedVars = Object.keys(this.vars).sort((a,b) => b.length - a.length);
     let e = expr;
@@ -615,11 +657,11 @@ class GogoCompiler {
     catch { return expr; }
   }
 
-
   extractArgs(expr, fnName) {
     const inner = expr.slice(fnName.length + 1, -1);
     return this.splitArgs(inner);
   }
+
   splitArgs(str) {
     const args = [];
     let depth = 0, cur = '', inStr = false, q = '';
@@ -665,11 +707,15 @@ function runCode() {
     compiler.run(code);
     setStatus('ok', 'concluído');
   } catch(e) {
-    const span = document.createElement('span');
-    span.className = 'console-line err';
-    span.textContent = '✖ Erro: ' + e.message;
-    consoleEl.appendChild(span);
-    setStatus('err', 'erro');
+    if (e instanceof ReturnSignal) {
+      setStatus('ok', 'concluído');
+    } else {
+      const span = document.createElement('span');
+      span.className = 'console-line err';
+      span.textContent = '✖ Erro: ' + e.message;
+      consoleEl.appendChild(span);
+      setStatus('err', 'erro');
+    }
   }
   consoleEl.scrollTop = consoleEl.scrollHeight;
 }
@@ -696,7 +742,7 @@ function importarCodigo(event) {
     const text = e.target.result;
     editorEl.innerHTML = highlight(text);
     updateLineNumbers();
-    //\MAQUINA DE ESCREVER CATINX
+    //MAQUINA DE ESCREVER CATINX
     const range = document.createRange();
     range.selectNodeContents(editorEl);
     range.collapse(false);
@@ -710,12 +756,14 @@ function importarCodigo(event) {
 //USAR COMO NA FUNC DE IMPORT DEPOIS PIMP
 const exemplo = `# Exemplo GOGO — edite e pressione ▶ Executar
 
-x = 1
-y = 10
-
-mostre("Contando de 1 a 5:")
-para i de 1 ate 5:
-  mostre(i)
+x = 0
+mostre("Pares e impares de 0 a 9:")
+enquanto x < 10:
+  se x % 2 == 0:
+    mostre("par: " + x)
+  senao:
+    mostre("impar: " + x)
+  x = x + 1
 
 mostre("Fatorial de 5:")
 resultado = 1
@@ -723,13 +771,14 @@ n = 5
 enquanto n > 0:
   resultado = resultado * n
   n = n - 1
-
 mostre(resultado)
 
 f saudacao(nome):
   retorna "Ola, " + nome + "!"
 
 mostre(saudacao("Mundo"))
+
+# novo("text", "meu_arquivo.txt") — cria arquivo no GoOS
 `;
 
 editorEl.innerHTML = highlight(exemplo);

@@ -1062,3 +1062,68 @@ function exportas(file,format){
 </script>
     
 IF WHILE FN FOR >:V FOFO COMPILER????talvez
+
+
+
+urrrr GALINHAS E OVOS SIM FAZENDINHERS MEO 
+
+
+
+
+get isometric view -- project Fellow Farmy OMAIGAAAAH
+ 
+SET VIEW 
+create object transforn(rotate and stretch) set top and left 20 
+
+generate grid based on omaigaah land size
+set buyable plots locked one 
+
+
+set var locked bool, planted = null or string, watered = bool, o valor do vegetal e o tipo de planta sao definidos em outro dicionario
+
+plant{
+  image: img //implementar dps o  mudar de imagem conforme cresce urr e gerar uma opção com o GOGOpaint a um preset de como pintar uma planta otimizada é so ao inves de criar uma camada em branco quando ele criar um novo projeto ele criar uma camada com o argumento do png da "forma" da planta 
+  name: str,
+  reward: 50 // bom se quiser fazer algo mais catapimbers e usar o preço como base pra poder definir preço e recompensa eu nao recomendo visto que isso deixaria monotono  da pra fazer uma PG generica pra deixar mais interessante mas eu nao vejo pq implementar isso agr :V
+  cost: 15
+   growth: int, 
+   stage: enum {tiny, medium, full_grown},
+   // bom se o vegetal pode ser colhido a partir de um determinado estado urrr pode colocar harvest_stage: medium
+
+
+}
+
+
+plant(plot:id ou clique nele, plant:str)
+
+
+
+ //se for implementado, attributes[
+  size = 1.0,
+  color = 0,0,0 // via modulção não e Set >:V
+
+
+]
+ mutations = [size:2.5], //MULTIPLICA NAO DEFINE assim pode stackar mais de um valor por exemplo se a planta for grande size 1.2  de mult e se ela tiver a mutação de gigantismo tbm fica : size * (for mutation in mutations pipipi popopo) 
+ 
+
+generate hot bar of prices  omai gahhhhhhh
+slot{
+  id: int incremental,
+  slot = planta
+  image = slot.image,
+  cost : slot.
+
+
+
+}
+
+
+mony é o dinheiro eu acho  :V
+
+set default check non void funcs 
+
+can_plant(plot) set handlers if plot.wattered == true return ta moiado/ if plot.explodido == true retunr ta explodido da nao
+can_water(plant) 
+can_harvest(plant)
+can_buy(plot) if locked == true continue, if mony not enough return "POBRE KKKKK"

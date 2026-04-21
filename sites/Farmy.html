@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fellow Farmy</title>
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #87CEEB;
+}
+
+#game {
+    display: grid;
+    grid-template-columns: repeat(6, 80px);
+    gap: 6px;
+    justify-content: center;
+    margin-top: 40px;
+}
+
+.plot {
+    width: 80px;
+    height: 80px;
+    background: #6b4f2a;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: white;
+    font-size: 10px;
+    text-align: center;
+}
+
+.locked {
+    background: #333;
+}
+.watered {
+    outline: 3px solid #4aa3ff;
+}
+#ui {
+    text-align: center;
+    margin-top: 20px;
+}
+
+button {
+    margin: 5px;
+    padding: 10px;
+}
+</style>
+</head>
+<body>
+
+<div id="ui">
+    <div>💰 Money: <span id="money">100</span></div>
+    <button onclick="setMode('plant')">🌱 Plantar</button>
+    <button onclick="setMode('water')">💧 Regar</button>
+    <button onclick="setMode('harvest')">🌾 Colher</button>
+</div>
+
+<div id="game"></div>
+
+<script>
+const GRID_SIZE = 36;
+const COLS = 6;
+
+let money = 100;
+let mode = 'plant';
+
+const plants = {
+    cenoura: { cost: 10, reward: 25, growth: 3 }
+};
+
+let plots = [];
+
+function createPlots() {
+    const game = document.getElementById('game');
+
+    for (let i = 0; i < GRID_SIZE; i++) {
+        const plot = {
+            id: i,
+            locked: i > 5,
+            planted: null,
+            growth: 0,
+            watered: false
+        };
+
+        plots.push(plot);
+
+        const div = document.createElement('div');
+        div.className = 'plot' + (plot.locked ? ' locked' : '');
+        div.onclick = () => handleClick(plot, div);
+
+        game.appendChild(div);
+    }
+}
+
+function updateUI() {
+    document.getElementById('money').innerText = money;
+}
+
+function setMode(m) {
+    mode = m;
+}
+
+function canPlant(plot) {
+    if (plot.locked) return false;
+    if (plot.planted) return false;
+    return money >= plants.cenoura.cost;
+}
+
+function canWater(plot) {
+    return plot.planted && !plot.watered;
+}
+
+function canHarvest(plot) {
+    return plot.planted && plot.growth >= plants.cenoura.growth;
+}
+
+function handleClick(plot, div) {
+    if (plot.locked) {
+        if (money >= 20) {
+            money -= 20;
+            plot.locked = false;
+            div.classList.remove('locked');
+        }
+        updateUI();
+        return;
+    }
+
+    if (mode === 'plant' && canPlant(plot)) {
+        plot.planted = 'cenoura';
+        plot.growth = 0;
+        plot.watered = false;
+        money -= plants.cenoura.cost;
+    }
+
+    else if (mode === 'water' && canWater(plot)) {
+        plot.watered = true;
+        div.classList.add('watered');
+
+        setTimeout(() => {
+            plot.growth++;
+            plot.watered = false;
+            div.classList.remove('watered');
+            renderPlot(plot, div);
+        }, 1000);
+    }
+
+    else if (mode === 'harvest' && canHarvest(plot)) {
+        money += plants.cenoura.reward;
+        plot.planted = null;
+        plot.growth = 0;
+        div.innerText = '';
+    }
+
+    renderPlot(plot, div);
+    updateUI();
+}
+
+function renderPlot(plot, div) {
+    if (!plot.planted) {
+        div.innerText = '';
+        return;
+    }
+
+    const stages = ['🌱','🥕','🥕🥕'];
+    div.innerText = stages[plot.growth] || '🥕🥕🥕';
+}
+
+createPlots();
+updateUI();
+</script>
+
+</body>
+</html>

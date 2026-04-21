@@ -45,6 +45,14 @@ const ICON_ROW_H   = 82;
 const ICON_COL_W   = 92;
 const ICON_TOP_PAD = 20;
 
+// ── PRESETS DE TAMANHO DE JANELA ──
+const WINDOW_SIZES = {
+    small:      { w: 320,  h: 240  },
+    medium:     { w: 540,  h: 380  },
+    big:        { w: 800,  h: 580  },
+    fullscreen: null 
+};
+
 (function () {
     const s = document.createElement('style');
     s.textContent = `
@@ -554,6 +562,7 @@ function openAppById(appId) { //FOPEN
     usedRAM += (app.ram || 0);
     return createWindow(app);
 }
+
 //==================
 // WINDOW
 //+===================
@@ -562,7 +571,23 @@ function createWindow(app) { // FWINDOW COLOCAR ATRIBUTO SIZE DPS QUE EU ESQUECI
     const win    = document.createElement('div');
     win.className = 'window'; win.id = `window-${winUid}`; win.style.zIndex = ++zIndexCounter;
     const offset = (document.querySelectorAll('.window').length * 22) + 50;
-    win.style.top = `${offset}px`; win.style.left = `${offset}px`;
+
+    // ── PRESET DE TAMANHO ──
+    const sizeKey    = app.size || 'medium';
+    const sizePreset = WINDOW_SIZES[sizeKey];
+
+    if (sizeKey === 'fullscreen' || !sizePreset) {
+        const dh = desktop.offsetHeight || window.innerHeight - 42;
+        win.style.top    = '0px';
+        win.style.left   = '0px';
+        win.style.width  = desktop.offsetWidth + 'px';
+        win.style.height = dh + 'px';
+    } else {
+        win.style.top    = `${offset}px`;
+        win.style.left   = `${offset}px`;
+        win.style.width  = sizePreset.w + 'px';
+        win.style.height = sizePreset.h + 'px';
+    }
 
     const ports = app.ports || [];
     win.dataset.ports   = JSON.stringify(ports);
@@ -582,7 +607,11 @@ function createWindow(app) { // FWINDOW COLOCAR ATRIBUTO SIZE DPS QUE EU ESQUECI
         <div class="title-bar" style="display:flex;align-items:center;padding:0 2px;">
             <div style="display:flex;gap:1px;margin-right:3px;">${leftBtns}</div>
             <span style="flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${app.nome}</span>
-            <div style="display:flex;gap:1px;margin-left:3px;align-items:center;">${rightBtns}<button class="close-btn">X</button></div>
+            <div style="display:flex;gap:1px;margin-left:3px;align-items:center;">
+                ${rightBtns}
+                <button class="fullscreen-btn" title="Maximizar" style="padding:0 5px;font-size:10px;">⬜</button>
+                <button class="close-btn">X</button>
+            </div>
         </div>
         <div class="window-content">
             <iframe src="${app.html}" style="width:100%;height:100%;border:none;"></iframe>
@@ -592,6 +621,33 @@ function createWindow(app) { // FWINDOW COLOCAR ATRIBUTO SIZE DPS QUE EU ESQUECI
         <div class="resize-handle corner"></div>`;
 
     desktop.appendChild(win);
+
+    // ── BOTÃO FULLSCREEN DA MÁQUINA VIRTUAL ──
+    win.querySelector('.fullscreen-btn').addEventListener('click', () => {
+        if (win.dataset.maximized === '1') {
+            // restaura tamanho anterior
+            win.style.top    = win.dataset.prevTop;
+            win.style.left   = win.dataset.prevLeft;
+            win.style.width  = win.dataset.prevWidth;
+            win.style.height = win.dataset.prevHeight;
+            win.dataset.maximized = '0';
+            win.querySelector('.fullscreen-btn').textContent = '⬜';
+        } else {
+            // salva tamanho atual e maximiza dentro do desktop
+            win.dataset.prevTop    = win.style.top;
+            win.dataset.prevLeft   = win.style.left;
+            win.dataset.prevWidth  = win.style.width;
+            win.dataset.prevHeight = win.style.height;
+            const dh = desktop.offsetHeight || window.innerHeight - 42;
+            win.style.top    = '0px';
+            win.style.left   = '0px';
+            win.style.width  = desktop.offsetWidth + 'px';
+            win.style.height = dh + 'px';
+            win.dataset.maximized = '1';
+            win.querySelector('.fullscreen-btn').textContent = '❐';
+        }
+        drawConnections();
+    });
 
     const taskItem = document.createElement('div');
     taskItem.className = 'taskbar-app active';
@@ -760,7 +816,7 @@ window.pescar = appId => window.emitResource(appId, {
     data: { raridade: Math.random() },
 });
 
-function createNotepadFile() { // PLACEHOLDER GERAR HANDLER DE AQUIVO DPS PIMP 
+function createNotepadFile() { // PLACEHOLDER GERAR HANDLER DE ARQUIVO DPS PIMP 
     const saved = addFile({ name: 'Novo.txt', type: 'text', size: 1, data: { content: '' } });
     if (saved) renderDesktopFiles();
 }
@@ -1072,6 +1128,8 @@ window.addEventListener('message', event => {
     if (type === 'open-app'        && appId)          openAppById(appId);
     if (type === 'delete-file'     && fileId != null) deleteFile(fileId);
     if (type === 'create-shortcut' && url)            createShortcut(name || url, url);
+    if (type === 'create-file'     && event.data.fileType)
+        window.createNewFile(event.data.fileType, event.data.name, event.data.data || {}, event.data.size || 1);
     if (type === 'emit-from-window') {
         let srcWin = null;
         for (const w of document.querySelectorAll('.window')) {
@@ -1104,6 +1162,7 @@ function applySavedState() {
     const state = loadState();
     if (state.wallpaper) document.body.style.backgroundImage = `url('${state.wallpaper}')`;
 }
+
 //===========================
 // PAINT STUFF
 //========================
@@ -1127,8 +1186,8 @@ window.getOpenWindows = function() {
     }));
 };  
 window.OpenWindow = function(id) {
-    openAppById(id)
-}
+    openAppById(id);
+};
 window.closeWindowById = function(id) {
     const win = document.getElementById(id);
     if (!win) return false;
@@ -1140,15 +1199,37 @@ window.closeWindowById = function(id) {
     win.remove();
     return true;
 };
+
 //====================
 //Go Music
 //==============
 
 
 //============================
-//HANDLERS PIMP handler de criar arquivo depois faz a função novo pra api >:V
+// HANDLER DE CRIAR ARQUIVO
+//  ('text'|'folder'|'image'|'fish'|'dinheiro'|'shortcut')
+//       nome  (string com o nome visível)
+//       data  (objeto com campos extras, opcional)
+//       size  (número em MB, padrão 1)
 //============================
+window.createNewFile = function(type, name, data = {}, size = 1) {
+    if (!DESKTOP_FILE_TYPES[type]) {
+        console.warn(`[createNewFile] Tipo desconhecido: "${type}". Válidos: ${Object.keys(DESKTOP_FILE_TYPES).join(', ')}`);
+        return null;
+    }
+    if (!name || !name.trim()) {
+        console.warn('[createNewFile] Nome inválido.');
+        return null;
+    }
 
+    // defaults por tipo
+    if (type === 'text'   && data.content   === undefined) data.content   = '';
+    if (type === 'folder' && !Array.isArray(data.children)) data.children = [];
+
+    const saved = addFile({ name: name.trim(), type, size, data });
+    if (saved) renderDesktopFiles();
+    return saved;
+};
 
 
 //===========================
@@ -1160,4 +1241,3 @@ applySavedState();
 applyUpgrades();
 initSessionTime();
 loadApps();
-
