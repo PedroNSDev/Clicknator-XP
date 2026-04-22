@@ -3,9 +3,9 @@ const UNLOCK_KEY   = 'winxp-unlocks';
 const FILE_KEY     = 'winxp-files';
 const UPGRADES_KEY = 'winxp-upgrades';
 const sounds = {
-    click: new Audio('Click.mp3'),
-    open: new Audio('open.mp3'),
-    error: new Audio('error.mp3')
+    click: new Audio('click.mp3'),
+    open: new Audio('open.mp3')
+   // error: new Audio('error.mp3')
 };
 const openApps        = new Set();
 let zIndexCounter     = 10;
