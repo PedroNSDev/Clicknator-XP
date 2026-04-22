@@ -2,7 +2,11 @@ const SAVE_KEY     = 'winxp-state';
 const UNLOCK_KEY   = 'winxp-unlocks';
 const FILE_KEY     = 'winxp-files';
 const UPGRADES_KEY = 'winxp-upgrades';
-
+const sounds = {
+    click: new Audio('Click.mp3'),
+    open: new Audio('open.mp3'),
+    error: new Audio('error.mp3')
+};
 const openApps        = new Set();
 let zIndexCounter     = 10;
 let appsList          = [];
@@ -10,6 +14,7 @@ let connections       = [];
 let pendingConnection = null;
 let usedRAM           = 0;
 let currentTargetIcon = null;
+
 
 window.systemInfo = { username: '', ram: 256, space: 2048, session_time: 0 };
 
@@ -186,12 +191,13 @@ const DESKTOP_FILE_TYPES = {
     image:    { icon: '🖼️', onDblClick: file => openImageViewer(file)    },
     shortcut: { icon: '⭐', onDblClick: file => openShortcut(file)        },
     fish:     { icon: '🐟', onDblClick: file => openFishViewer(file)     },
-    dinheiro: { icon: '💰', onDblClick: file => openDinheiroViewer(file) }
+    dinheiro: { icon: '💰', onDblClick: file => openDinheiroViewer(file) },
+    audio:    { icon: '🎵', onDblClick: file => openAudioPlayer(file) },
     // art: { icon: '💰', onDblClick: file => openDinheiroViewer(file)
       // msc: { icon: '💰', onDblClick: file => openDinheiroViewer(file)
         // exe: { icon: '💰', onDblClick: file => openDinheiroViewer(file)
 };
-const TYPE_ICONS = { text:'📝', folder:'📁', fish:'🐟', app:'⚙️', image:'🖼️', shortcut:'⭐', dinheiro:'💰',art:'🎨' }; // Implementar formato .art depois que e adicionar handler pra importar projetos no GoPaint PIMP
+const TYPE_ICONS = { text:'📝', folder:'📁', fish:'🐟', app:'⚙️', image:'🖼️', shortcut:'⭐', dinheiro:'💰',art:'🎨', audio:'🎵'}; // Implementar formato .art depois que e adicionar handler pra importar projetos no GoPaint PIMP
 
 const FILE_DELETE_HANDLERS = {
     app: file => {
@@ -355,8 +361,11 @@ desktop.addEventListener('dragover', e => {
 });
 desktop.addEventListener('drop', e => {
     e.preventDefault();
-    const realImages = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/'));
-    if (realImages.length) { realImages.forEach(importRealImage); return; }
+    const files = [...e.dataTransfer.files];
+    const images = files.filter(f => f.type.startsWith('image/'));
+    const audios = files.filter(f => f.type.startsWith('audio/'));
+    if (images.length) images.forEach(importRealImage);
+    if (audios.length) audios.forEach(ImportAudioFile);
     const vfsId = e.dataTransfer.getData('vfs-file-id');
     if (vfsId) moveFileBetween(parseInt(vfsId), null);
 });
@@ -727,7 +736,29 @@ function tryConnect(pending, targetWin, targetPort) {
     connections.push(conn);
     drawConnections();
 }
+// ───   ─────────────────────────────────────────
+// AUDIO 
+// ───   ─────────────────────────────────────────
 
+function ImportAudioFile(file) {
+    const sizeMB = Math.max(1, Math.round(file.size / 1024 / 1024));
+
+    const reader = new FileReader();
+    reader.onload = ev => {
+        const saved = addFile({
+            name: file.name,
+            type: 'audio',
+            size: sizeMB,
+            data: {
+                src: ev.target.result
+            }
+        });
+
+        if (saved) renderDesktopFiles();
+    };
+
+    reader.readAsDataURL(file);
+}
 // ─── REPLACE routeResourceToWindow ─────────────────────────────────────────
 
 function routeResourceToWindow(resource, targetWin) { // FSEND RESOURCE
@@ -1162,7 +1193,22 @@ function applySavedState() {
     const state = loadState();
     if (state.wallpaper) document.body.style.backgroundImage = `url('${state.wallpaper}')`;
 }
+// =====================
+// CLICK SOUND SYSTEM
+// =====================
+const clickAudio = new Audio('click.mp3');
+clickAudio.volume = 0.4; 
 
+function playClickSound() {
+    const sound = new Audio('click.mp3'); // cria novo sempre
+
+    sound.volume = 0.4;
+    sound.playbackRate = 0.8 + Math.random() * 0.4;
+
+    sound.play().catch(err => {
+        console.warn('Erro ao tocar som:', err);
+    });
+}
 //===========================
 // PAINT STUFF
 //========================
@@ -1230,7 +1276,13 @@ window.createNewFile = function(type, name, data = {}, size = 1) {
     if (saved) renderDesktopFiles();
     return saved;
 };
+document.addEventListener('click', (e) => {
+    const clickable = e.target.closest('button, .menu-item-right');
 
+    if (clickable) {
+        playClickSound();
+    }
+});
 
 //===========================
 // INIT

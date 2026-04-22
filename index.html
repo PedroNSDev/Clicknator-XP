@@ -1,62 +1,229 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1194290959028721" crossorigin="anonymous"></script>
-    <meta name="google-adsense-account" content="ca-pub-1194290959028721">
-    <title>ClickNator XP</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
+        <!DOCTYPE html>
+        <html lang="pt-BR">
+        <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>ClickNator XP</title>
 
-<canvas id="cables"></canvas>
+        <link rel="stylesheet" href="style.css">
 
-<div id="desktop"></div>
+        <style>
 
-<div id="taskbar">
-    <button id="start-btn">
-        <span style="font-style:italic;font-weight:bold;">Iniciar</span>
-    </button>
+        /* ═════════ BOOT VISTA STYLE ═════════ */
 
-    <div id="start-menu">
-        <div id="start-apps-list"></div>
-        <div class="menu-separator"></div>
-        <button id="change-wallpaper">Trocar papel de parede</button>
-        <input type="file" id="wallpaper-input" style="display:none">
-        <button id="shutdown-btn">Desligar</button>
-    </div>
+        #boot-screen {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at center, #0a1a3a 0%, #050b1a 70%, #000 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            font-family: Segoe UI, Tahoma, sans-serif;
+            color: #fff;
+            overflow: hidden;
+        }
 
-    <div id="quick-launch"></div>
-    <div id="taskbar-apps"></div>
-    <div id="clock">12:00</div>
-</div>
+        /* brilho suave tipo vidro */
+        #boot-screen::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle, rgba(255,255,255,0.06), transparent 70%);
+            pointer-events: none;
+        }
 
-<!-- ═══ CONTEXT MENU ════════════════════════════════════════════ -->
-<div id="context-menu">
+        /* LOGO COM GLOW */
+        #boot-logo {
+            width: 180px;
+            margin-bottom: 30px;
+            filter: drop-shadow(0 0 8px #4da6ff)
+                    drop-shadow(0 0 20px #1e90ff);
+            animation: logoPulse 2s ease-in-out infinite;
+        }
 
-    <!-- itens sempre visíveis -->
-    <div class="menu-item" id="menu-open">Abrir</div>
-    <div class="menu-item" id="menu-rename">Renomear</div>
+        @keyframes logoPulse {
+            0%, 100% {
+                transform: scale(1);
+                filter: drop-shadow(0 0 6px #4da6ff)
+                        drop-shadow(0 0 15px #1e90ff);
+            }
+            50% {
+                transform: scale(1.05);
+                filter: drop-shadow(0 0 12px #80cfff)
+                        drop-shadow(0 0 30px #3399ff);
+            }
+        }
 
-    <!-- só para arquivos (text, folder…) -->
-    <div class="menu-item" id="menu-delete" style="color:#a00;">🗑 Excluir</div>
+        .boot-content {
+            text-align: center;
+            z-index: 2;
+        }
 
-    <div class="menu-separator"></div>
+        /* BARRA */
+        .boot-bar {
+            width: 300px;
+            height: 20px;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.08);
+            padding: 3px;
+            display: flex;
+            gap: 3px;
+            margin: 0 auto;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.6);
+        }
 
-    <!-- só para ícones de app -->
-    <div class="menu-item" id="menu-pin">Adicionar à Barra de Tarefas</div>
+        .boot-block {
+            flex: 1;
+            border-radius: 2px;
+            background: #0a2a80;
+            opacity: 0.2;
+            transition: all 0.2s;
+        }
 
-    <div class="menu-separator"></div>
-    <div class="menu-item" id="menu-unlock">Desbloquear Pescaria</div>
+        .boot-block.active {
+            opacity: 1;
+            background: linear-gradient(to bottom, #5bbcff, #1e90ff);
+            box-shadow: 0 0 6px #4da6ff;
+        }
 
-    <div class="menu-separator"></div>
-    <div class="menu-item" id="menu-new-notepad">Novo &gt; Bloco de notas</div>
-    <div class="menu-item" id="menu-new-folder">Novo &gt; Pasta</div>
+        .boot-text {
+            margin-top: 18px;
+            font-size: 14px;
+            color: #cfd8ff;
+            letter-spacing: 0.5px;
+        }
 
-</div>
+        </style>
+        </head>
+        <body>
 
-<script src="script.js"></script>
-</body>
-</html>
+        <!-- BOOT -->
+        <div id="boot-screen">
+            <div class="boot-content">
+                <img src="logo.png" id="boot-logo">
+
+                <div class="boot-bar" id="boot-bar"></div>
+
+                <p class="boot-text" id="boot-text">Iniciando...</p>
+            </div>
+        </div>
+
+        <audio id="boot-audio" src="boot.mp3" preload="auto"></audio>
+
+        <!-- SISTEMA -->
+        <canvas id="cables"></canvas>
+        <div id="desktop"></div>
+
+        <div id="taskbar">
+            <button id="start-btn">
+                <span style="font-style:italic;font-weight:bold;">Iniciar</span>
+            </button>
+
+            <div id="start-menu">
+                <div id="start-apps-list"></div>
+                <div class="menu-separator"></div>
+                <button id="change-wallpaper">Trocar papel de parede</button>
+                <input type="file" id="wallpaper-input" style="display:none">
+                <button id="shutdown-btn">Desligar</button>
+            </div>
+
+            <div id="quick-launch"></div>
+            <div id="taskbar-apps"></div>
+            <div id="clock">12:00</div>
+        </div>
+
+        <div id="context-menu">
+            <div class="menu-item" id="menu-open">Abrir</div>
+            <div class="menu-item" id="menu-rename">Renomear</div>
+            <div class="menu-item" id="menu-delete" style="color:#a00;">🗑 Excluir</div>
+
+            <div class="menu-separator"></div>
+
+            <div class="menu-item" id="menu-pin">Adicionar à Barra de Tarefas</div>
+
+            <div class="menu-separator"></div>
+            <div class="menu-item" id="menu-unlock">Desbloquear Pescaria</div>
+
+            <div class="menu-separator"></div>
+            <div class="menu-item" id="menu-new-notepad">Novo &gt; Bloco de notas</div>
+            <div class="menu-item" id="menu-new-folder">Novo &gt; Pasta</div>
+        </div>
+    <script src="script.js"></script>
+      <script>
+const texts = [
+    "Iniciando serviços...",
+    "Carregando sistema...",
+    "Inicializando interface...",
+    "Aplicando configurações...",
+    "Finalizando boot...",
+    "Bem vindo!"
+];
+
+const bar = document.getElementById("boot-bar");
+const textEl = document.getElementById("boot-text");
+const audio = document.getElementById("boot-audio");
+
+/* criar blocos */
+const totalBlocks = 18;
+for (let i = 0; i < totalBlocks; i++) {
+    const b = document.createElement("div");
+    b.className = "boot-block";
+    bar.appendChild(b);
+}
+
+const blocks = document.querySelectorAll(".boot-block");
+
+let progress = 0;
+
+function getDelay(p) {
+    const base = 60;
+        //GET SLOW 
+    const slowdown = Math.pow(p, 2) * 400;
+        //SET RANDOM FrEEZE
+    const randomFreeze = Math.random() < 0.25 ? Math.random() * 400 : 0;
+
+    return base + slowdown + randomFreeze + Math.random() * 120;
+}
+
+function step() {
+    if (progress < blocks.length) {
+
+        blocks[progress].classList.add("active");
+
+        const ratio = progress / blocks.length;
+
+        textEl.textContent = texts[
+            Math.min(texts.length - 1, Math.floor(ratio * texts.length))
+        ];
+
+        progress++;
+
+        setTimeout(() => step(), getDelay(ratio));
+
+    } else {
+        finish();
+    }
+}
+
+function finish() {
+    const boot = document.getElementById("boot-screen");
+    setTimeout(() => {
+        boot.style.transition = "opacity 0.8s";
+        boot.style.opacity = "0";
+        setTimeout(() => boot.remove(), 800);
+    }, 500);
+    setTimeout(() => {
+        audio.currentTime = 0;
+        audio.play().catch(()=>{});
+    }, 800);
+}
+
+window.addEventListener("load", () => {
+    setTimeout(step, 300);
+});
+</script>
+
+
+        </body>
+        </html>
