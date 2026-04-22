@@ -1,0 +1,9 @@
+{
+  "name": "Farmy",
+  "version": "0.2",
+  "description": "Simulador de Fazenda",
+  "icon": "🌾",
+  "color": "#2ecc71",
+  "tags": ["farm", "idle", "sim"],
+  "file": "Farmy.html"
+}

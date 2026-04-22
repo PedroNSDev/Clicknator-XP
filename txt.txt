@@ -1067,7 +1067,13 @@ IF WHILE FN FOR >:V FOFO COMPILER????talvez
 
 urrrr GALINHAS E OVOS SIM FAZENDINHERS MEO 
 
+TRAVESSAOm
+// ─────────────────────────────────────────────────────────────────
+// 
+// ─────────────────────────────────────────────────────────────────
 
+
+//── ───────────────────────────────────
 
 
 get isometric view -- project Fellow Farmy OMAIGAAAAH
@@ -1132,3 +1138,10 @@ can_buy(plot) if locked == true continue, if mony not enough return "POBRE KKKKK
 
 
 catapimbers dai pra dar render era so fazer algo tipo urr X = (mapX - mapY) *(tileWidth/2) FAAAAAAAAAAAH 
+
+
+da pra fazer um site de jogos assim hunh
+eu tenho que simplificar a interface ta mt robusta e pixelada de um jeito nao muito anos 2000
+
+config do  site seria algo pra game em /Games: game seria a pasta contendo o jogo nela teria um config.json com a imagem e o nome do jogo pra dar de argumento pra função de render e o resto é o resto
+precisa ter uma interface amigavel e fruitger ne MEO

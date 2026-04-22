@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌾 Farmy v0.4</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+:root {
+  --wood-dark: #2a1508; --wood-mid: #4a2c12; --wood-rim: #7a4e28;
+  --green-hi: #2ecc71; --gold: #f1c40f; --red: #e74c3c;
+  --blue: #3498db; --cyan: #1abc9c; --purple: #9b59b6;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #060d06;
+  display: flex; justify-content: center; align-items: center;
+  min-height: 100vh; font-family: 'Press Start 2P', monospace; overflow: hidden;
+}
+#game-wrapper {
+  display: flex; flex-direction: column;
+  border: 3px solid var(--wood-rim);
+  box-shadow: 0 0 0 1px #000, 0 0 80px rgba(46,204,113,.12), 0 0 160px rgba(0,0,0,.9);
+}
+#top-bar {
+  width: 920px; height: 42px; background: var(--wood-dark);
+  border-bottom: 3px solid var(--wood-mid);
+  display: flex; align-items: center; padding: 0 14px; gap: 12px;
+}
+#mony-display { color: var(--gold); font-size: 11px; text-shadow: 0 0 8px rgba(241,196,15,.4); min-width: 130px; }
+#tool-label { font-size: 7px; color: var(--green-hi); letter-spacing: 1px; }
+#skills-btn {
+  background: linear-gradient(180deg,#0a1a2d,#060c18); border: 2px solid var(--blue);
+  color: var(--blue); font-family: 'Press Start 2P', monospace; font-size: 5px;
+  padding: 5px 8px; cursor: pointer; letter-spacing: 1px; transition: all .12s;
+}
+#skills-btn:hover { box-shadow: 0 0 8px rgba(52,152,219,.35); color: #7ec8e3; }
+#msg-display { margin-left: auto; font-size: 7px; color: var(--red); max-width: 320px; text-align: right; }
+#canvas-container {
+  position: relative; width: 920px; height: 460px; overflow: hidden; cursor: grab;
+}
+#canvas-container.dragging { cursor: grabbing; }
+canvas { display: block; image-rendering: pixelated; }
+#toast {
+  position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+  background: rgba(5,10,5,.95); border: 1px solid #444; color: #eee;
+  padding: 7px 16px; font-size: 7px; pointer-events: none; opacity: 0;
+  transition: opacity .3s; white-space: nowrap; z-index: 20; border-radius: 2px;
+}
+/* ── HOTBAR ── */
+#hotbar {
+  width: 920px; height: 148px;
+  background:
+    repeating-linear-gradient(90deg,rgba(0,0,0,.07) 0,rgba(0,0,0,.07) 1px,transparent 1px,transparent 48px),
+    repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0,rgba(255,255,255,.025) 1px,transparent 1px,transparent 18px),
+    linear-gradient(180deg,#1a0c05 0%,#260e05 50%,#1a0c05 100%);
+  border-top: 3px solid var(--wood-rim);
+  display: flex; align-items: center; padding: 8px 10px; gap: 8px;
+  overflow-x: auto; overflow-y: hidden; flex-shrink: 0;
+}
+#hotbar::-webkit-scrollbar { height: 3px; }
+#hotbar::-webkit-scrollbar-track { background: #0d0804; }
+#hotbar::-webkit-scrollbar-thumb { background: var(--wood-mid); border-radius: 2px; }
+#tab-group { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+.tab-btn {
+  width: 62px; height: 57px;
+  background: linear-gradient(180deg,#1a0d06,#0f0906); border: 2px solid var(--wood-mid); border-radius: 3px;
+  color: #666; font-family: 'Press Start 2P', monospace; font-size: 5px; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+  transition: all .12s; flex-shrink: 0; letter-spacing: .5px;
+}
+.tab-btn span:first-child { font-size: 18px; line-height: 1; }
+.tab-btn:hover { border-color: var(--wood-rim); color: #aaa; }
+.tab-btn.active-plants { background: linear-gradient(180deg,#0a2d0a,#061806); border-color: var(--green-hi); color: var(--green-hi); box-shadow: 0 0 8px rgba(46,204,113,.3); }
+.tab-btn.active-equips { background: linear-gradient(180deg,#0a1a2d,#060c18); border-color: var(--blue); color: var(--blue); box-shadow: 0 0 8px rgba(52,152,219,.3); }
+.tool-btn {
+  min-width: 62px; width: 62px; height: 124px;
+  background: linear-gradient(180deg,#1a0d06,#100908); border: 2px solid var(--wood-mid); border-radius: 3px;
+  color: #777; font-family: 'Press Start 2P', monospace; font-size: 5px; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+  transition: all .12s; flex-shrink: 0; letter-spacing: .5px;
+}
+.tool-btn span:first-child { font-size: 22px; line-height: 1; }
+.tool-btn:hover { border-color: var(--wood-rim); color: #ccc; background: #200e06; }
+.tool-btn.active { background: linear-gradient(180deg,#0a2d0a,#061806); border-color: var(--green-hi); color: var(--green-hi); box-shadow: 0 0 10px rgba(46,204,113,.3), inset 0 0 8px rgba(46,204,113,.05); }
+.tool-btn.active-hammer { background: linear-gradient(180deg,#2d0a0a,#180606); border-color: var(--red); color: var(--red); box-shadow: 0 0 10px rgba(231,76,60,.3); }
+.hbar-div { width: 2px; height: 108px; background: linear-gradient(180deg,transparent,var(--wood-mid),transparent); flex-shrink: 0; }
+.hbar-cat { writing-mode: vertical-lr; font-size: 5px; color: var(--wood-rim); letter-spacing: 3px; padding: 6px 3px; flex-shrink: 0; opacity: .7; }
+.plant-card {
+  min-width: 62px; width: 62px; height: 124px; border-radius: 5px 5px 3px 3px;
+  border: 2px solid #274827; display: flex; flex-direction: column; align-items: center;
+  cursor: pointer; transition: transform .15s, box-shadow .15s, border-color .15s;
+  position: relative; overflow: hidden; flex-shrink: 0;
+  background: linear-gradient(180deg,#1a4020,#0d2412); user-select: none;
+}
+.pc-art {
+  width: 100%; height: 62px; background: linear-gradient(180deg,#1e5a28,#133d18);
+  display: flex; align-items: center; justify-content: center; font-size: 28px; flex-shrink: 0;
+  border-bottom: 1px solid rgba(255,255,255,.06); transition: background .15s;
+}
+.pc-name { font-size: 5px; color: #8de88d; text-align: center; padding: 4px 3px 2px; line-height: 1.6; flex: 1; display: flex; align-items: center; justify-content: center; }
+.pc-cost { font-size: 7px; color: var(--gold); padding: 3px; width: 100%; text-align: center; background: rgba(0,0,0,.45); border-top: 1px solid rgba(255,255,255,.07); }
+.plant-card:hover:not(.locked) { transform: translateY(-4px); box-shadow: 0 8px 18px rgba(0,0,0,.5); }
+.plant-card.selected { transform: translateY(-10px); border-color: var(--gold); box-shadow: 0 0 16px rgba(241,196,15,.45), 0 12px 24px rgba(0,0,0,.65); }
+.plant-card.selected .pc-art { background: linear-gradient(180deg,#266632,#184422); }
+.plant-card.selected .pc-cost { color: #fff; background: rgba(241,196,15,.2); }
+.equip-card {
+  min-width: 62px; width: 62px; height: 124px; border-radius: 5px 5px 3px 3px;
+  border: 2px solid #1a3d5c; display: flex; flex-direction: column; align-items: center;
+  cursor: pointer; transition: transform .15s, box-shadow .15s, border-color .15s;
+  position: relative; overflow: hidden; flex-shrink: 0;
+  background: linear-gradient(180deg,#0d1e2d,#060e18); user-select: none;
+}
+.ec-art { width: 100%; height: 52px; background: linear-gradient(180deg,#112236,#0a1624); display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; border-bottom: 1px solid rgba(255,255,255,.06); }
+.ec-name { font-size: 5px; color: #7ec8e3; text-align: center; padding: 2px 3px; line-height: 1.5; display: flex; align-items: center; justify-content: center; }
+.ec-desc { font-size: 4px; color: #5a8a9a; text-align: center; padding: 1px 3px; line-height: 1.4; flex: 1; display: flex; align-items: center; justify-content: center; }
+.ec-cost { font-size: 7px; color: var(--cyan); padding: 3px; width: 100%; text-align: center; background: rgba(0,0,0,.45); border-top: 1px solid rgba(255,255,255,.07); }
+.equip-card.building-type { border-color: #2a4a1a; background: linear-gradient(180deg,#0d1e0d,#060e06); }
+.equip-card.building-type .ec-art { background: linear-gradient(180deg,#112811,#0a1a0a); }
+.equip-card.building-type .ec-name { color: #8de88d; }
+.equip-card.building-type .ec-cost { color: var(--green-hi); }
+.equip-card:hover:not(.locked) { transform: translateY(-4px); box-shadow: 0 8px 18px rgba(0,0,0,.5); }
+.equip-card.selected { transform: translateY(-10px); border-color: var(--blue); box-shadow: 0 0 16px rgba(52,152,219,.5), 0 12px 24px rgba(0,0,0,.65); }
+.equip-card.selected.building-type { border-color: var(--green-hi); box-shadow: 0 0 16px rgba(46,204,113,.4), 0 12px 24px rgba(0,0,0,.65); }
+.plant-card.locked, .equip-card.locked { filter: brightness(.45) saturate(.3); border-color: #2a2a2a; }
+.plant-card.locked:hover, .equip-card.locked:hover { filter: brightness(.6) saturate(.4); transform: translateY(-2px); }
+.lock-ov { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,.55); gap: 4px; pointer-events: none; }
+.lock-ov span:first-child { font-size: 18px; }
+.lock-ov span:last-child { font-size: 6px; color: var(--gold); }
+/* ──SKY BACKGROUND ── */
+#sky-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background: linear-gradient(to bottom, #87CEEB 0%, #bde6ff 60%, #dff4ff 100%);
+}
+
+.cloud {
+  position: absolute;
+  background: url('./cloud.jpg') no-repeat center/contain;
+  opacity: 0.85;
+}
+
+.cloud1 {
+  width: 300px;
+  height: 150px;
+  top: 60px;
+  animation: moveCloud 60s linear infinite;
+}
+.cloud2 {
+  width: 220px;
+  height: 120px;
+  top: 180px;
+  animation: moveCloud 90s linear infinite;
+}
+.cloud3 {
+  width: 260px;
+  height: 140px;
+  top: 300px;
+  animation: moveCloud 75s linear infinite;
+}
+@keyframes moveCloud {
+  from {
+    transform: translateX(-400px);
+  }
+  to {
+    transform: translateX(110vw);
+  }
+}
+.slot-group { display: flex; gap: 7px; align-items: flex-end; }
+#panel-plants { display: flex; align-items: center; gap: 7px; }
+#panel-equips { display: none; align-items: center; gap: 7px; }
+
+/* ── SKILL TREE OVERLAY ── */
+#skill-overlay {
+  display: none; position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,.85); align-items: center; justify-content: center;
+}
+#skill-overlay.open { display: flex; }
+#skill-panel {
+  width: 720px; background: linear-gradient(180deg,#0c180c,#080f08);
+  border: 2px solid var(--wood-rim); box-shadow: 0 0 40px rgba(46,204,113,.15), 0 0 80px rgba(0,0,0,.8);
+}
+#skill-header {
+  height: 40px; background: linear-gradient(90deg,#1a0d04,#2a1508,#1a0d04);
+  border-bottom: 2px solid var(--wood-mid); display: flex; align-items: center;
+  justify-content: space-between; padding: 0 14px;
+}
+#skill-header span { font-size: 9px; color: var(--purple); text-shadow: 0 0 10px rgba(155,89,182,.5); letter-spacing: 2px; }
+#skill-close {
+  background: #1a0808; border: 1px solid #4a1818; color: var(--red);
+  font-family: 'Press Start 2P', monospace; font-size: 7px;
+  padding: 5px 10px; cursor: pointer; letter-spacing: 1px;
+}
+#skill-close:hover { background: #2a0a0a; }
+#skill-body { position: relative; width: 720px; height: 460px; overflow: hidden; }
+#skill-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+.skill-node {
+  position: absolute; width: 76px; height: 84px;
+  border: 2px solid #2a3a2a; border-radius: 6px;
+  background: linear-gradient(180deg,#0d180d,#06100a);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  cursor: not-allowed; user-select: none; z-index: 1; gap: 3px; text-align: center;
+  transition: transform .15s, box-shadow .15s, border-color .15s;
+}
+.sn-icon { font-size: 22px; line-height: 1; }
+.sn-name { font-size: 4px; color: #3a5a3a; line-height: 1.5; padding: 0 4px; }
+.sn-cost { font-size: 6px; color: #3a5a3a; }
+.skill-node.sk-free { border-color: var(--green-hi); background: linear-gradient(180deg,#0a2d0a,#061806); cursor: default; }
+.skill-node.sk-free .sn-name { color: var(--green-hi); }
+.skill-node.sk-free .sn-cost { color: var(--green-hi); }
+.skill-node.sk-unlocked { border-color: var(--green-hi); background: linear-gradient(180deg,#0a2d0a,#061806); cursor: default; box-shadow: 0 0 12px rgba(46,204,113,.25); }
+.skill-node.sk-unlocked .sn-name { color: var(--green-hi); }
+.skill-node.sk-unlocked .sn-cost { color: var(--green-hi); }
+.skill-node.sk-available { border-color: var(--gold); background: linear-gradient(180deg,#1a1a04,#0d0d02); cursor: pointer; }
+.skill-node.sk-available .sn-name { color: #c8b840; }
+.skill-node.sk-available .sn-cost { color: var(--gold); }
+.skill-node.sk-available:hover { transform: scale(1.06); box-shadow: 0 0 14px rgba(241,196,15,.4); border-color: #ffdd44; }
+.skill-node.sk-locked { opacity: .45; cursor: not-allowed; }
+#skill-footer {
+  height: 48px; background: var(--wood-dark); border-top: 2px solid var(--wood-mid);
+  display: flex; align-items: center; padding: 0 16px; gap: 16px;
+}
+#skill-mony { font-size: 10px; color: var(--gold); }
+#skill-desc { font-size: 6px; color: #7a9a7a; flex: 1; line-height: 1.6; letter-spacing: .5px; }
+</style>
+</head>
+<body>
+  <div id="sky-bg">
+  <div class="cloud cloud1"></div>
+  <div class="cloud cloud2"></div>
+  <div class="cloud cloud3"></div>
+</div>
+<div id="game-wrapper">
+  <div id="top-bar">
+    <div id="mony-display">💰 $<span id="mony-val">150</span></div>
+    <div id="tool-label">🌱 PLANTAR</div>
+    <button id="skills-btn" onclick="openSkills()">🧠 SKILLS</button>
+    <div id="msg-display"></div>
+  </div>
+  <div id="canvas-container">
+    <canvas id="gameCanvas" width="920" height="460"></canvas>
+    <div id="toast"></div>
+  </div>
+  <div id="hotbar">
+    <div id="tab-group">
+      <button class="tab-btn active-plants" id="tab-plants" onclick="switchTab('plants')"><span>🌱</span><span>PLANTAS</span></button>
+      <button class="tab-btn" id="tab-equips" onclick="switchTab('equips')"><span>⚙️</span><span>EQUIPS</span></button>
+    </div>
+    <div class="hbar-div"></div>
+    <button class="tool-btn active" id="btn-plant"   onclick="setTool('plant')">  <span>🌱</span><span>PLANTAR</span></button>
+    <button class="tool-btn"        id="btn-water"   onclick="setTool('water')">  <span>💧</span><span>REGAR</span></button>
+    <button class="tool-btn"        id="btn-harvest" onclick="setTool('harvest')"><span>✂️</span><span>COLHER</span></button>
+    <button class="tool-btn"        id="btn-hammer"  onclick="setTool('hammer')"> <span>🔨</span><span>DEMOLIR</span></button>
+    <div class="hbar-div"></div>
+    <div id="panel-plants">
+      <div class="hbar-cat">VEGETAIS</div>
+      <div class="slot-group" id="crop-slots"></div>
+      <div class="hbar-div"></div>
+      <div class="hbar-cat">ÁRVORES</div>
+      <div class="slot-group" id="tree-slots"></div>
+    </div>
+    <div id="panel-equips">
+      <div class="hbar-cat">CONSTRUÇÕES</div>
+      <div class="slot-group" id="build-slots"></div>
+      <div class="hbar-div"></div>
+      <div class="hbar-cat">CONSUMÍVEIS</div>
+      <div class="slot-group" id="consume-slots"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SKILL TREE -->
+<div id="skill-overlay">
+  <div id="skill-panel">
+    <div id="skill-header">
+      <span>🧠 ÁRVORE DE HABILIDADES</span>
+      <button id="skill-close" onclick="closeSkills()">✕ FECHAR</button>
+    </div>
+    <div id="skill-body">
+      <svg id="skill-svg"></svg>
+      <div id="skill-nodes-container"></div>
+    </div>
+    <div id="skill-footer">
+      <div id="skill-mony">💰 $<span id="sk-mony-val">0</span></div>
+      <div id="skill-desc">Passe o mouse sobre uma habilidade para ver detalhes.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+//  DATA
+// ════════════════════════════════════════════════════════════════
+let PLANTS_DATA = {};
+let EQUIPS_DATA = {};
+
+// ── SKILL TREE DATA ──────────────────────────────────────────────
+// pos = top-left of node (76x84px). Container: 720x460px
+const SKILLS_DEF = {
+  starter:       { name:"Fazendeiro",    desc:"Você começou a sua jornada!",                 cost:0,   icon:"🎓", pos:[322,10],  parents:[],               free:true  },
+  green_thumb:   { name:"Polegar Verde", desc:"Plantas crescem 15% mais rápido.",             cost:200, icon:"🌿", pos:[60,120],  parents:['starter']               },
+  mercador:      { name:"Mercador",      desc:"Colheitas valem +20%.",                        cost:250, icon:"💰", pos:[322,120], parents:['starter']               },
+  expansionista: { name:"Expansionista", desc:"Plots custam 20% menos.",                      cost:300, icon:"🔓", pos:[584,120], parents:['starter']               },
+  irrigacao:     { name:"Irrigação+",   desc:"Regado = crescimento 3× em vez de 2×.",        cost:400, icon:"💧", pos:[0,250],   parents:['green_thumb']           },
+  mutante:       { name:"Mutante",       desc:"Chance de mutação sobe para 10%. Bônus: 3×.", cost:350, icon:"✨", pos:[180,250], parents:['green_thumb']           },
+  exportador:    { name:"Exportador",    desc:"Colheitas valem +40% (soma com Mercador).",    cost:500, icon:"📦", pos:[380,250], parents:['mercador']              },
+  construtor:    { name:"Construtor",    desc:"Construções custam 30% menos.",                cost:400, icon:"🏗️", pos:[584,250], parents:['expansionista']         },
+  hidroponia:    { name:"Hidroponia",    desc:"Sem água: plantas crescem a 1.5× de speed.",  cost:700, icon:"🌊", pos:[0,370],   parents:['irrigacao']             },
+  laboratorio:   { name:"Laboratório",  desc:"Mutações dão bônus de 4× no lugar de 3×.",    cost:800, icon:"🧬", pos:[180,370], parents:['mutante']               },
+  magnata:       { name:"Magnata",       desc:"Colheitas valem +60% (soma com os outros).",  cost:900, icon:"👑", pos:[380,370], parents:['exportador']            },
+  engenheiro:    { name:"Engenheiro",    desc:"Intervalos de construção reduzidos em 50%.",  cost:600, icon:"⚙️", pos:[584,370], parents:['construtor']            },
+};
+
+// Node center helpers
+function nodeCenter(id) {
+  const [x,y] = SKILLS_DEF[id].pos;
+  return [x+38, y+42];
+}
+
+// ════════════════════════════════════════════════════════════════
+//  GRID CONFIG
+// ════════════════════════════════════════════════════════════════
+const GRID_ROWS  = 9, GRID_COLS = 9;
+const TILE_W     = 96, TILE_H = 48, TILE_D = 10;
+const OFFSET_X   = 460, OFFSET_Y = 30;
+const RING_PRICES = [0, 0, 150, 350, 700];
+
+let panX = 0, panY = 0;
+let isDragging = false, dragStart = {x:0,y:0}, panStart = {x:0,y:0}, didDrag = false;
+let hoveredCell = null;
+
+let player = { mony: 100, skills: { starter: true } };
+let grid = [];
+let currentTool = 'plant', currentTab = 'plants';
+let selectedPlantId = 'milho', selectedEquipId = null;
+
+function createPlot(locked, buyPrice) {
+  return { locked, buyPrice, planted:null, watered:false, explodido:false,
+           timer:0, stage:null, mutations:[], building:null, buildingTimer:0 };
+}
+
+function initGrid() {
+  grid = [];
+  for (let r=0;r<GRID_ROWS;r++) {
+    grid[r]=[];
+    for (let c=0;c<GRID_COLS;c++) {
+      const dist = Math.max(Math.abs(r-4), Math.abs(c-4));
+      grid[r][c] = createPlot(dist>1, RING_PRICES[dist]??700);
+    }
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  SAVE / LOAD
+// ════════════════════════════════════════════════════════════════
+function saveGame() {
+  const up = Object.keys(PLANTS_DATA).filter(id=>PLANTS_DATA[id].unlocked);
+  const ue = Object.keys(EQUIPS_DATA).filter(id=>EQUIPS_DATA[id].unlocked);
+  localStorage.setItem('farmy_v04', JSON.stringify({player, grid, selectedPlantId, up, ue}));
+}
+
+function loadGame() {
+  const raw = localStorage.getItem('farmy_v04');
+  if (!raw) { initGrid(); return; }
+  try {
+    const s = JSON.parse(raw);
+    player = s.player;
+    if (!player.skills) player.skills = { starter:true };
+    if (!player.skills.starter) player.skills.starter = true;
+    selectedPlantId = s.selectedPlantId||'milho';
+    if (s.grid && s.grid.length===GRID_ROWS && s.grid[0].length===GRID_COLS) {
+      grid = s.grid;
+      // MIGRATE OLD PLOTS
+      for (let r=0;r<GRID_ROWS;r++)
+        for (let c=0;c<GRID_COLS;c++) {
+          const p = grid[r][c];
+          if (p.building===undefined)      p.building=null;
+          if (p.buildingTimer===undefined)  p.buildingTimer=0;
+          if (p.mutations===undefined)      p.mutations=[];
+        }
+    } else { initGrid(); }
+    (s.up||[]).forEach(id=>{ if(PLANTS_DATA[id]) PLANTS_DATA[id].unlocked=true; });
+    (s.ue||[]).forEach(id=>{ if(EQUIPS_DATA[id]) EQUIPS_DATA[id].unlocked=true; });
+  } catch { initGrid(); }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  SKILL BONUSES
+// ════════════════════════════════════════════════════════════════
+function getBonus(type) {
+  const sk = player.skills;
+  switch(type) {
+    case 'growth_speed':    return sk.green_thumb   ? 1.15 : 1.0;
+    case 'water_mult':      return sk.irrigacao     ? 3    : 2;
+    case 'unwet_mult':      return sk.hidroponia    ? 1.5  : 1.0;
+    case 'harvest_mult': {
+      let b = 0;
+      if (sk.mercador)    b += 0.20;
+      if (sk.exportador)  b += 0.40;
+      if (sk.magnata)     b += 0.60;
+      return 1.0 + b;
+    }
+    case 'plot_discount':   return sk.expansionista ? 0.80 : 1.0;
+    case 'mut_chance':      return sk.mutante       ? 0.10 : 0.05;
+    case 'mut_mult':
+      if (sk.laboratorio) return 4;
+      if (sk.mutante)     return 3;
+      return 2;
+    case 'build_discount':  return sk.construtor    ? 0.70 : 1.0;
+    case 'interval_mult':   return sk.engenheiro    ? 0.50 : 1.0;
+  }
+  return 1.0;
+}
+
+// ════════════════════════════════════════════════════════════════
+//  UTILS
+// ════════════════════════════════════════════════════════════════
+const STAGES = ['tiny','medium','full_grown'];
+
+function getEffectiveAttr(plot, attr) {
+  if (!plot.planted) return 1.0;
+  const plant = PLANTS_DATA[plot.planted];
+  let val = (plant.attributes&&plant.attributes[attr]!==undefined) ? plant.attributes[attr] : 1.0;
+  for (const m of plot.mutations) if (m.stat===attr) val*=m.value;
+  for (const m of (plant.mutations||[])) if (m.stat===attr) val*=m.value;
+  return val;
+}
+
+function neighbors(r, c) {
+  const out=[];
+  for (let dr=-1;dr<=1;dr++) for (let dc=-1;dc<=1;dc++) {
+    if (dr===0&&dc===0) continue;
+    const nr=r+dr, nc=c+dc;
+    if (nr>=0&&nr<GRID_ROWS&&nc>=0&&nc<GRID_COLS) out.push([nr,nc]);
+  }
+  return out;
+}
+
+// ════════════════════════════════════════════════════════════════
+//  VALIDATORS
+// ════════════════════════════════════════════════════════════════
+function can_plant(plot) {
+  if (plot.locked)    return {ok:false, msg:'PLOT BLOQUEADO! 🔒'};
+  if (plot.building)  return {ok:false, msg:'TEM CONSTRUÇÃO AQUI! 🏗️'};
+  if (plot.planted)   return {ok:false, msg:'JÁ TEM PLANTA AQUI!'};
+  const plant = PLANTS_DATA[selectedPlantId];
+  if (!plant)          return {ok:false, msg:'PLANTA INVÁLIDA!'};
+  if (!plant.unlocked) return {ok:false, msg:'DESBLOQUEIE PRIMEIRO 🔒'};
+  if (player.mony<plant.cost) return {ok:false, msg:`SEM MONY! 💸 falta $${plant.cost-player.mony}`};
+  return {ok:true};
+}
+function can_water(plot) {
+  if (!plot.planted)              return {ok:false, msg:'NADA PRA REGAR! 🤷'};
+  if (plot.watered)               return {ok:false, msg:'JÁ FOI REGADO! 💧'};
+  if (plot.stage==='full_grown')  return {ok:false, msg:'JÁ CRESCEU!'};
+  return {ok:true};
+}
+function can_harvest(plot) {
+  if (!plot.planted) return {ok:false, msg:'NADA PRA COLHER! 🤷'};
+  const plant = PLANTS_DATA[plot.planted];
+  if (STAGES.indexOf(plot.stage)<STAGES.indexOf(plant.harvest_stage))
+    return {ok:false, msg:`AGUARDA... (${plot.stage}) ⏳`};
+  return {ok:true};
+}
+function can_buy(plot) {
+  if (!plot.locked) return {ok:false, msg:'JÁ DESBLOQUEADO!'};
+  const price = Math.ceil(plot.buyPrice * getBonus('plot_discount'));
+  if (player.mony<price) return {ok:false, msg:`EM DIMDIMS 💸 falta $${price-player.mony}`};
+  return {ok:true, price};
+}
+function can_place_building(plot, equipId) {
+  if (plot.locked)    return {ok:false, msg:'PLOT BLOQUEADO! 🔒'};
+  if (plot.building)  return {ok:false, msg:'JÁ TEM CONSTRUÇÃO! 🏗️'};
+  if (plot.planted)   return {ok:false, msg:'TEM PLANTA AQUI! Remova primeiro.'};
+  const eq = EQUIPS_DATA[equipId];
+  if (!eq)            return {ok:false, msg:'EQUIP INVÁLIDO!'};
+  if (!eq.unlocked)   return {ok:false, msg:'DESBLOQUEIE PRIMEIRO 🔒'};
+  const cost = Math.ceil(eq.cost * getBonus('build_discount'));
+  if (player.mony<cost) return {ok:false, msg:`SEM MONY! 💸 falta $${cost-player.mony}`};
+  return {ok:true, cost};
+}
+function can_hammer(plot) {
+  if (!plot.building) return {ok:false, msg:'SEM CONSTRUÇÃO AQUI! 🔨'};
+  return {ok:true};
+}
+function can_consume(plot, equipId) {
+  const eq = EQUIPS_DATA[equipId];
+  if (!eq)           return {ok:false, msg:'EQUIP INVÁLIDO!'};
+  if (!eq.unlocked)  return {ok:false, msg:'DESBLOQUEIE PRIMEIRO 🔒'};
+  if (player.mony<eq.cost) return {ok:false, msg:`SEM MONY! 💸 falta $${eq.cost-player.mony}`};
+  return {ok:true};
+}
+
+// ════════════════════════════════════════════════════════════════
+//  ACTIONS
+// ════════════════════════════════════════════════════════════════
+function doPlant(r, c) {
+  const plot=grid[r][c], check=can_plant(plot);
+  if (!check.ok) { showToast(check.msg,'error'); return; }
+  const plant=PLANTS_DATA[selectedPlantId];
+  player.mony-=plant.cost;
+  plot.planted=selectedPlantId; plot.stage='tiny'; plot.timer=0; plot.watered=false; plot.mutations=[];
+  if (Math.random()<getBonus('mut_chance')) {
+    plot.mutations.push({stat:'size', value:2.5});
+    showToast('✨ MUTAÇÃO GIGANTE! ×2.5','success');
+  } else {
+    showToast(`${plant.image} ${plant.name} plantado!`,'info');
+  }
+  saveGame(); updateUI(); draw();
+}
+function doWater(r, c) {
+  const plot=grid[r][c], check=can_water(plot);
+  if (!check.ok) { showToast(check.msg,'error'); return; }
+  plot.watered=true;
+  showToast('💧 REGADO!','success');
+  saveGame(); draw();
+}
+function doHarvest(r, c) {
+  const plot=grid[r][c], check=can_harvest(plot);
+  if (!check.ok) { showToast(check.msg,'error'); return; }
+  const plant=PLANTS_DATA[plot.planted];
+  const hm = getBonus('harvest_mult');
+  const mm = plot.mutations.length>0 ? getBonus('mut_mult') : 1;
+  const earned=Math.floor(plant.reward*hm*mm);
+  player.mony+=earned;
+  showToast(`+$${earned} ${plant.image}`,'success');
+  plot.planted=null; plot.stage=null; plot.timer=0; plot.watered=false; plot.mutations=[];
+  saveGame(); updateUI(); draw();
+}
+function doBuyPlot(r, c) {
+  const plot=grid[r][c], check=can_buy(plot);
+  if (!check.ok) { showToast(check.msg,'error'); return; }
+  player.mony-=check.price;
+  plot.locked=false;
+  showToast(`🔓 DESBLOQUEADO! -$${check.price}`,'success');
+  saveGame(); updateUI(); draw();
+}
+function doPlaceBuilding(r, c) {
+  if (!selectedEquipId) { showToast('Selecione uma construção!','error'); return; }
+  const plot=grid[r][c];
+  const check=can_place_building(plot, selectedEquipId);
+  if (!check.ok) { showToast(check.msg,'error'); return; }
+  player.mony-=check.cost;
+  plot.building=selectedEquipId; plot.buildingTimer=0;
+  const eq=EQUIPS_DATA[selectedEquipId];
+  showToast(`${eq.image} ${eq.name} construído! -$${check.cost}`,'success');
+  saveGame(); updateUI(); draw();
+}
+function doConsumeEquip(r, c) {
+  if (!selectedEquipId) { showToast('Selecione um consumível!','error'); return; }
+  const plot=grid[r][c];
+  if (plot.locked) { showToast('PLOT BLOQUEADO! 🔒','error'); return; }
+  const check=can_consume(plot, selectedEquipId);
+  if (!check.ok) { showToast(check.msg,'error'); return; }
+  player.mony-=EQUIPS_DATA[selectedEquipId].cost;
+  const targets=[[r,c],...neighbors(r,c)];
+  if (selectedEquipId==='fertilizer') {
+    let n=0;
+    for (const [nr,nc] of targets) {
+      const p=grid[nr][nc];
+      if (!p.locked&&p.planted&&p.stage!=='full_grown') { p.timer+=PLANTS_DATA[p.planted].growth*0.45; n++; }
+    }
+    showToast(`🧪 Fertilizante: ${n} acelerados!`,'success');
+  } else if (selectedEquipId==='megaplow') {
+    let n=0;
+    for (const [nr,nc] of neighbors(r,c)) {
+      const p=grid[nr][nc];
+      if (!p.locked&&p.planted) { p.planted=null; p.stage=null; p.timer=0; p.watered=false; p.mutations=[]; n++; }
+    }
+    showToast(`🚜 Mega-Arado: ${n} plots limpos!`,'success');
+  }
+  saveGame(); updateUI(); draw();
+}
+function doHammer(r, c) {
+  const plot=grid[r][c], check=can_hammer(plot);
+  if (!check.ok) { showToast(check.msg,'error'); return; }
+  const eq=EQUIPS_DATA[plot.building];
+  const refund=Math.floor(eq.cost*0.30);
+  player.mony+=refund;
+  plot.building=null; plot.buildingTimer=0;
+  showToast(`🔨 Demolido! +$${refund} (30%)`, 'success');
+  saveGame(); updateUI(); draw();
+}
+
+// ════════════════════════════════════════════════════════════════
+//  BUILDING TRIGGERS
+// ════════════════════════════════════════════════════════════════
+function triggerBuilding(r, c, bId) {
+  if (bId==='sprinkler') {
+    let n=0;
+    for (const [nr,nc] of neighbors(r,c)) {
+      const p=grid[nr][nc];
+      if (!p.locked&&p.planted&&!p.watered&&p.stage!=='full_grown') { p.watered=true; n++; }
+    }
+    if(n>0) showToast(`🚿 Sprinkler regou ${n} plots!`,'info');
+  } else if (bId==='autocollector') {
+    let earned=0, n=0;
+    for (const [nr,nc] of neighbors(r,c)) {
+      const p=grid[nr][nc];
+      if (!p.locked&&p.planted) {
+        const plant=PLANTS_DATA[p.planted];
+        if (plant&&STAGES.indexOf(p.stage)>=STAGES.indexOf(plant.harvest_stage)) {
+          const hm=getBonus('harvest_mult'), mm=p.mutations.length>0?getBonus('mut_mult'):1;
+          earned+=Math.floor(plant.reward*hm*mm);
+          p.planted=null; p.stage=null; p.timer=0; p.watered=false; p.mutations=[]; n++;
+        }
+      }
+    }
+    if(n>0) { player.mony+=earned; updateUI(); showToast(`🤖 Auto-Coletor: ${n} colhidos +$${earned}`,'success'); }
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  ISO TRANSFORM
+// ════════════════════════════════════════════════════════════════
+function toScreen(c,r) {
+  return { x:(c-r)*(TILE_W/2)+OFFSET_X+panX, y:(c+r)*(TILE_H/2)+OFFSET_Y+panY };
+}
+function toMap(sx,sy) {
+  const ax=sx-OFFSET_X-panX, ay=sy-OFFSET_Y-panY;
+  return { r:Math.floor((ay/(TILE_H/2)-ax/(TILE_W/2))/2), c:Math.floor((ax/(TILE_W/2)+ay/(TILE_H/2))/2) };
+}
+
+// ════════════════════════════════════════════════════════════════
+//  DRAW
+// ════════════════════════════════════════════════════════════════
+const canvas=document.getElementById('gameCanvas');
+const ctx=canvas.getContext('2d');
+const STAGE_SCALE={tiny:0.42, medium:0.68, full_grown:1.0};
+
+function drawDiamond(cx,cy,w,h) {
+  ctx.beginPath();
+  ctx.moveTo(cx,cy); ctx.lineTo(cx+w/2,cy+h/2);
+  ctx.lineTo(cx,cy+h); ctx.lineTo(cx-w/2,cy+h/2); ctx.closePath();
+}
+
+function tileColors(plot, hov) {
+  let top, lft, rgt, str;
+  if (plot.locked)           { top='#161210'; lft='#0e0b08'; rgt='#0b0906'; str='#281c12'; }
+  else if (plot.building)    { top='#1c2c1c'; lft='#121c12'; rgt='#0c1410'; str='#2c4a2c'; }
+  else if (plot.watered&&plot.planted) { top='#3d5c3d'; lft='#2a4028'; rgt='#1c2c1c'; str='#4a6a4a'; }
+  else                       { top='#8b6040'; lft='#6a3e1a'; rgt='#4a2a0a'; str='#5a3416'; }
+  if (hov) { top='#a07850'; lft='#7a4e2a'; rgt='#5a3a1a'; str='#8a6030'; }
+  return {top,lft,rgt,str};
+}
+
+function drawTile(c, r) {
+  const pos=toScreen(c,r), plot=grid[r][c];
+  const hov=!isDragging&&hoveredCell&&hoveredCell.r===r&&hoveredCell.c===c&&!plot.locked;
+  const {top,lft,rgt,str}=tileColors(plot,hov);
+  // top face
+  drawDiamond(pos.x,pos.y,TILE_W,TILE_H);
+  ctx.fillStyle=top; ctx.fill(); ctx.strokeStyle=str; ctx.lineWidth=1; ctx.stroke();
+  // left face
+  ctx.beginPath();
+  ctx.moveTo(pos.x-TILE_W/2,pos.y+TILE_H/2); ctx.lineTo(pos.x,pos.y+TILE_H);
+  ctx.lineTo(pos.x,pos.y+TILE_H+TILE_D); ctx.lineTo(pos.x-TILE_W/2,pos.y+TILE_H/2+TILE_D); ctx.closePath();
+  ctx.fillStyle=lft; ctx.fill(); ctx.strokeStyle='#2a1208'; ctx.stroke();
+  // right face
+  ctx.beginPath();
+  ctx.moveTo(pos.x+TILE_W/2,pos.y+TILE_H/2); ctx.lineTo(pos.x,pos.y+TILE_H);
+  ctx.lineTo(pos.x,pos.y+TILE_H+TILE_D); ctx.lineTo(pos.x+TILE_W/2,pos.y+TILE_H/2+TILE_D); ctx.closePath();
+  ctx.fillStyle=rgt; ctx.fill(); ctx.strokeStyle='#1a0c04'; ctx.stroke();
+  if (plot.watered&&!plot.locked&&!plot.building) {
+    ctx.save(); drawDiamond(pos.x,pos.y,TILE_W,TILE_H); ctx.clip();
+    ctx.strokeStyle='rgba(60,120,200,.15)'; ctx.lineWidth=1.5;
+    for (let i=-TILE_W;i<TILE_W;i+=10) {
+      ctx.beginPath(); ctx.moveTo(pos.x+i,pos.y); ctx.lineTo(pos.x+i+TILE_H,pos.y+TILE_H); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  // building progress arc
+  if (plot.building) {
+    const eq=EQUIPS_DATA[plot.building];
+    if (eq) {
+      const eff=Math.max(1,Math.floor(eq.interval*getBonus('interval_mult')));
+      const prog=Math.min(1, plot.buildingTimer/eff);
+      const cx=pos.x, cy=pos.y+TILE_H/2;
+      ctx.strokeStyle=prog>0.85?'#f1c40f':'#2ecc71';
+      ctx.lineWidth=2.5;
+      ctx.beginPath();
+      ctx.arc(cx,cy,16,-Math.PI/2,-Math.PI/2+Math.PI*2*prog);
+      ctx.stroke();
+    }
+  }
+}
+
+function drawPlant(c, r) {
+  const pos=toScreen(c,r), plot=grid[r][c];
+  const cx=pos.x, cy=pos.y+TILE_H/2+4;
+  if (plot.locked) {
+    ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font='14px serif';
+    ctx.fillText('🔒',cx,cy-6);
+    ctx.font='5px "Press Start 2P"'; ctx.fillStyle='#f1c40f'; ctx.textBaseline='top';
+    ctx.fillText(`$${plot.buyPrice}`,cx,cy+6); return;
+  }
+  if (plot.building) {
+    const eq=EQUIPS_DATA[plot.building];
+    if (eq) {
+      ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font='20px serif';
+      ctx.shadowColor='#2ecc71'; ctx.shadowBlur=10;
+      ctx.fillText(eq.image, cx, cy-4);
+      ctx.shadowBlur=0;
+      ctx.font='4px "Press Start 2P"'; ctx.fillStyle='#8de88d'; ctx.textBaseline='top';
+      ctx.fillText(eq.name.toUpperCase(),cx,cy+10);
+    }
+    return;
+  }
+  if (!plot.planted) return;
+  const plant=PLANTS_DATA[plot.planted];
+  const effSize=getEffectiveAttr(plot,'size');
+  const sc=STAGE_SCALE[plot.stage]??0.42;
+  const px=Math.max(10,Math.round(24*sc*effSize));
+  if (plot.mutations.length>0) { ctx.shadowColor='#f1c40f'; ctx.shadowBlur=16; }
+  ctx.font=`${px}px serif`; ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+  ctx.fillText(plant.image,cx,cy); ctx.shadowBlur=0;
+  if (plot.watered&&plot.stage!=='full_grown') { ctx.font='8px serif'; ctx.fillText('💧',cx+px/2+2,cy-px-2); }
+  if (STAGES.indexOf(plot.stage)>=STAGES.indexOf(plant.harvest_stage)) {
+    ctx.font='9px serif'; ctx.fillText('⭐',cx-px/2-2,cy-px);
+  }
+}
+
+function drawTooltip(c, r) {
+  if (isDragging) return;
+  const plot=grid[r][c], pos=toScreen(c,r);
+  let tip=null;
+  if (plot.locked) {
+    const price=Math.ceil(plot.buyPrice*getBonus('plot_discount'));
+    tip=`COMPRAR $${price}`;
+  } else if (plot.building&&currentTool==='hammer') {
+    const refund=Math.floor(EQUIPS_DATA[plot.building].cost*0.30);
+    tip=`🔨 DEMOLIR +$${refund}`;
+  } else if (currentTool==='plant'&&!plot.planted&&!plot.building) {
+    const pl=PLANTS_DATA[selectedPlantId];
+    if(pl) tip=`${pl.image} PLANTAR ($${pl.cost})`;
+  } else if (currentTool==='water'&&plot.planted) {
+    const w=can_water(plot); tip=w.ok?'💧 REGAR':w.msg;
+  } else if (currentTool==='harvest'&&plot.planted) {
+    const plant=PLANTS_DATA[plot.planted];
+    const ready=STAGES.indexOf(plot.stage)>=STAGES.indexOf(plant.harvest_stage);
+    const hm=getBonus('harvest_mult'), mm=plot.mutations.length>0?getBonus('mut_mult'):1;
+    tip=ready?`✂️ COLHER +$${Math.floor(plant.reward*hm*mm)}`:`⏳ ${plot.stage}`;
+  } else if (currentTool==='equip'&&selectedEquipId) {
+    const eq=EQUIPS_DATA[selectedEquipId];
+    if(eq&&eq.type==='building') { const cost=Math.ceil(eq.cost*getBonus('build_discount')); tip=`${eq.image} CONSTRUIR ($${cost})`; }
+    else if(eq) tip=`${eq.image} USAR ($${eq.cost})`;
+  }
+  if (!tip) return;
+  ctx.font='6px "Press Start 2P"';
+  const tw=ctx.measureText(tip).width, tx=pos.x-tw/2-9, ty=pos.y-26;
+  ctx.fillStyle='rgba(5,8,5,.92)'; ctx.strokeStyle='#444'; ctx.lineWidth=1;
+  const rw=tw+18, rh=17, rad=3;
+  ctx.beginPath();
+  ctx.moveTo(tx+rad,ty); ctx.lineTo(tx+rw-rad,ty); ctx.arcTo(tx+rw,ty,tx+rw,ty+rad,rad);
+  ctx.lineTo(tx+rw,ty+rh-rad); ctx.arcTo(tx+rw,ty+rh,tx+rw-rad,ty+rh,rad);
+  ctx.lineTo(tx+rad,ty+rh); ctx.arcTo(tx,ty+rh,tx,ty+rh-rad,rad);
+  ctx.lineTo(tx,ty+rad); ctx.arcTo(tx,ty,tx+rad,ty,rad); ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle=currentTool==='hammer'?'#e74c3c':currentTool==='equip'?'#7ec8e3':'#2ecc71';
+  ctx.textAlign='left'; ctx.textBaseline='top'; ctx.fillText(tip,tx+9,ty+5);
+}
+function spawnCloud() {
+  const cloud = document.createElement('div');
+  cloud.className = 'cloud';
+  
+  const size = 150 + Math.random() * 200;
+  cloud.style.width = size + 'px';
+  cloud.style.height = size * 0.5 + 'px';
+  cloud.style.top = Math.random() * 400 + 'px';
+  
+  const duration = 40 + Math.random() * 60;
+  cloud.style.animation = `moveCloud ${duration}s linear`;
+
+  document.getElementById('sky-bg').appendChild(cloud);
+
+  setTimeout(() => cloud.remove(), duration * 1000);
+}
+
+setInterval(spawnCloud, 3000);
+function draw() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const bg = ctx.createLinearGradient(0,0,0,canvas.height);
+  bg.addColorStop(0, '#1e90ff'); 
+  bg.addColorStop(0.3, '#70c5ff');
+  bg.addColorStop(0.9, '#e0f4ff');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,canvas.width,canvas.height);
+  for (let r=0;r<GRID_ROWS;r++) for (let c=0;c<GRID_COLS;c++) drawTile(c,r);
+  for (let r=0;r<GRID_ROWS;r++) for (let c=0;c<GRID_COLS;c++) drawPlant(c,r);
+  if (hoveredCell) {
+    const {r,c}=hoveredCell;
+    if (r>=0&&r<GRID_ROWS&&c>=0&&c<GRID_COLS) drawTooltip(c,r);
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  CANVAS EVENTS
+// ════════════════════════════════════════════════════════════════
+const container=document.getElementById('canvas-container');
+canvas.addEventListener('mousedown',e=>{
+  isDragging=true; didDrag=false;
+  dragStart={x:e.clientX,y:e.clientY}; panStart={x:panX,y:panY};
+  container.classList.add('dragging');
+});
+canvas.addEventListener('mousemove',e=>{
+  const rect=canvas.getBoundingClientRect();
+  const sx=(e.clientX-rect.left)*(canvas.width/rect.width);
+  const sy=(e.clientY-rect.top)*(canvas.height/rect.height);
+  if (isDragging) {
+    const dx=e.clientX-dragStart.x, dy=e.clientY-dragStart.y;
+    if (Math.abs(dx)>3||Math.abs(dy)>3) didDrag=true;
+    panX=panStart.x+dx; panY=panStart.y+dy; hoveredCell=null; draw(); return;
+  }
+  const {r,c}=toMap(sx,sy);
+  const nHov=(r>=0&&r<GRID_ROWS&&c>=0&&c<GRID_COLS)?{r,c}:null;
+  if (JSON.stringify(nHov)!==JSON.stringify(hoveredCell)) { hoveredCell=nHov; draw(); }
+});
+canvas.addEventListener('mouseup',e=>{
+  container.classList.remove('dragging');
+  if (!didDrag) {
+    const rect=canvas.getBoundingClientRect();
+    handleClick((e.clientX-rect.left)*(canvas.width/rect.width),(e.clientY-rect.top)*(canvas.height/rect.height));
+  }
+  isDragging=false;
+});
+canvas.addEventListener('mouseleave',()=>{ if(!isDragging){hoveredCell=null;draw();} });
+document.addEventListener('mouseup',()=>{ if(isDragging){isDragging=false;container.classList.remove('dragging');} });
+
+function handleClick(mx, my) {
+  const {r,c}=toMap(mx,my);
+  if (r<0||r>=GRID_ROWS||c<0||c>=GRID_COLS) return;
+  const plot=grid[r][c];
+  if (plot.locked)                       { doBuyPlot(r,c); return; }
+  if (currentTool==='plant')             doPlant(r,c);
+  else if (currentTool==='water')        doWater(r,c);
+  else if (currentTool==='harvest')      doHarvest(r,c);
+  else if (currentTool==='hammer')       doHammer(r,c);
+  else if (currentTool==='equip') {
+    const eq=EQUIPS_DATA[selectedEquipId];
+    if (!eq) { showToast('Selecione um equip!','error'); return; }
+    if (eq.type==='building') doPlaceBuilding(r,c);
+    else doConsumeEquip(r,c);
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  HOT BAR > SET TOOL & SWITCH TAB
+// ════════════════════════════════════════════════════════════════
+function setTool(tool) {
+  currentTool=tool; selectedEquipId=null;
+  ['plant','water','harvest','hammer'].forEach(t=>{
+    const btn=document.getElementById(`btn-${t}`);
+    btn.classList.remove('active','active-hammer');
+  });
+  if (tool==='hammer') document.getElementById('btn-hammer').classList.add('active-hammer');
+  else document.getElementById(`btn-${tool}`)?.classList.add('active');
+  const icons={plant:'🌱 PLANTAR',water:'💧 REGAR',harvest:'✂️ COLHER',hammer:'🔨 DEMOLIR'};
+  document.getElementById('tool-label').textContent=icons[tool]||tool.toUpperCase();
+  document.querySelectorAll('.equip-card').forEach(c=>c.classList.remove('selected'));
+}
+
+function switchTab(tab) {
+  currentTab=tab;
+  document.getElementById('panel-plants').style.display=tab==='plants'?'flex':'none';
+  document.getElementById('panel-equips').style.display=tab==='equips'?'flex':'none';
+  document.getElementById('tab-plants').className='tab-btn'+(tab==='plants'?' active-plants':'');
+  document.getElementById('tab-equips').className='tab-btn'+(tab==='equips'?' active-equips':'');
+}
+
+// ════════════════════════════════════════════════════════════════
+//  HOTBAR 
+// ════════════════════════════════════════════════════════════════
+function buildHotbar() {
+  ['crop-slots','tree-slots','build-slots','consume-slots'].forEach(id=>document.getElementById(id).innerHTML='');
+  Object.entries(PLANTS_DATA).forEach(([id,plant])=>{
+    const card=document.createElement('div');
+    card.className=['plant-card',plant.unlocked?'':'locked',selectedPlantId===id?'selected':''].join(' ').trim();
+    card.id=`card-${id}`;
+    card.innerHTML=`<div class="pc-art">${plant.image}</div><div class="pc-name">${plant.name}</div><div class="pc-cost">💰${plant.cost}</div>${!plant.unlocked?`<div class="lock-ov"><span>🔒</span><span>$${plant.unlock_price}</span></div>`:''}`;
+    card.addEventListener('click',()=>handlePlantClick(id));
+    document.getElementById(plant.isTree?'tree-slots':'crop-slots').appendChild(card);
+  });
+  Object.entries(EQUIPS_DATA).forEach(([id,eq])=>{
+    const isB=eq.type==='building';
+    const card=document.createElement('div');
+    card.className=['equip-card',isB?'building-type':'',eq.unlocked?'':'locked',selectedEquipId===id?'selected':''].join(' ').trim();
+    card.id=`ecard-${id}`;
+    card.innerHTML=`<div class="ec-art">${eq.image}</div><div class="ec-name">${eq.name}</div><div class="ec-desc">${eq.description}</div><div class="ec-cost">💰${eq.cost}</div>${!eq.unlocked?`<div class="lock-ov"><span>🔒</span><span>$${eq.unlock_price}</span></div>`:''}`;
+    card.addEventListener('click',()=>handleEquipClick(id));
+    document.getElementById(isB?'build-slots':'consume-slots').appendChild(card);
+  });
+}
+
+function handlePlantClick(id) {
+  const plant=PLANTS_DATA[id];
+  if (!plant.unlocked) {
+    if (player.mony>=plant.unlock_price) {
+      player.mony-=plant.unlock_price; plant.unlocked=true;
+      saveGame(); updateUI(); buildHotbar(); selectPlantCard(id);
+      showToast(`✅ ${plant.image} ${plant.name} desbloqueado!`,'success');
+    } else showToast(`EM DIMDIMS 💸 falta $${plant.unlock_price-player.mony}`,'error');
+    return;
+  }
+  selectPlantCard(id); switchTab('plants'); setTool('plant');
+}
+
+function handleEquipClick(id) {
+  const eq=EQUIPS_DATA[id];
+  if (!eq.unlocked) {
+    if (player.mony>=eq.unlock_price) {
+      player.mony-=eq.unlock_price; eq.unlocked=true;
+      saveGame(); updateUI(); buildHotbar();
+      showToast(`✅ ${eq.image} ${eq.name} desbloqueado!`,'success');
+    } else showToast(`EM DIMDIMS 💸 falta $${eq.unlock_price-player.mony}`,'error');
+    return;
+  }
+  document.querySelectorAll('.equip-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById(`ecard-${id}`).classList.add('selected');
+  document.querySelectorAll('.plant-card').forEach(c=>c.classList.remove('selected'));
+  ['plant','water','harvest','hammer'].forEach(t=>{ const b=document.getElementById(`btn-${t}`); b.classList.remove('active','active-hammer'); });
+  selectedEquipId=id; selectedPlantId=null; currentTool='equip';
+  document.getElementById('tool-label').textContent=`${eq.image} ${eq.name}`;
+  saveGame();
+}
+
+function selectPlantCard(id) {
+  document.querySelectorAll('.plant-card').forEach(c=>c.classList.remove('selected'));
+  const el=document.getElementById(`card-${id}`);
+  if(el) el.classList.add('selected');
+  selectedPlantId=id; saveGame();
+}
+
+// ════════════════════════════════════════════════════════════════
+//  SKILL TREE UI
+// ════════════════════════════════════════════════════════════════
+function skillState(id) {
+  if (player.skills[id]) return 'unlocked';
+  const def=SKILLS_DEF[id];
+  if (def.free) return 'unlocked';
+  if (def.parents.every(p=>player.skills[p])) return 'available';
+  return 'locked';
+}
+
+function buildSkillTree() {
+  const container=document.getElementById('skill-nodes-container');
+  const svg=document.getElementById('skill-svg');
+  container.innerHTML='';
+  // Draw SVG lineS >> first
+  let lines='';
+  for (const [id,def] of Object.entries(SKILLS_DEF)) {
+    for (const parentId of def.parents) {
+      const [x1,y1]=nodeCenter(parentId);
+      const [x2,y2]=nodeCenter(id);
+      const parentUnlocked=!!player.skills[parentId];
+      const col=parentUnlocked?'#2ecc71':'#2a3a2a';
+      const w=parentUnlocked?2:1.5;
+      lines+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`;
+    }
+  }
+  svg.innerHTML=lines;
+  // Create nodes
+  for (const [id,def] of Object.entries(SKILLS_DEF)) {
+    const state=skillState(id);
+    const node=document.createElement('div');
+    node.className=`skill-node sk-${state}`;
+    node.style.left=def.pos[0]+'px';
+    node.style.top=def.pos[1]+'px';
+    node.dataset.id=id;
+    const costLabel=def.cost===0?'GRÁTIS':`$${def.cost}`;
+    node.innerHTML=`<div class="sn-icon">${def.icon}</div><div class="sn-name">${def.name}</div><div class="sn-cost">${state==='unlocked'?'✅':costLabel}</div>`;
+    node.addEventListener('mouseenter',()=>{
+      document.getElementById('skill-desc').textContent=`${def.icon} ${def.name} — ${def.desc}`;
+    });
+    node.addEventListener('mouseleave',()=>{
+      document.getElementById('skill-desc').textContent='Passe o mouse sobre uma habilidade para ver detalhes.';
+    });
+    if (state==='available') {
+      node.addEventListener('click',()=>buySkill(id));
+    }
+    container.appendChild(node);
+  }
+  document.getElementById('sk-mony-val').textContent=player.mony;
+}
+
+function buySkill(id) {
+  const def=SKILLS_DEF[id];
+  if (player.skills[id]) { showToast('Já desbloqueado!','info'); return; }
+  if (player.mony<def.cost) { showToast(`EM DIMDIMS 💸 falta $${def.cost-player.mony}`,'error'); return; }
+  player.mony-=def.cost;
+  player.skills[id]=true;
+  saveGame(); updateUI(); buildSkillTree();
+  showToast(`${def.icon} ${def.name} desbloqueado!`,'success');
+}
+
+function openSkills()  { buildSkillTree(); document.getElementById('skill-overlay').classList.add('open'); }
+function closeSkills() { document.getElementById('skill-overlay').classList.remove('open'); }
+
+// Close tbn
+document.getElementById('skill-overlay').addEventListener('click',e=>{
+  if(e.target===document.getElementById('skill-overlay')) closeSkills();
+});
+
+// ════════════════════════════════════════════════════════════════
+//  TOAST / UI
+// ════════════════════════════════════════════════════════════════
+let _tt=null;
+function showToast(msg, type='info') {
+  const cols={error:'#e74c3c',success:'#2ecc71',info:'#3498db'};
+  const col=cols[type]||'#aaa';
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.style.borderColor=col; t.style.color=type==='success'?col:'#eee'; t.style.opacity='1';
+  if(_tt) clearTimeout(_tt); _tt=setTimeout(()=>{t.style.opacity='0';},2800);
+  const m=document.getElementById('msg-display');
+  m.style.color=col; m.textContent=msg;
+  setTimeout(()=>{if(m.textContent===msg)m.textContent='';},2800);
+}
+function updateUI() {
+  document.getElementById('mony-val').textContent=player.mony;
+  if (document.getElementById('skill-overlay').classList.contains('open'))
+    document.getElementById('sk-mony-val').textContent=player.mony;
+}
+
+// ════════════════════════════════════════════════════════════════
+// RATE TICK
+// ════════════════════════════════════════════════════════════════
+function growthTick() {
+  let changed=false;
+  const gs=getBonus('growth_speed'), wm=getBonus('water_mult'), um=getBonus('unwet_mult');
+  const im=getBonus('interval_mult');
+  for (let r=0;r<GRID_ROWS;r++) {
+    for (let c=0;c<GRID_COLS;c++) {
+      const plot=grid[r][c];
+      // plant growth
+      if (plot.planted&&plot.stage!=='full_grown') {
+        const plant=PLANTS_DATA[plot.planted]; if(!plant) continue;
+        const prev=plot.stage;
+        const rate=(plot.watered?wm:um)*gs;
+        plot.timer+=rate;
+        const g=plant.growth;
+        if      (plot.timer>=g)       plot.stage='full_grown';
+        else if (plot.timer>=g*0.5)   plot.stage='medium';
+        if (plot.stage!==prev) changed=true;
+      }
+      // building tick
+      if (plot.building) {
+        const eq=EQUIPS_DATA[plot.building];
+        if (eq) {
+          const eff=Math.max(1,Math.floor(eq.interval*im));
+          plot.buildingTimer++;
+          if (plot.buildingTimer>=eff) { plot.buildingTimer=0; triggerBuilding(r,c,plot.building); changed=true; }
+        }
+      }
+    }
+  }
+  if (changed) { saveGame(); draw(); }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  BOOT
+// ════════════════════════════════════════════════════════════════
+async function boot() {
+  try {
+    const [pr,er]=await Promise.all([fetch('./plants.json'),fetch('./equips.json')]);
+    PLANTS_DATA=await pr.json(); EQUIPS_DATA=await er.json();
+    loadGame(); buildHotbar(); updateUI(); draw();
+    setInterval(growthTick,1000);
+  } catch(e) { console.error(e); showToast('Erro ao carregar dados!','error'); }
+}
+boot();
+</script>
+</body>
+</html>

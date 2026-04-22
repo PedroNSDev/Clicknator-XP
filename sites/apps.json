@@ -8,6 +8,7 @@
   {
     "id": "notepad",
     "nome": "Me leia.txt",
+       "size": "medium",
     "icone": "📝",
     "html": "apps/notas.html",
     "instantiable": true,
@@ -16,6 +17,7 @@
   {
     "id": "gonetgo",
     "nome": "GoNetGo!",
+       "size": "fullscreen",
     "icone": "🌐",
     "html": "apps/browser.html",
     "ram": 32
@@ -44,6 +46,7 @@
   {
     "id": "credits",
     "nome": "Creditos",
+      "size": "medium",
     "icone": "👯",
     "html": "apps/creditos.html",
     "ram": 1
@@ -51,6 +54,7 @@
   {
     "id": "clicknator",
     "nome": "clicknator.exe",
+    "size": "medium",
     "icone": "🖱️",
     "html": "apps/clicknator.html",
     "ram": 100,
@@ -90,7 +94,7 @@
     "html": "apps/loja.html",
     "ram": 16,
     "ports": [
-      { "dir": "in", "format": "dinheiro" }
+      { "dir": "in", "format": "dinheiro" } 
     ]
   },
   {
@@ -99,7 +103,7 @@
     "icone": "💱",
     "html": "apps/conversor.html",
     "ram": 16,
-    "size": "Medium",
+    "size": "medium",
     "ports": [
       { "dir": "in",  "format": "any" },
       { "dir": "out", "format": "dinheiro" }

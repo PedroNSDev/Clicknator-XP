@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🕹️ GameHub</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #050a05;
+  --panel:   #0c150c;
+  --border:  #1a3a1a;
+  --green:   #2ecc71;
+  --green-dk:#1a5a30;
+  --gold:    #f1c40f;
+  --dim:     #3a5a3a;
+  --text:    #c8dcc8;
+  --muted:   #5a7a5a;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  background-image:
+    linear-gradient(rgba(46,204,113,.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(46,204,113,.03) 1px, transparent 1px);
+  background-size: 32px 32px;
+  min-height: 100vh;
+  font-family: 'Share Tech Mono', monospace;
+  color: var(--text);
+}
+
+/* ── HEADER ── */
+header {
+  border-bottom: 1px solid var(--border);
+  padding: 28px 48px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  background: linear-gradient(180deg, rgba(46,204,113,.04) 0%, transparent 100%);
+}
+.logo { display: flex; align-items: center; gap: 16px; }
+.logo-icon {
+  font-size: 36px; line-height: 1;
+  filter: drop-shadow(0 0 12px rgba(46,204,113,.5));
+}
+.logo-text h1 {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 18px; color: var(--green);
+  text-shadow: 0 0 20px rgba(46,204,113,.4);
+  letter-spacing: 2px;
+}
+.logo-text p {
+  font-size: 11px; color: var(--muted); margin-top: 6px; letter-spacing: 1px;
+}
+.header-stat {
+  text-align: right; font-size: 11px; color: var(--muted); line-height: 1.8;
+}
+.header-stat strong { color: var(--green); font-family: 'Press Start 2P'; font-size: 9px; }
+
+/* ── CONTENT ── */
+main { padding: 40px 48px; max-width: 1200px; margin: 0 auto; }
+
+.section-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px; color: var(--dim); letter-spacing: 4px;
+  text-transform: uppercase; margin-bottom: 24px;
+  display: flex; align-items: center; gap: 12px;
+}
+.section-title::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+
+/* ── GAME GRID ── */
+#games-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+/* ── GAME CARD ── */
+.game-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform .2s, box-shadow .2s, border-color .2s;
+  text-decoration: none; color: inherit;
+  display: flex; flex-direction: column;
+  position: relative;
+}
+.game-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0,0,0,.6), 0 0 0 1px var(--green-dk);
+  border-color: var(--green-dk);
+}
+.game-card:hover .card-play { opacity: 1; transform: translateY(0); }
+
+/* Banner */
+.card-banner {
+  height: 120px; display: flex; align-items: center; justify-content: center;
+  font-size: 56px; position: relative; overflow: hidden;
+  background: linear-gradient(135deg, #0c1e0c 0%, #071407 100%);
+  border-bottom: 1px solid var(--border);
+}
+.card-banner::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 60%, rgba(46,204,113,.08) 0%, transparent 70%);
+}
+.card-banner .banner-icon {
+  position: relative; z-index: 1;
+  filter: drop-shadow(0 0 16px rgba(46,204,113,.35));
+  transition: transform .2s;
+}
+.game-card:hover .banner-icon { transform: scale(1.1); }
+
+.card-play {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,.6);
+  font-family: 'Press Start 2P', monospace; font-size: 10px; color: var(--green);
+  opacity: 0; transform: translateY(4px);
+  transition: opacity .2s, transform .2s; z-index: 2;
+  letter-spacing: 3px;
+  text-shadow: 0 0 20px rgba(46,204,113,.8);
+}
+
+/* INFO */
+.card-info { padding: 16px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.card-name { font-family: 'Press Start 2P', monospace; font-size: 11px; color: var(--green); }
+.card-version { font-size: 10px; color: var(--muted); white-space: nowrap; }
+.card-desc { font-size: 11px; color: var(--muted); line-height: 1.6; flex: 1; }
+.card-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.tag {
+  font-size: 9px; color: var(--dim); border: 1px solid var(--border);
+  padding: 2px 7px; border-radius: 2px; letter-spacing: 1px;
+}
+
+/* ── LOADING / EMPTY ── */
+.loader {
+  grid-column: 1/-1; text-align: center; padding: 60px 0;
+  font-family: 'Press Start 2P'; font-size: 8px; color: var(--muted);
+  letter-spacing: 3px;
+}
+.loader::after {
+  content: '...'; animation: dots 1.2s infinite;
+}
+@keyframes dots {
+  0%   { content: '.'; }
+  33%  { content: '..'; }
+  66%  { content: '...'; }
+}
+
+/* ── FOOTER ── */
+footer {
+  margin-top: 60px; padding: 20px 48px;
+  border-top: 1px solid var(--border);
+  font-size: 10px; color: var(--muted); letter-spacing: 1px;
+  display: flex; justify-content: space-between;
+}
+
+#game-overlay {
+  display: none; position: fixed; inset: 0; z-index: 100;
+  background: #000;
+  flex-direction: column;
+}
+#game-overlay.open { display: flex; }
+#overlay-bar {
+  height: 36px; background: #0c0c0c; border-bottom: 1px solid #222;
+  display: flex; align-items: center; padding: 0 12px; gap: 12px; flex-shrink: 0;
+}
+#overlay-close {
+  background: #1a0a0a; border: 1px solid #4a1a1a; color: #e74c3c;
+  font-family: 'Press Start 2P'; font-size: 7px; padding: 5px 10px;
+  cursor: pointer; letter-spacing: 1px;
+}
+#overlay-close:hover { background: #2a0a0a; }
+#overlay-title { font-family: 'Press Start 2P'; font-size: 8px; color: #555; letter-spacing: 2px; }
+#game-frame { flex: 1; border: none; width: 100%; display: block; background: #000; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🕹️</div>
+    <div class="logo-text">
+      <h1>GAMEHUB</h1>
+      <p>colecção de jogos // games collection</p>
+    </div>
+  </div>
+  <div class="header-stat">
+    <div>status <strong id="game-count">—</strong> jogos disponíveis</div>
+    <div>versão <strong>hub-1.0</strong></div>
+  </div>
+</header>
+
+<main>
+  <div class="section-title">biblioteca // library</div>
+  <div id="games-grid">
+    <div class="loader">carregando jogos</div>
+  </div>
+</main>
+
+<footer>
+  <span>GameHub // static edition</span>
+  <span>+ de 100 JOGOS(so tem 1;-;)</span>
+</footer>
+
+<div id="game-overlay">
+  <div id="overlay-bar">
+    <button id="overlay-close" onclick="closeGame()">✕ FECHAR</button>
+    <div id="overlay-title"></div>
+  </div>
+  <iframe id="game-frame" src="" allowfullscreen></iframe>
+</div>
+
+<script>
+async function loadGames() {
+  const grid = document.getElementById('games-grid');
+  try {
+    const manifest = await fetch('games/games.json').then(r => r.json());
+    const configs  = await Promise.all(
+      manifest.map(g => fetch(`games/${g.folder}/config.json`).then(r => r.json()).then(c => ({ ...c, folder: g.folder, id: g.id })))
+    );
+
+    document.getElementById('game-count').textContent = configs.length;
+    grid.innerHTML = '';
+    configs.forEach(cfg => grid.appendChild(makeCard(cfg)));
+  } catch (e) {
+    console.error(e);
+    grid.innerHTML = '<div class="loader" style="animation:none">erro ao carregar jogos</div>';
+  }
+}
+
+function makeCard(cfg) {
+  const a = document.createElement('a');
+  a.className = 'game-card';
+  a.href = '#';
+  a.addEventListener('click', ev => { ev.preventDefault(); openGame(cfg); });
+
+  a.innerHTML = `
+    <div class="card-banner" style="background: linear-gradient(135deg, ${hexDarken(cfg.color || '#0c1e0c', 0.5)} 0%, ${hexDarken(cfg.color || '#0c1e0c', 0.8)} 100%);">
+      <span class="banner-icon">${cfg.icon || '🎮'}</span>
+      <div class="card-play">▶ JOGAR</div>
+    </div>
+    <div class="card-info">
+      <div class="card-header">
+        <div class="card-name">${cfg.name || cfg.id}</div>G/
+        <div class="card-version">v${cfg.version || '?'}</div>
+      </div>
+      <div class="card-desc">${cfg.description || ''}</div>
+      <div class="card-tags">${(cfg.tags || []).map(t => `<span class="tag">${t}</span>`).join('')}</div>
+    </div>
+  `;
+  return a;
+}
+
+function openGame(cfg) {
+  document.getElementById('overlay-title').textContent = `${cfg.icon || '🎮'}  ${cfg.name}  v${cfg.version || '?'}`;
+  document.getElementById('game-frame').src = `games/${cfg.folder}/${cfg.file || cfg.id.toLowerCase() + '.html'}`;
+  document.getElementById('game-overlay').classList.add('open');
+}
+
+function closeGame() {
+  document.getElementById('game-overlay').classList.remove('open');
+  document.getElementById('game-frame').src = '';
+}
+
+function hexDarken(hex, factor) {
+  const c = hex.replace('#', '');
+  const n = parseInt(c, 16);
+  const r = Math.floor(((n >> 16) & 0xff) * (1 - factor));
+  const g = Math.floor(((n >> 8)  & 0xff) * (1 - factor));
+  const b = Math.floor(( n        & 0xff) * (1 - factor));
+  return `#${[r,g,b].map(x => x.toString(16).padStart(2,'0')).join('')}`;
+}
+
+loadGames();
+</script>
+</body>
+</html>

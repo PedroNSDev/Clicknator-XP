@@ -1,0 +1,51 @@
+{
+  "sprinkler": {
+    "image": "🚿",
+    "name": "Sprinkler",
+    "cost": 500,
+    "description": "Rega vizinhos a cada 12S",
+    "type": "building",
+    "interval": 12,
+    "unlocked": true,
+    "unlock_price": 0
+  },
+  "autocollector": {
+    "image": "🤖",
+    "name": "Auto-Coletor",
+    "cost": 1500,
+    "description": "Coleta prontos a cada 25s",
+    "type": "building",
+    "interval": 25,
+    "unlocked": false,
+    "unlock_price": 3000
+  },
+  "sprinkler MK2": {
+    "image": "🚿",
+    "name": "Sprinkler",
+    "cost": 2500,
+    "description": "Rega vizinhos a cada 12S",
+    "type": "building",
+    "interval": 12,
+    "unlocked": true,
+    "unlock_price": 0
+  },
+
+  "fertilizer": {
+    "image": "🧪",
+    "name": "Fertilizante",
+    "cost": 300,
+    "description": "Acelera 3x vizinhos (uso único)",
+    "type": "consumable",
+    "unlocked": true,
+    "unlock_price": 0
+  },
+  "megaplow": {
+    "image": "🚜",
+    "name": "MegaArado",
+    "cost": 800,
+    "description": "Limpa 3x3 de plantas (uso único)",
+    "type": "consumable",
+    "unlocked": false,
+    "unlock_price": 1200
+  }
+}
