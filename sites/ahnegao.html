@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memi meiker</title>
+<link href="https://fonts.googleapis.com/css2?family=Metal+Mania&display=swap" rel="stylesheet">
+<style>
+body {
+  margin: 0;
+  font-family: 'Metal Mania', 'Impact', cursive;
+  background: black url('5GpM.gif');
+  color: #fff;
+  text-align: center;
+}
+.side-img {
+  position: fixed;
+
+  top: 50%;
+  transform: translateY(-50%);
+  width: 180px;
+  pointer-events: none;
+  image-rendering: pixelated;
+  z-index: 1;
+  background-size: cover;
+}
+
+.left-img {
+  left: 10px;
+}
+
+.right-img {
+  right: 10px;
+}
+.header {
+  background: linear-gradient(#550000, #220000);
+  padding: 10px 20px;
+  font-size: 26px;
+  font-weight: bold;
+  text-shadow: 2px 2px 4px black;
+  border-bottom: 3px solid red;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  background-size: contain;
+  background-image: url(flamingline.gif);
+}
+
+.esqueleto {
+  width: 80px;
+  image-rendering: pixelated;
+}
+.container {
+  width: 700px;
+  margin: 20px auto;
+  background: #2a0000;
+  border: 4px ridge red;
+  padding: 15px;
+}
+
+input, button {
+  width: 90%;
+  margin: 6px;
+  padding: 8px;
+  font-family: Verdana;
+  border: 2px inset #aaa;
+}
+
+button {
+  background: linear-gradient(#ff4d4d, #660000);
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+canvas {
+  margin-top: 15px;
+  max-width: 100%;
+  border: 3px groove red;
+  image-rendering: pixelated;
+}
+h1{
+    font-size: 55px;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 4px #4c3939;
+    outline: 1px solid #a12e2e;
+
+}
+.footer {
+  font-size: 12px;
+  margin-top: 20px;
+  color: #aaa;
+}
+
+.trail {
+  position: fixed;
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+  image-rendering: pixelated;
+}
+</style>
+</head>
+<body>
+
+<audio id="bgm" autoplay loop>
+  <source src="rockdobrabo.mp3" type="audio/mpeg">
+</audio>
+<div class="header">
+  <img src="esqueletotrompete.gif" class="esqueleto">
+  <span>FAZERDOR DE MEMES 3000</span>
+  <img src="esqueletotrompete.gif" class="esqueleto">
+</div>  
+
+<div class="container">
+  <h1>SO OS MELHORES!!</h1>
+
+  <input type="text" id="topText" placeholder="Texto de cima"><br>
+  <canvas id="canvas"></canvas>
+    <img src="Caveiradorock.jpg" class="side-img left-img">
+    <img src="Caveiradorock2.jpg" class="side-img right-img">
+  <input type="text" id="bottomText" placeholder="Texto de baixo"><br>
+  
+
+  <button onclick="generateMeme()">Criar Meme</button>
+  
+  <button onclick="downloadMeme()">Baixar</button>
+  <button onclick="sendToMSN()">Enviar para MSN 💬</button>
+</div>
+
+<div class="footer">Saite do Caique não roubar </div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let currentImage = null;
+
+ctx.imageSmoothingEnabled = false;
+
+canvas.addEventListener('click', () => {
+  document.getElementById('imageInput').click();
+});
+
+const input = document.createElement('input');
+input.type = 'file';
+input.accept = 'image/*';
+input.id = 'imageInput';
+input.style.display = 'none';
+document.body.appendChild(input);
+
+input.addEventListener('change', function() {
+  const file = this.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      currentImage = img;
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+function drawText(text, x, y) {
+  ctx.lineWidth = 6;
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'white';
+  ctx.strokeText(text, x, y);
+  ctx.fillText(text, x, y);
+}
+
+function generateMeme() {
+  if (!currentImage) return alert('mano tem que escolhe a imagem primeiro');
+
+  const topText = document.getElementById('topText').value.toUpperCase();
+  const bottomText = document.getElementById('bottomText').value.toUpperCase();
+
+  ctx.drawImage(currentImage, 0, 0);
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+
+  const fontSize = Math.floor(canvas.width / 8);
+  ctx.font = `bold ${fontSize}px Impact, Arial Black`;
+
+  drawText(topText, canvas.width / 2, 10);
+
+  ctx.textBaseline = 'bottom';
+  drawText(bottomText, canvas.width / 2, canvas.height - 10);
+}
+
+function downloadMeme() {
+  const link = document.createElement('a');
+  link.download = 'meme2005.png';
+  link.href = canvas.toDataURL();
+  link.click();
+}
+
+function sendToMSN() {
+  alert('Eu ainda nao sei faze saite de mandar pro msn');
+}
+
+const trailImgSrc = 'images (4).jpg';
+
+let hue = 20;
+
+document.addEventListener('mousemove', e => {
+  const img = document.createElement('img');
+  img.src = trailImgSrc;
+  img.className = 'trail';
+  img.style.left = e.clientX + 'px';
+  img.style.top = e.clientY + 'px';
+
+  document.body.appendChild(img);
+
+  setTimeout(() => {
+    img.remove();
+  }, 400);
+});
+const bgm = document.getElementById('bgm');
+
+function startMusic() {
+  bgm.play().catch(() => {});
+  document.removeEventListener('click', startMusic);
+}
+
+document.addEventListener('click', startMusic);
+</script>
+
+</body>
+</html>

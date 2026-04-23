@@ -5,7 +5,6 @@ const UPGRADES_KEY = 'winxp-upgrades';
 const sounds = {
     click: new Audio('click.mp3'),
     open: new Audio('open.mp3')
-   // error: new Audio('error.mp3')
 };
 const openApps        = new Set();
 let zIndexCounter     = 10;
@@ -14,7 +13,6 @@ let connections       = [];
 let pendingConnection = null;
 let usedRAM           = 0;
 let currentTargetIcon = null;
-
 
 window.systemInfo = { username: '', ram: 256, space: 2048, session_time: 0 };
 
@@ -38,24 +36,53 @@ const startBtn           = document.getElementById('start-btn');
 const startMenu          = document.getElementById('start-menu');
 const wallpaperInput     = document.getElementById('wallpaper-input');
 const changeWallpaperBtn = document.getElementById('change-wallpaper');
-//wiring stuff
 const canvas = document.getElementById('cables');
 const ctx    = canvas.getContext('2d');
 
 const resizeCanvas = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
-window.addEventListener('resize', resizeCanvas);
+window.addEventListener('resize', () => {
+    resizeCanvas();
+    clearTimeout(window._iconResizeTimer);
+    window._iconResizeTimer = setTimeout(() => {
+        if (appsList.length) renderAllIcons();
+    }, 120);
+});
 resizeCanvas();
 
-const ICON_ROW_H   = 82;
-const ICON_COL_W   = 92;
-const ICON_TOP_PAD = 20;
+// ── NEW GRID  ──
+const ICON_PAD_TOP  = 12; 
+const ICON_PAD_SIDE = 10; 
 
-// ── PRESETS DE TAMANHO DE JANELA ──
+function gridCellSize() {
+    const dw = desktop.offsetWidth  || window.innerWidth;
+    const dh = (desktop.offsetHeight || window.innerHeight - 42);
+    const cw = Math.min(100, Math.max(76, Math.round(dw / 14)));
+    const ch = Math.min(98,  Math.max(78, Math.round(dh / 7)));
+    return { cw, ch };
+}
+
+function gridRows() {
+    const dh = (desktop.offsetHeight || window.innerHeight - 42) - ICON_PAD_TOP;
+    const { ch } = gridCellSize();
+    return Math.max(1, Math.floor(dh / ch));
+}
+
+function iconPos(idx) {
+    const rows    = gridRows();
+    const { cw, ch } = gridCellSize();
+    const col = Math.floor(idx / rows);
+    const row = idx % rows;
+    return {
+        top:  ICON_PAD_TOP  + row * ch,
+        left: ICON_PAD_SIDE + col * cw,
+    };
+}
+
 const WINDOW_SIZES = {
     small:      { w: 320,  h: 240  },
     medium:     { w: 540,  h: 380  },
     big:        { w: 800,  h: 580  },
-    fullscreen: null 
+    fullscreen: null
 };
 
 (function () {
@@ -69,22 +96,155 @@ const WINDOW_SIZES = {
             border-color:#1a4a9a!important;border-radius:2px 0 0 2px!important; }
         .connect-btn-right { background:#6a1b9a!important;color:white!important;
             border-color:#4a0f6e!important;border-radius:0 2px 2px 0!important; }
+        .taskbar-app.minimized { opacity:0.65; font-style:italic; }
+        .taskbar-app.minimized .taskbar-label::before { content:'— '; }
+
+        /* ── AUDIO TOAST ── */
+        #audio-toast {
+            position:fixed;
+            bottom:50px; right:12px;
+            background:linear-gradient(135deg,#1a1a2e,#12121e);
+            color:#e8e8e8;
+            border-radius:10px;
+            padding:10px 14px;
+            z-index:99999;
+            display:none;
+            align-items:center;
+            gap:10px;
+            box-shadow:0 4px 24px rgba(0,0,0,0.5);
+            font-family:Tahoma,sans-serif;
+            font-size:12px;
+            min-width:240px;
+            max-width:300px;
+            border:1px solid #2a2a44;
+            animation:toast-in 0.25s ease;
+            cursor:default;
+        }
+        #audio-toast.visible { display:flex; }
+        @keyframes toast-in {
+            from { opacity:0; transform:translateY(14px) scale(0.95); }
+            to   { opacity:1; transform:translateY(0)  scale(1); }
+        }
+        #audio-toast .toast-art {
+            width:38px; height:38px; border-radius:6px;
+            background:linear-gradient(135deg,#6c63ff,#a78bfa);
+            display:flex; align-items:center; justify-content:center;
+            font-size:20px; flex-shrink:0;
+        }
+        #audio-toast .toast-info { flex:1; overflow:hidden; }
+        #audio-toast .toast-track {
+            font-weight:600; font-size:12px; color:#fff;
+            overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+        }
+        #audio-toast .toast-status { font-size:10px; color:#777; margin-top:2px; }
+        .toast-ctrl {
+            background:none; border:none; color:#aaa; cursor:pointer;
+            font-size:16px; padding:4px; border-radius:4px; transition:color .15s;
+        }
+        .toast-ctrl:hover { color:#fff; background:rgba(255,255,255,0.08); }
+        #audio-toast .toast-close {
+            position:absolute; top:6px; right:8px;
+            background:none; border:none; color:#444; cursor:pointer;
+            font-size:12px; padding:0 2px;
+        }
+        #audio-toast .toast-close:hover { color:#aaa; }
+        #audio-toast .toast-progress {
+            position:absolute; bottom:0; left:0; right:0; height:2px;
+            background:rgba(255,255,255,0.06); border-radius:0 0 10px 10px; overflow:hidden;
+        }
+        #audio-toast .toast-progress-fill {
+            height:100%; background:linear-gradient(90deg,#6c63ff,#a78bfa);
+            width:0%; transition:width 0.5s linear;
+        }
+        #audio-toast { position:fixed; } /* re-assert for safety */
     `;
     document.head.appendChild(s);
 })();
 
-function iconRows() {
-    const h = (desktop.offsetHeight || window.innerHeight - 42) - ICON_TOP_PAD;
-    return Math.max(1, Math.floor(h / ICON_ROW_H));
+// ── AUDIO TOAST ──
+let _audioToastPinned = false;
+
+function ensureAudioToast() {
+    if (document.getElementById('audio-toast')) return;
+    const toast = document.createElement('div');
+    toast.id = 'audio-toast';
+    toast.innerHTML = `
+        <div class="toast-art">🎵</div>
+        <div class="toast-info">
+            <div class="toast-track" id="toast-track-name">—</div>
+            <div class="toast-status" id="toast-status">Parado</div>
+        </div>
+        <button class="toast-ctrl" id="toast-prev" title="Anterior">⏮</button>
+        <button class="toast-ctrl" id="toast-play" title="Play/Pausa">▶</button>
+        <button class="toast-ctrl" id="toast-next" title="Próxima">⏭</button>
+        <button class="toast-close" id="toast-close" title="Fechar">✕</button>
+        <div class="toast-progress"><div class="toast-progress-fill" id="toast-prog"></div></div>
+    `;
+    toast.style.position = 'fixed';
+    document.body.appendChild(toast);
+
+    const sendCtrl = action => {
+        const wins = document.querySelectorAll('.window');
+        for (const w of wins) {
+            if (w.id.includes('go-music')) {
+                w.querySelector('iframe')?.contentWindow?.postMessage({ type:'control', action }, '*');
+                break;
+            }
+        }
+    };
+
+    document.getElementById('toast-prev') .onclick = () => sendCtrl('prev');
+    document.getElementById('toast-play') .onclick = () => sendCtrl('toggle');
+    document.getElementById('toast-next') .onclick = () => sendCtrl('next');
+    document.getElementById('toast-close').onclick = () => {
+        _audioToastPinned = false;
+        hideAudioToast();
+    };
+
+    // Make toast draggable
+    let tx1=0,ty1=0,tx2=0,ty2=0;
+    toast.addEventListener('mousedown', e => {
+        if (e.target.closest('button')) return;
+        tx2 = e.clientX; ty2 = e.clientY;
+        const onMove = e => {
+            tx1 = tx2 - e.clientX; ty1 = ty2 - e.clientY;
+            tx2 = e.clientX; ty2 = e.clientY;
+            toast.style.top    = (toast.offsetTop  - ty1) + 'px';
+            toast.style.right  = 'auto';
+            toast.style.left   = (toast.offsetLeft - tx1) + 'px';
+        };
+        const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+    });
 }
-function iconPos(idx, leftStart) {
-    const rows = iconRows();
-    return { top: ICON_TOP_PAD + (idx % rows) * ICON_ROW_H, left: leftStart + Math.floor(idx / rows) * ICON_COL_W };
+
+function showAudioToast(info) {
+    ensureAudioToast();
+    const toast = document.getElementById('audio-toast');
+    document.getElementById('toast-track-name').textContent = info.name || '—';
+    document.getElementById('toast-status').textContent     = info.playing ? '▶ Tocando' : '⏸ Pausado';
+    document.getElementById('toast-play').textContent       = info.playing ? '⏸' : '▶';
+    if (info.progress != null) document.getElementById('toast-prog').style.width = (info.progress * 100) + '%';
+    toast.classList.add('visible');
+}
+
+function hideAudioToast() {
+    document.getElementById('audio-toast')?.classList.remove('visible');
+}
+
+function isAudioWinMinimized() {
+    const wins = document.querySelectorAll('.window');
+    for (const w of wins) {
+        if (w.id.includes('go-music') && w.dataset.minimized === '1') return true;
+    }
+    return false;
 }
 
 function drawConnections() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     connections.forEach(({ from, to }) => {
+        if (from.dataset.minimized === '1' || to.dataset.minimized === '1') return;
         const r1 = from.getBoundingClientRect();
         const r2 = to.getBoundingClientRect();
         const x1 = r1.right, y1 = r1.top + r1.height / 2;
@@ -192,12 +352,9 @@ const DESKTOP_FILE_TYPES = {
     shortcut: { icon: '⭐', onDblClick: file => openShortcut(file)        },
     fish:     { icon: '🐟', onDblClick: file => openFishViewer(file)     },
     dinheiro: { icon: '💰', onDblClick: file => openDinheiroViewer(file) },
-    audio:    { icon: '🎵', onDblClick: file => openAudioPlayer(file) },
-    // art: { icon: '💰', onDblClick: file => openDinheiroViewer(file)
-      // msc: { icon: '💰', onDblClick: file => openDinheiroViewer(file)
-        // exe: { icon: '💰', onDblClick: file => openDinheiroViewer(file)
+    audio:    { icon: '🎵', onDblClick: file => openAudioPlayer(file)    },
 };
-const TYPE_ICONS = { text:'📝', folder:'📁', fish:'🐟', app:'⚙️', image:'🖼️', shortcut:'⭐', dinheiro:'💰',art:'🎨', audio:'🎵'}; // Implementar formato .art depois que e adicionar handler pra importar projetos no GoPaint PIMP
+const TYPE_ICONS = { text:'📝', folder:'📁', fish:'🐟', app:'⚙️', image:'🖼️', shortcut:'⭐', dinheiro:'💰', art:'🎨', audio:'🎵' };
 
 const FILE_DELETE_HANDLERS = {
     app: file => {
@@ -258,25 +415,52 @@ function moveFileBetween(fileId, targetFolderId) {
     document.querySelectorAll('[id^="window-folder-"]').forEach(w => w.refreshFolder?.());
 }
 
-window.renderDesktopFiles = function() {
-    document.querySelectorAll('.icon.file').forEach(e => e.remove());
+// ── RENDER ICons ──
+function renderAllIcons() {
+    document.querySelectorAll('.icon[data-app], .icon.file').forEach(e => e.remove());
+
+    let slotIdx = 0; 
+    appsList.forEach(app => {
+        if (!isUnlocked(app)) return;
+        const icon = document.createElement('div');
+        icon.className     = 'icon';
+        icon.dataset.app   = app.id;
+        const pos = iconPos(slotIdx++);
+        icon.style.top  = pos.top  + 'px';
+        icon.style.left = pos.left + 'px';
+        icon.innerHTML = `<div class="icon-img">${app.icone}</div><span>${app.nome}</span>`;
+        makeDraggable(icon);
+        icon.addEventListener('dblclick', () => openAppById(app.id));
+        icon.addEventListener('click', e => {
+            if (e.ctrlKey) { e.stopPropagation(); icon.classList.toggle('sel-highlight'); }
+        });
+        icon.addEventListener('contextmenu', e => {
+            e.preventDefault(); e.stopPropagation();
+            currentTargetIcon = icon;
+            showContextMenu(e.pageX, e.pageY, 'app');
+        });
+        desktop.appendChild(icon);
+    });
+
     const allFiles = getFiles();
     const childIds = new Set();
     allFiles.forEach(f => {
         if (f.type === 'folder' && Array.isArray(f.data?.children))
             f.data.children.forEach(id => childIds.add(id));
     });
-    let col = 0;
+
     allFiles.forEach(file => {
         if (childIds.has(file.id)) return;
         const typeDef = DESKTOP_FILE_TYPES[file.type];
         if (!typeDef) return;
+
         const icon          = document.createElement('div');
         icon.className      = 'icon file';
         icon.dataset.fileId = file.id;
-        const fp = iconPos(col, 120);
-        icon.style.top  = fp.top  + 'px';
-        icon.style.left = fp.left + 'px';
+        const pos = iconPos(slotIdx++);
+        icon.style.top  = pos.top  + 'px';
+        icon.style.left = pos.left + 'px';
+
         let iconContent = typeDef.icon;
         if (file.type === 'image' && file.data?.src) {
             iconContent = `<img src="${file.data.src}" style="width:36px;height:28px;object-fit:cover;border:1px solid #999;border-radius:2px;display:block;margin:0 auto 2px;">`;
@@ -300,10 +484,12 @@ window.renderDesktopFiles = function() {
             showContextMenu(e.pageX, e.pageY, 'file');
         });
         desktop.appendChild(icon);
-        col++;
     });
-};
-const renderDesktopFiles = window.renderDesktopFiles;
+}
+
+// PLACEHLDER DPS FAZER UM RUN TIME PRA UNIFICAR TUDO
+window.renderDesktopFiles = renderAllIcons;
+const renderDesktopFiles  = renderAllIcons;
 
 desktop.addEventListener('contextmenu', e => {
     e.preventDefault();
@@ -349,7 +535,7 @@ document.addEventListener('mouseup', () => {
     _rbs = null;
     _rbEl?.remove(); _rbEl = null;
 });
-//Blue Square forgor name FIX BUG WHERE it demands at least one app or holding ctrl to drag PIMP
+
 desktop.addEventListener('click', e => {
     if (e.target === desktop && !e.ctrlKey)
         document.querySelectorAll('.icon.sel-highlight').forEach(i => i.classList.remove('sel-highlight'));
@@ -357,15 +543,17 @@ desktop.addEventListener('click', e => {
 
 desktop.addEventListener('dragover', e => {
     if (e.dataTransfer.types.includes('Files') || e.dataTransfer.types.includes('text/plain') ||
-        e.dataTransfer.types.includes('vfs-file-id')) e.preventDefault();   
+        e.dataTransfer.types.includes('vfs-file-id')) e.preventDefault();
 });
 desktop.addEventListener('drop', e => {
     e.preventDefault();
     const files = [...e.dataTransfer.files];
     const images = files.filter(f => f.type.startsWith('image/'));
     const audios = files.filter(f => f.type.startsWith('audio/'));
+    const texts  = files.filter(f => f.type.startsWith('text/') || f.name.endsWith('.txt') || f.name.endsWith('.md') || f.name.endsWith('.csv'));
     if (images.length) images.forEach(importRealImage);
     if (audios.length) audios.forEach(ImportAudioFile);
+    if (texts.length)  texts.forEach(importTextFile);
     const vfsId = e.dataTransfer.getData('vfs-file-id');
     if (vfsId) moveFileBetween(parseInt(vfsId), null);
 });
@@ -379,11 +567,76 @@ function importRealImage(file) {
     };
     reader.readAsDataURL(file);
 }
+
+function importTextFile(file) {
+    const sizeMB = Math.max(1, Math.ceil(file.size / 1024));
+    const reader = new FileReader();
+    reader.onload = ev => {
+        const saved = addFile({ name: file.name, type: 'text', size: sizeMB, data: { content: ev.target.result } });
+        if (saved) renderDesktopFiles();
+    };
+    reader.readAsText(file);
+}
+
 function importImageFile() {
     const input = document.createElement('input');
     input.type = 'file'; input.accept = 'image/*'; input.multiple = true;
     input.onchange = e => [...e.target.files].forEach(importRealImage);
     input.click();
+}
+
+// ── AUDIO PLAYER ──
+window.openAudioPlayer = function(file) {
+    const existing = document.getElementById('window-go-music');
+    if (!existing) {
+        const app = appsList.find(a => a.id === 'go-music');
+        if (app) {
+            openAppById('go-music');
+        } else {
+            // fallback
+            openSimpleAudioPlayer(file);
+            return;
+        }
+        setTimeout(() => {
+            const win = document.getElementById('window-go-music');
+            if (win && file?.data?.src) {
+                win.querySelector('iframe')?.contentWindow?.postMessage({
+                    type: 'resource-received',
+                    resource: { name: file.name, type: 'audio', size: file.size, data: file.data }
+                }, '*');
+            }
+        }, 400);
+    } else {
+        existing.style.zIndex = ++zIndexCounter;
+        if (existing.dataset.minimized === '1') restoreWindow(existing, document.querySelector(`[data-win-id="window-go-music"]`));
+        if (file?.data?.src) {
+            existing.querySelector('iframe')?.contentWindow?.postMessage({
+                type: 'resource-received',
+                resource: { name: file.name, type: 'audio', size: file.size, data: file.data }
+            }, '*');
+        }
+    }
+};
+const openAudioPlayer = window.openAudioPlayer;
+
+function openSimpleAudioPlayer(file) {
+    const winId = `audio-simple-${file.id}`;
+    if (document.getElementById(winId)) { document.getElementById(winId).style.zIndex = ++zIndexCounter; return; }
+    const win = document.createElement('div');
+    win.className = 'window'; win.id = winId; win.style.zIndex = ++zIndexCounter;
+    win.style.top = '120px'; win.style.left = '160px'; win.style.width = '300px'; win.style.height = '110px';
+    win.innerHTML = `
+        <div class="title-bar"><span>🎵 ${file.name}</span><button class="close-btn">X</button></div>
+        <div style="padding:12px;font-family:Tahoma;font-size:12px;background:#1a1a2e;color:#eee;display:flex;flex-direction:column;gap:8px;height:calc(100% - 34px);">
+            <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;">${file.name}</div>
+            <audio controls style="width:100%;height:32px;" src="${file.data?.src}"></audio>
+        </div>
+        <div class="resize-handle right"></div><div class="resize-handle bottom"></div><div class="resize-handle corner"></div>`;
+    desktop.appendChild(win);
+    win.querySelector('.close-btn').onclick = () => win.remove();
+    win.addEventListener('mousedown', () => win.style.zIndex = ++zIndexCounter);
+    makeDraggable(win, win.querySelector('.title-bar'));
+    makeResizable(win);
 }
 
 window.openImageViewer = function(file) {
@@ -441,7 +694,7 @@ function createShortcut(name, url) {
 }
 window.createShortcut = createShortcut;
 
-function openFishViewer(file) {  //Adicionar BackDoor no outro site dps pra fazer crossover  PIMP
+function openFishViewer(file) {
     const winId = `fish-viewer-${file.id}`;
     if (document.getElementById(winId)) { document.getElementById(winId).style.zIndex = ++zIndexCounter; return; }
     const raridade = file.data?.raridade ?? Math.random();
@@ -466,7 +719,7 @@ function openFishViewer(file) {  //Adicionar BackDoor no outro site dps pra faze
     makeResizable(win);
 }
 
-function openDinheiroViewer(file) { // criar handler dps PIMP
+function openDinheiroViewer(file) {
     const winId  = `din-viewer-${file.id}`;
     if (document.getElementById(winId)) { document.getElementById(winId).style.zIndex = ++zIndexCounter; return; }
     const valor  = file.data?.valor  ?? 0;
@@ -505,8 +758,7 @@ window.applyUpgrades = applyUpgrades;
 async function loadApps() {
     const res = await fetch('apps.json');
     appsList  = await res.json();
-    createDesktopIcons();
-    renderDesktopFiles();
+    renderAllIcons();   
     populateStartMenu();
 }
 
@@ -519,10 +771,7 @@ const isRemovable = app => Object.prototype.hasOwnProperty.call(app, 'unlocked')
 
 function unlockApp(appId) {
     const u = getUnlocks(); u[appId] = true; saveUnlocks(u);
-    if (!document.querySelector(`.icon[data-app="${appId}"]`)) {
-        const app = appsList.find(a => a.id === appId);
-        if (app) desktop.appendChild(buildAppIcon(app));
-    }
+    renderAllIcons();   
     populateStartMenu();
 }
 window.unlockApp = unlockApp;
@@ -535,53 +784,86 @@ function removeApp(appId) {
     populateStartMenu();
 }
 
-function createDesktopIcons() {
-    document.querySelectorAll('.icon[data-app]').forEach(e => e.remove());
-    let idx = 0;
-    appsList.forEach(app => { if (isUnlocked(app)) desktop.appendChild(buildAppIcon(app, idx++)); });
-}
 
-function buildAppIcon(app, index = 0) {
-    const icon = document.createElement('div');
-    icon.className = 'icon'; icon.dataset.app = app.id;
-    const ap = iconPos(index, 20);
-    icon.style.top = ap.top + 'px'; icon.style.left = ap.left + 'px';
-    icon.innerHTML = `<div class="icon-img">${app.icone}</div><span>${app.nome}</span>`;
-    makeDraggable(icon);
-    icon.addEventListener('dblclick', () => openAppById(app.id));
-    icon.addEventListener('click', e => { if (e.ctrlKey) { e.stopPropagation(); icon.classList.toggle('sel-highlight'); } });
-    icon.addEventListener('contextmenu', e => { e.preventDefault(); e.stopPropagation(); currentTargetIcon = icon; showContextMenu(e.pageX, e.pageY, 'app'); });
-    return icon;
-}
-function removeDesktopIcon(appId) { document.querySelector(`.icon[data-app="${appId}"]`)?.remove(); }
+function createDesktopIcons() { renderAllIcons(); }
+function removeDesktopIcon(appId) { renderAllIcons(); } 
 
 window.getUsedRAM = () => usedRAM;
 window.getRAMInfo = () => `${usedRAM}/${window.systemInfo.ram} MB`;
 
-function openAppById(appId) { //FOPEN
+function openAppById(appId) {
     const app = appsList.find(a => a.id === appId); if (!app) return;
     if (usedRAM + (app.ram || 0) > window.systemInfo.ram) {
         alert(`RAM insuficiente!\nUsando: ${usedRAM}/${window.systemInfo.ram}MB\nPrecisa: ${app.ram || 0}MB`); return;
     }
     if (!app.instantiable) {
-        if (openApps.has(appId)) { document.getElementById(`window-${appId}`)?.style.setProperty('z-index', ++zIndexCounter); return; }
-        openApps.add(appId);
+        const existWin = document.getElementById(`window-${appId}`);
+        if (existWin) {
+
+            if (existWin.dataset.minimized === '1') {
+                const taskItem = document.querySelector(`[data-win-id="window-${appId}"]`);
+                restoreWindow(existWin, taskItem);
+            } else {
+                existWin.style.zIndex = ++zIndexCounter;
+            }
+            return;
+        }
     }
-    
+
     usedRAM += (app.ram || 0);
     return createWindow(app);
 }
 
-//==================
+
+function minimizeWindow(win, taskItem) {
+    win.style.display = 'none';
+    win.dataset.minimized = '1';
+    if (taskItem) {
+        taskItem.classList.remove('active');
+        taskItem.classList.add('minimized');
+    }
+
+    if (win.id.includes('go-music')) {
+        _audioToastPinned = true;
+        const lastInfo = win._lastAudioStatus;
+        if (lastInfo) showAudioToast(lastInfo);
+        else {
+            ensureAudioToast();
+            document.getElementById('audio-toast').classList.add('visible');
+            document.getElementById('toast-track-name').textContent = 'GoMusic';
+            document.getElementById('toast-status').textContent = '— minimizado';
+        }
+    }
+    drawConnections();
+}
+
+function restoreWindow(win, taskItem) {
+    win.style.display = '';
+    win.dataset.minimized = '0';
+    win.style.zIndex = ++zIndexCounter;
+    if (taskItem) {
+        taskItem.classList.add('active');
+        taskItem.classList.remove('minimized');
+    }
+
+    if (win.id.includes('go-music')) {
+        if (!_audioToastPinned) hideAudioToast();
+        else hideAudioToast();
+        _audioToastPinned = false;
+    }
+    drawConnections();
+}
+
+// ─────────────────────────────────────────────────────
 // WINDOW
-//+===================
-function createWindow(app) { // FWINDOW COLOCAR ATRIBUTO SIZE DPS QUE EU ESQUECI AAA, E GERAR A BOTAO FULLSCREEN PIMP 
+// ─────────────────────────────────────────────────────
+function createWindow(app) {
     const winUid = app.instantiable ? `${app.id}-${Date.now()}` : app.id;
     const win    = document.createElement('div');
     win.className = 'window'; win.id = `window-${winUid}`; win.style.zIndex = ++zIndexCounter;
+    win.dataset.minimized = '0';
     const offset = (document.querySelectorAll('.window').length * 22) + 50;
 
-    // ── PRESET DE TAMANHO ──
     const sizeKey    = app.size || 'medium';
     const sizePreset = WINDOW_SIZES[sizeKey];
 
@@ -618,6 +900,7 @@ function createWindow(app) { // FWINDOW COLOCAR ATRIBUTO SIZE DPS QUE EU ESQUECI
             <span style="flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${app.nome}</span>
             <div style="display:flex;gap:1px;margin-left:3px;align-items:center;">
                 ${rightBtns}
+                <button class="minimize-btn" title="Minimizar" style="padding:0 5px;font-size:11px;line-height:1;">_</button>
                 <button class="fullscreen-btn" title="Maximizar" style="padding:0 5px;font-size:10px;">⬜</button>
                 <button class="close-btn">X</button>
             </div>
@@ -631,10 +914,9 @@ function createWindow(app) { // FWINDOW COLOCAR ATRIBUTO SIZE DPS QUE EU ESQUECI
 
     desktop.appendChild(win);
 
-    // ── BOTÃO FULLSCREEN DA MÁQUINA VIRTUAL ──
+    // ── FULLSCREEN  ──
     win.querySelector('.fullscreen-btn').addEventListener('click', () => {
         if (win.dataset.maximized === '1') {
-            // restaura tamanho anterior
             win.style.top    = win.dataset.prevTop;
             win.style.left   = win.dataset.prevLeft;
             win.style.width  = win.dataset.prevWidth;
@@ -642,7 +924,6 @@ function createWindow(app) { // FWINDOW COLOCAR ATRIBUTO SIZE DPS QUE EU ESQUECI
             win.dataset.maximized = '0';
             win.querySelector('.fullscreen-btn').textContent = '⬜';
         } else {
-            // salva tamanho atual e maximiza dentro do desktop
             win.dataset.prevTop    = win.style.top;
             win.dataset.prevLeft   = win.style.left;
             win.dataset.prevWidth  = win.style.width;
@@ -658,12 +939,31 @@ function createWindow(app) { // FWINDOW COLOCAR ATRIBUTO SIZE DPS QUE EU ESQUECI
         drawConnections();
     });
 
+    // ── TASKBAR ITEM ──
     const taskItem = document.createElement('div');
     taskItem.className = 'taskbar-app active';
+    taskItem.dataset.winId = `window-${winUid}`;
     taskItem.innerHTML = `<span class="taskbar-label">${app.nome}</span><button class="taskbar-close-btn" title="Fechar">✕</button>`;
     taskbarApps.appendChild(taskItem);
-    taskItem.querySelector('.taskbar-label').onclick     = () => win.style.zIndex = ++zIndexCounter;
+
+
+    taskItem.querySelector('.taskbar-label').onclick = () => {
+        if (win.dataset.minimized === '1') {
+            restoreWindow(win, taskItem);
+        } else {
+       
+            if (parseInt(win.style.zIndex) >= zIndexCounter) {
+                minimizeWindow(win, taskItem);
+            } else {
+                win.style.zIndex = ++zIndexCounter;
+                taskItem.classList.add('active');
+            }
+        }
+    };
     taskItem.querySelector('.taskbar-close-btn').onclick = e => { e.stopPropagation(); closeWindow(win, app, taskItem); };
+
+    // ── MINIMIZE BUTTON ──
+    win.querySelector('.minimize-btn').addEventListener('click', () => minimizeWindow(win, taskItem));
 
     win.querySelectorAll('.connect-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -692,17 +992,15 @@ function closeWindow(win, app, taskItem) {
     connections = connections.filter(c => c.from !== win && c.to !== win);
     drawConnections();
     if (!app.instantiable) openApps.delete(app.id);
+    if (win.id.includes('go-music')) hideAudioToast();
     taskItem.remove(); win.remove();
 }
-
-// ─── REPLACE tryConnect ────────────────────────────────────────────────────
 
 function tryConnect(pending, targetWin, targetPort) {
     if (pending.win === targetWin) return;
     const aPort = pending.port;
     const bPort = targetPort || { dir: 'in', format: 'any' };
 
-    // storage age como out (alimenta) E como in (recebe) dependendo da posição
     const aIsOut = aPort.dir === 'out' || aPort.dir === 'storage';
     const bIsIn  = bPort.dir === 'in'  || bPort.dir === 'storage';
     const aIsIn  = aPort.dir === 'in'  || aPort.dir === 'storage';
@@ -728,7 +1026,6 @@ function tryConnect(pending, targetWin, targetPort) {
     const toPort   = aIsOut ? bPort       : aPort;
     const conn     = { from, to, fromPort, toPort };
 
-    // fuelInterval só dispara quando FROM é storage (pasta alimentando destino)
     if (fromPort.dir === 'storage') {
         conn.fuelInterval = setInterval(() => storageFuelTick(from, to, toPort.format), 3000);
     }
@@ -736,32 +1033,24 @@ function tryConnect(pending, targetWin, targetPort) {
     connections.push(conn);
     drawConnections();
 }
-// ───   ─────────────────────────────────────────
-// AUDIO 
-// ───   ─────────────────────────────────────────
 
+// ── AUDIO FILE IMPORT ──
 function ImportAudioFile(file) {
     const sizeMB = Math.max(1, Math.round(file.size / 1024 / 1024));
-
     const reader = new FileReader();
     reader.onload = ev => {
         const saved = addFile({
             name: file.name,
             type: 'audio',
             size: sizeMB,
-            data: {
-                src: ev.target.result
-            }
+            data: { src: ev.target.result }
         });
-
         if (saved) renderDesktopFiles();
     };
-
     reader.readAsDataURL(file);
 }
-// ─── REPLACE routeResourceToWindow ─────────────────────────────────────────
 
-function routeResourceToWindow(resource, targetWin) { // FSEND RESOURCE
+function routeResourceToWindow(resource, targetWin) {
     if (!targetWin) {
         const s = addFile(resource); if (s) renderDesktopFiles(); return;
     }
@@ -781,7 +1070,6 @@ function routeResourceToWindow(resource, targetWin) { // FSEND RESOURCE
 
     targetWin.querySelector('iframe')?.contentWindow?.postMessage({ type: 'resource-received', resource }, '*');
 
-    // processadores consomem o recurso e emitem o resultado — não salva no desktop
     if (targetWin.dataset.appType === 'processor') return;
 
     if (winHasStoragePort(targetWin)) {
@@ -789,12 +1077,9 @@ function routeResourceToWindow(resource, targetWin) { // FSEND RESOURCE
     }
 }
 
-// ─── REPLACE window.emitResource ───────────────────────────────────────────
-
 window.emitResource = function(appId, resource) {
     let sourceWin = document.getElementById(`window-${appId}`);
 
-    // FOLDER
     if (!sourceWin && String(appId).startsWith('folder-')) {
         sourceWin = document.getElementById(`window-folder-${appId.replace('folder-', '')}`);
     }
@@ -812,8 +1097,7 @@ window.emitResource = function(appId, resource) {
     return true;
 };
 
-
-function storageFuelTick(storageWin, targetWin, fmt) { // FAUTO ROUTE 
+function storageFuelTick(storageWin, targetWin, fmt) {
     if (!document.body.contains(storageWin) || !document.body.contains(targetWin)) return;
     const allFiles = getFiles();
     let candidates = [];
@@ -839,7 +1123,6 @@ function storageFuelTick(storageWin, targetWin, fmt) { // FAUTO ROUTE
     deleteFile(file.id);
 }
 
-
 window.pescar = appId => window.emitResource(appId, {
     name: 'Peixe_' + Math.floor(Math.random() * 100),
     type: 'fish',
@@ -847,7 +1130,7 @@ window.pescar = appId => window.emitResource(appId, {
     data: { raridade: Math.random() },
 });
 
-function createNotepadFile() { // PLACEHOLDER GERAR HANDLER DE ARQUIVO DPS PIMP 
+function createNotepadFile() {
     const saved = addFile({ name: 'Novo.txt', type: 'text', size: 1, data: { content: '' } });
     if (saved) renderDesktopFiles();
 }
@@ -876,41 +1159,33 @@ function createFolder() {
     const saved = addFile({ name: nome, type: 'folder', size: 1, data: { children: [] } });
     if (saved) renderDesktopFiles();
 }
+
 function emitFromFolder(folderWin, targetWin, fmt = 'any') {
     const folderId = parseInt(folderWin.id.replace('window-folder-', ''));
     const files = getFiles();
     const folder = files.find(f => f.id === folderId);
-
     if (!folder?.data?.children?.length) return;
-
     const candidates = folder.data.children
         .map(id => files.find(f => f.id === id))
         .filter(f => f && f.type !== 'folder' && (fmt === 'any' || f.type === fmt));
-
     if (!candidates.length) return;
-
     const file = candidates[0];
-
-    const resource = {
-        name: file.name,
-        type: file.type,
-        size: file.size,
-        data: { ...(file.data || {}) }
-    };
-
+    const resource = { name: file.name, type: file.type, size: file.size, data: { ...(file.data || {}) } };
     routeResourceToWindow(resource, targetWin);
     deleteFile(file.id);
 }
+
 function openFolder(fileId) {
     const existing = document.getElementById(`window-folder-${fileId}`);
     if (existing) { existing.style.zIndex = ++zIndexCounter; return; }
     const win = document.createElement('div');
     win.className = 'window'; win.id = `window-folder-${fileId}`; win.style.zIndex = ++zIndexCounter;
     win.dataset.ports = JSON.stringify([
-    { dir: 'in', format: 'any' },
-    { dir: 'out', format: 'any' },
-    { dir: 'storage', format: 'any' }
+        { dir: 'in', format: 'any' },
+        { dir: 'out', format: 'any' },
+        { dir: 'storage', format: 'any' }
     ]);
+    win.dataset.minimized = '0';
     win.style.top = '100px'; win.style.left = '140px'; win.style.width = '420px'; win.style.height = '320px';
     win.innerHTML = `
         <div class="title-bar" style="display:flex;align-items:center;padding:0 2px;">
@@ -918,11 +1193,10 @@ function openFolder(fileId) {
                 <button class="connect-btn connect-btn-left" data-port-dir="in" data-port-fmt="any" title="in:any">🔌</button>
                 <button class="connect-btn connect-btn-left" data-port-dir="storage" data-port-fmt="any" title="storage:any">📦</button>
             </div>
-
             <span id="folder-title-${fileId}" style="flex:1;text-align:center;">📁 Pasta</span>
-
             <div style="display:flex;gap:1px;">
                 <button class="connect-btn connect-btn-right" data-port-dir="out" data-port-fmt="any" title="out:any">🔌</button>
+                <button class="minimize-btn" title="Minimizar" style="padding:0 5px;font-size:11px;">_</button>
                 <button class="close-btn">X</button>
             </div>
         </div>
@@ -934,6 +1208,27 @@ function openFolder(fileId) {
         <div id="folder-content-${fileId}" style="display:flex;flex-wrap:wrap;gap:8px;padding:10px;height:calc(100% - 70px);overflow-y:auto;background:#fff;align-content:flex-start;transition:background 0.1s;"></div>
         <div class="resize-handle right"></div><div class="resize-handle bottom"></div><div class="resize-handle corner"></div>`;
     desktop.appendChild(win);
+
+    // Folder taskbar item
+    const taskItem = document.createElement('div');
+    taskItem.className = 'taskbar-app active';
+    taskItem.dataset.winId = `window-folder-${fileId}`;
+    taskItem.innerHTML = `<span class="taskbar-label">📁 Pasta</span><button class="taskbar-close-btn" title="Fechar">✕</button>`;
+    taskbarApps.appendChild(taskItem);
+
+    taskItem.querySelector('.taskbar-label').onclick = () => {
+        if (win.dataset.minimized === '1') restoreWindow(win, taskItem);
+        else if (parseInt(win.style.zIndex) >= zIndexCounter) minimizeWindow(win, taskItem);
+        else win.style.zIndex = ++zIndexCounter;
+    };
+    taskItem.querySelector('.taskbar-close-btn').onclick = e => {
+        e.stopPropagation();
+        connections.filter(c => c.from === win || c.to === win).forEach(c => { if (c.fuelInterval) clearInterval(c.fuelInterval); });
+        connections = connections.filter(c => c.from !== win && c.to !== win);
+        drawConnections(); taskItem.remove(); win.remove();
+    };
+
+    win.querySelector('.minimize-btn').addEventListener('click', () => minimizeWindow(win, taskItem));
 
     const content = document.getElementById(`folder-content-${fileId}`);
     content.addEventListener('dragover',  e => { e.preventDefault(); content.style.background = '#d8ecff'; });
@@ -960,35 +1255,32 @@ function openFolder(fileId) {
     win.querySelector('.close-btn').onclick = () => {
         connections.filter(c => c.from === win || c.to === win).forEach(c => { if (c.fuelInterval) clearInterval(c.fuelInterval); });
         connections = connections.filter(c => c.from !== win && c.to !== win);
-        drawConnections(); win.remove();
+        drawConnections(); taskItem.remove(); win.remove();
     };
 
     win.querySelectorAll('.connect-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const port = {
-            dir: btn.dataset.portDir,
-            format: btn.dataset.portFmt
-        };
-
-        if (!pendingConnection) {
-            pendingConnection = { win, port };
-            btn.style.background = 'yellow';
-        } else {
-            tryConnect(pendingConnection, win, port);
-            pendingConnection = null;
-            document.querySelectorAll('.connect-btn').forEach(b => b.style.background = '');
-        }
+        btn.addEventListener('click', () => {
+            const port = { dir: btn.dataset.portDir, format: btn.dataset.portFmt };
+            if (!pendingConnection) {
+                pendingConnection = { win, port };
+                btn.style.background = 'yellow';
+            } else {
+                tryConnect(pendingConnection, win, port);
+                pendingConnection = null;
+                document.querySelectorAll('.connect-btn').forEach(b => b.style.background = '');
+            }
+        });
     });
-});
 
     makeDraggable(win, win.querySelector('.title-bar'));
     makeResizable(win);
 
-    function refreshFolder() { //FREFRESH FOLDER
+    function refreshFolder() {
         const allFiles = getFiles();
         const folder   = allFiles.find(f => f.id === fileId);
-        if (!folder) { win.remove(); return; }
+        if (!folder) { taskItem.remove(); win.remove(); return; }
         document.getElementById(`folder-title-${fileId}`).innerText = `📁 ${folder.name}`;
+        taskItem.querySelector('.taskbar-label').textContent = `📁 ${folder.name}`;
         const children = folder.data?.children || [];
         document.getElementById(`folder-info-${fileId}`).innerText = `${children.length} item(s)`;
         content.innerHTML = '';
@@ -1037,7 +1329,7 @@ function openFolder(fileId) {
     refreshFolder();
 }
 
-function baixar(id) { // FDOWNLOAD
+function baixar(id) {
     const app = appsList.find(a => a.id === id); if (!app) return;
     if (getFiles().some(f => f.type === 'app' && f.data?.appId === id)) { alert(`${app.nome} já está instalado!`); return; }
     const appSize = app.size || 20, used = window.getUsedSpace();
@@ -1047,7 +1339,7 @@ function baixar(id) { // FDOWNLOAD
     unlockApp(id); alert('Download concluído! 🎉');
     setTimeout(() => openAppById(id), 250);
 }
-function baixarDireto(id) { unlockApp(id); alert('Download concluído! 🎉'); } //AUXILIAR DOWNLOAD SEM RENDER
+function baixarDireto(id) { unlockApp(id); alert('Download concluído! 🎉'); }
 
 (function () {
     const item = document.createElement('div');
@@ -1116,11 +1408,11 @@ document.getElementById('menu-pin').onclick = () => {
     document.getElementById('quick-launch').appendChild(quick);
 };
 
-document.getElementById('menu-unlock')     ?.addEventListener('click', () => unlockApp('pescaria'));
-document.getElementById('menu-new-notepad') ?.addEventListener('click', createNotepadFile);
-document.getElementById('menu-new-folder')  ?.addEventListener('click', createFolder);
-document.getElementById('menu-new-image')   ?.addEventListener('click', importImageFile); //REMOVER PIMP 
-document.getElementById('menu-new-art-project')  ?.addEventListener('click', createNewArt); //implementar arquivo formato ".art" PIMP 
+document.getElementById('menu-unlock')          ?.addEventListener('click', () => unlockApp('pescaria'));
+document.getElementById('menu-new-notepad')      ?.addEventListener('click', createNotepadFile);
+document.getElementById('menu-new-folder')       ?.addEventListener('click', createFolder);
+document.getElementById('menu-new-image')        ?.addEventListener('click', importImageFile);
+document.getElementById('menu-new-art-project')  ?.addEventListener('click', createNewArt);
 
 startBtn.onclick = e => { e.stopPropagation(); startMenu.classList.toggle('visible'); };
 document.addEventListener('click', e => { if (!startMenu.contains(e.target) && e.target !== startBtn) startMenu.classList.remove('visible'); });
@@ -1152,15 +1444,34 @@ document.getElementById('shutdown-btn')?.addEventListener('click', () => {
         document.body.innerHTML = "<div style='background:black;color:white;height:100vh;display:flex;align-items:center;justify-content:center;font-family:sans-serif;'>Pode desligar com segurança.</div>";
 });
 
+// ── MESSAGE HANDLER ──
 window.addEventListener('message', event => {
     if (!event.data) return;
     const { type, appId, fileId, name, url } = event.data;
+
+    // ── AUDIO STATUS (for toast) ──
+    if (type === 'audio-status') {
+        let srcWin = null;
+        for (const w of document.querySelectorAll('.window')) {
+            if (w.querySelector('iframe')?.contentWindow === event.source) { srcWin = w; break; }
+        }
+        if (srcWin) {
+            srcWin._lastAudioStatus = event.data;
+            if (srcWin.dataset.minimized === '1') {
+                showAudioToast(event.data);
+            } else if (!_audioToastPinned) {
+                hideAudioToast();
+            }
+        }
+    }
+
     if (type === 'download-app'    && appId)          baixar(appId);
     if (type === 'open-app'        && appId)          openAppById(appId);
     if (type === 'delete-file'     && fileId != null) deleteFile(fileId);
     if (type === 'create-shortcut' && url)            createShortcut(name || url, url);
     if (type === 'create-file'     && event.data.fileType)
         window.createNewFile(event.data.fileType, event.data.name, event.data.data || {}, event.data.size || 1);
+
     if (type === 'emit-from-window') {
         let srcWin = null;
         for (const w of document.querySelectorAll('.window')) {
@@ -1193,64 +1504,41 @@ function applySavedState() {
     const state = loadState();
     if (state.wallpaper) document.body.style.backgroundImage = `url('${state.wallpaper}')`;
 }
-// =====================
-// CLICK SOUND SYSTEM
-// =====================
+
+// ── CLICK SOUND ──
 const clickAudio = new Audio('click.mp3');
-clickAudio.volume = 0.4; 
+clickAudio.volume = 0.4;
 
 function playClickSound() {
-    const sound = new Audio('click.mp3'); // cria novo sempre
-
+    const sound = new Audio('click.mp3');
     sound.volume = 0.4;
     sound.playbackRate = 0.8 + Math.random() * 0.4;
-
-    sound.play().catch(err => {
-        console.warn('Erro ao tocar som:', err);
-    });
-}
-//===========================
-// PAINT STUFF
-//========================
-function createNewArt() { 
-    
+    sound.play().catch(() => {});
 }
 
-//set "favorite folder" to save drawings on it >:V PIMP
-//set folder new handler to see as a canvas diplay
+// ── PAINT ──
+function createNewArt() {
+   
+}
 
-
-//====================
-//COMMAND API HANDLER  STUFF GOGOCOMPILER O MAI GAAAH
-//==============
-
+// ── COMMAND API ──
 window.getOpenWindows = function() {
     return [...document.querySelectorAll('.window')].map(win => ({
         id: win.id,
         app: win.dataset.appType || win.id,
         element: win
     }));
-};  
-window.OpenWindow = function(id) {
-    openAppById(id);
 };
+window.OpenWindow = function(id) { openAppById(id); };
 window.closeWindowById = function(id) {
     const win = document.getElementById(id);
     if (!win) return false;
     const closeBtn = win.querySelector('.close-btn');
-    if (closeBtn) {
-        closeBtn.click(); 
-        return true;
-    }
-    win.remove();
-    return true;
+    if (closeBtn) { closeBtn.click(); return true; }
+    win.remove(); return true;
 };
 
-//====================
-//Go Music
-//==============
-
-
+// ── FILE CREATOR ──
 //============================
 // HANDLER DE CRIAR ARQUIVO
 //  ('text'|'folder'|'image'|'fish'|'dinheiro'|'shortcut')
@@ -1263,32 +1551,20 @@ window.createNewFile = function(type, name, data = {}, size = 1) {
         console.warn(`[createNewFile] Tipo desconhecido: "${type}". Válidos: ${Object.keys(DESKTOP_FILE_TYPES).join(', ')}`);
         return null;
     }
-    if (!name || !name.trim()) {
-        console.warn('[createNewFile] Nome inválido.');
-        return null;
-    }
-
-    // defaults por tipo
+    if (!name || !name.trim()) { console.warn('[createNewFile] Nome inválido.'); return null; }
     if (type === 'text'   && data.content   === undefined) data.content   = '';
     if (type === 'folder' && !Array.isArray(data.children)) data.children = [];
-
     const saved = addFile({ name: name.trim(), type, size, data });
     if (saved) renderDesktopFiles();
     return saved;
 };
+
 document.addEventListener('click', (e) => {
     const clickable = e.target.closest('button, .menu-item-right');
-
-    if (clickable) {
-        playClickSound();
-    }
+    if (clickable) playClickSound();
 });
 
-//===========================
-// INIT
-//========================
-
-// PIMP somar render de desktopicons a partir de uma unica array >:V    apps + files
+// ── INIT ──
 applySavedState();
 applyUpgrades();
 initSessionTime();

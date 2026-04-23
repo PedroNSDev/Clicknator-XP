@@ -1145,3 +1145,17 @@ eu tenho que simplificar a interface ta mt robusta e pixelada de um jeito nao mu
 
 config do  site seria algo pra game em /Games: game seria a pasta contendo o jogo nela teria um config.json com a imagem e o nome do jogo pra dar de argumento pra função de render e o resto é o resto
 precisa ter uma interface amigavel e fruitger ne MEO
+
+
+aodeo >:V
+
+ja ta dando pra implementar a 3 fase do plano de domnição mundial hahahaha >:D
+implementar o sistema  de Personalização Total do sistema incluindo Header de JANELAS 
+da pra fazer um Css generico acolplado a variaveis dai se eu escolhesse um tema sla tipo "verde" ao inves de settar tudo pra verde ele mexe no deg do hue >:D assim nao perdendo totalmente a essencia da cor original
+catapimbas  eu sou um genio hehehe 
+
+preciso implementar Listeners bem sigmas e unificar eles pra gerar um fluxograma sem delay nem overlay de funções 
+
+terminar de implementar handler de arquivos de audio (nao sei se quero .wav tbm) >:P
+
+gerar handler de leitura tipo o do gamehub pros sites(que le dentro de pastas). assim fica mais facil de colocar os assets e nao polui tanto 
