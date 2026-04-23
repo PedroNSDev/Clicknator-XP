@@ -136,7 +136,7 @@
   },   
   {
     "id": "GoEdit",
-    "nome": "Excel.exe",
+    "nome": "GoEdit.exe",
     "size": "fullscreen",
     "icone": "🎥",
     "html": "apps/videoeditor.html",
