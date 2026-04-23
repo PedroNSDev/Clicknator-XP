@@ -1,0 +1,187 @@
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoEdit</title>
+    <script src="css/videoedt.js"></script>
+    <link rel="stylesheet" href="css/videoedit.css">
+       
+</head>
+<body>
+
+    <!-- Title Bar -->
+    <div class="title-bar">
+        <div class="title-bar-content">
+            <div class="title-bar-icon">🎬</div>
+            <span>GoEdit</span>
+        </div>
+        <div class="title-bar-buttons">
+            <button class="title-bar-button">_</button>
+            <button class="title-bar-button">□</button>
+            <button class="title-bar-button">✕</button>
+        </div>
+    </div>
+
+    <!-- Menu Bar -->
+    <div class="menu-bar">
+        <div class="menu-item">Arquivo</div>
+        <div class="menu-item">Editar</div>
+        <div class="menu-item">Clipe</div>
+        <div class="menu-item">Sequência</div>
+        <div class="menu-item">Ajuda</div>
+        <div style="margin-left: auto;">
+            <button class="xp-button" onclick="openExportModal()" title="Exportar o vídeo editado">📤 Exportar MP4</button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="panel">
+            <div class="panel-header">📁 Projeto</div>
+            <div class="panel-content">
+                <div class="import-section">
+                    <button class="xp-button" onclick="document.getElementById('file-input').click()" style="width: 100%; padding: 6px; font-size: 11px;">
+                        📁 Importar Mídia
+                    </button>
+                    <input type="file" id="file-input" class="hidden" accept="video/*,audio/*,image/*" multiple>
+                </div>
+
+                <div class="drop-zone" id="drop-zone">
+                    <div style="font-size: 16px; margin-bottom: 4px;">📥</div>
+                    <div>Arraste aqui</div>
+                </div>
+
+                <div style="border-top: 1px solid var(--xp-dark-gray); padding-top: 4px;">
+                    <div style="font-size: 10px; color: #000; margin-bottom: 4px; font-weight: bold;">Arquivos:</div>
+                    <div id="media-items-list" style="display: flex; flex-direction: column; gap: 2px;">
+                        <div style="text-align: center; color: #000; font-size: 10px; padding: 4px;">Nenhum</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Panel -->
+        <div class="panel preview-container">
+            <a>O APP SE ENCONTRA EM CONTRUÇÂO. O LAYOUT É SO UM MOSTRUARIO DOQ ESTA POR VIR</a>
+            <div class="panel-header">🎬 Monitor</div>
+            <div class="video-wrapper">
+                <a>APP EM CONTRUÇÂO</a>
+                <canvas id="preview-canvas"> </canvas>
+            </div>
+            <div class="preview-controls">
+                <button class="xp-button" onclick="seek(-5)" title="Retroceder 5s">⏪</button>
+                <button class="xp-button xp-button-large" id="play-pause-btn" onclick="togglePlay()" title="Play/Pause">▶</button>
+                <button class="xp-button" onclick="seek(5)" title="Avançar 5s">⏩</button>
+                <div class="time-display" id="time-display">00:00:00:00</div>
+            </div>
+        </div>
+
+        <!-- Right Panel -->
+        <div class="panel">
+            <div class="panel-header">⚙️ Propriedades</div>
+            <div class="panel-content">
+                <div id="no-selection-msg" style="color: #000; font-size: 11px; background-color: var(--xp-white); border: 1px solid var(--xp-dark-gray); padding: 4px;">
+                    Selecione um clipe
+                </div>
+                <div id="properties-panel" class="hidden">
+                    <div class="prop-group">
+                        <span class="prop-label">Opacidade</span>
+                        <input type="range" id="prop-opacity" min="0" max="100" value="100" oninput="updateClipProperty('opacity', this.value)">
+                        <span id="opacity-value" style="font-size: 10px;">100%</span>
+                    </div>
+                    <div class="prop-group">
+                        <span class="prop-label">Volume</span>
+                        <input type="range" id="prop-volume" min="0" max="100" value="100" oninput="updateClipProperty('volume', this.value)">
+                        <span id="volume-value" style="font-size: 10px;">100%</span>
+                    </div>
+                    <div class="prop-group">
+                        <span class="prop-label">Velocidade</span>
+                        <input type="range" id="prop-speed" min="25" max="200" value="100" oninput="updateClipProperty('speed', this.value)">
+                        <span id="speed-value" style="font-size: 10px;">100%</span>
+                    </div>
+                    <div id="image-duration-group" class="prop-group hidden">
+                        <span class="prop-label">Duração (s)</span>
+                        <input type="number" id="prop-image-duration" min="0.5" max="60" step="0.5" value="3" oninput="updateClipProperty('duration', this.value)">
+                    </div>
+                    <div id="image-position-group" class="prop-group hidden">
+                        <span class="prop-label">Posição X (%)</span>
+                        <input type="range" id="prop-pos-x" min="0" max="100" value="50" oninput="updateClipProperty('posX', this.value)">
+                        <span id="pos-x-value" style="font-size: 10px;">50%</span>
+                    </div>
+                    <div id="image-position-group-y" class="prop-group hidden">
+                        <span class="prop-label">Posição Y (%)</span>
+                        <input type="range" id="prop-pos-y" min="0" max="100" value="50" oninput="updateClipProperty('posY', this.value)">
+                        <span id="pos-y-value" style="font-size: 10px;">50%</span>
+                    </div>
+                    <div id="image-scale-group" class="prop-group hidden">
+                        <span class="prop-label">Escala (%)</span>
+                        <input type="range" id="prop-scale" min="10" max="200" value="100" oninput="updateClipProperty('scale', this.value)">
+                        <span id="scale-value" style="font-size: 10px;">100%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="timeline-area">
+        <div class="timeline-toolbar">
+            <div style="font-size: 11px; font-weight: bold;">⏱️ TIMELINE</div>
+            <div style="display: flex; gap: 2px;">
+                <button class="xp-button" style="font-size: 10px;" title="Zoom In" onclick="adjustZoom(1.2)">🔍+</button>
+                <button class="xp-button" style="font-size: 10px;" title="Zoom Out" onclick="adjustZoom(0.8)">🔍-</button>
+            </div>
+            <div style="margin-left: auto; font-size: 11px; color: #000;">
+                Duração: <span id="duration-display">00:00</span>
+            </div>
+        </div>
+        <div class="timeline-content">
+            <div class="track-headers" id="track-headers"></div>
+            <div class="tracks-container" id="tracks-container">
+                <div class="playhead" id="playhead">
+                    <div class="playhead-handle"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Context Menu -->
+    <div id="context-menu" class="context-menu">
+        <div class="context-menu-item" onclick="performSplit()">✂️ Dividir</div>
+        <div class="context-menu-item" onclick="duplicateClip()">📋 Duplicar</div>
+        <div class="context-menu-item" onclick="deleteContextClip()">🗑️ Deletar</div>
+    </div>
+
+    <!-- Export Modal -->
+    <div id="export-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>📤 Exportar para MP4</span>
+                <button class="title-bar-button" onclick="closeExportModal()" style="margin: -2px;">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="prop-group">
+                    <span class="prop-label">Nome do Arquivo</span>
+                    <input type="text" id="export-filename" value="projeto_editado" style="width: 100%;">
+                </div>
+                <div class="prop-group">
+                    <span class="prop-label">Qualidade</span>
+                    <select id="export-quality" style="width: 100%;">
+                        <option value="high">Alta (360p)</option>
+                        <option value="medium" selected>Média (240p)</option>
+                        <option value="low">Baixa (144p)</option>
+                    </select>
+                </div>
+                <div style="padding: 4px; background-color: var(--xp-white); border: 1px solid var(--xp-dark-gray); font-size: 10px; color: #000; margin-bottom: 4px;">
+                    ⚠️ A exportação pode levar alguns minutos.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="xp-button" onclick="closeExportModal()">Cancelar</button>
+                <button class="xp-button" onclick="startExport()">Exportar</button>
+            </div>
+        </div>
+    </div>
+ 
+</body>
+</html>

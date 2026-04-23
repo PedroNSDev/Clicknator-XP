@@ -9,105 +9,96 @@
 
         <style>
 
-        /* ═════════ BOOT VISTA STYLE ═════════ */
+        /* ═════════ BOOT VISTAA STYLE ═════════ */
 
-        #boot-screen {
-            position: fixed;
-            inset: 0;
-            background: radial-gradient(circle at center, #0a1a3a 0%, #050b1a 70%, #000 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 99999;
-            font-family: Segoe UI, Tahoma, sans-serif;
-            color: #fff;
-            overflow: hidden;
-        }
 
-        /* brilho suave tipo vidro */
-        #boot-screen::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle, rgba(255,255,255,0.06), transparent 70%);
-            pointer-events: none;
-        }
-
-        /* LOGO COM GLOW */
-        #boot-logo {
-            width: 180px;
-            margin-bottom: 30px;
-            filter: drop-shadow(0 0 8px #4da6ff)
-                    drop-shadow(0 0 20px #1e90ff);
-            animation: logoPulse 2s ease-in-out infinite;
-        }
-
-        @keyframes logoPulse {
-            0%, 100% {
-                transform: scale(1);
-                filter: drop-shadow(0 0 6px #4da6ff)
-                        drop-shadow(0 0 15px #1e90ff);
+            #boot-screen {
+                position: fixed;
+                inset: 0;
+                background: linear-gradient(180deg, #7ecbff, #3a8dde);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 99999;
+                font-family: Tahoma, sans-serif;
+                color: #fff;
             }
-            50% {
-                transform: scale(1.05);
-                filter: drop-shadow(0 0 12px #80cfff)
-                        drop-shadow(0 0 30px #3399ff);
+
+            .boot-content {
+                text-align: center;
             }
-        }
 
-        .boot-content {
-            text-align: center;
-            z-index: 2;
-        }
+            #boot-logo {
+                width: 220px;
+                margin-bottom: 10px;
+            }
+            .boot-title {
+                font-size: 22px;
+                font-weight: bold;
+                margin-top: 10px;
+            }
 
-        /* BARRA */
-        .boot-bar {
-            width: 300px;
-            height: 20px;
-            border-radius: 6px;
-            background: rgba(255,255,255,0.08);
-            padding: 3px;
-            display: flex;
-            gap: 3px;
-            margin: 0 auto;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.6);
-        }
+            .boot-sub {
+                font-size: 14px;
+                color: #ccc;
+                margin-bottom: 30px;
+            }
 
-        .boot-block {
-            flex: 1;
-            border-radius: 2px;
-            background: #0a2a80;
-            opacity: 0.2;
-            transition: all 0.2s;
-        }
+            .boot-bar {
+                width: 220px;
+                height: 18px;
+                border: 2px solid #444;
+                background: #111;
+                overflow: hidden;
+                position: relative;
+                margin: 0 auto;
+            }
+            .boot-progress {
+                position: absolute;
+                width: 60px;
+                height: 100%;
+                background: linear-gradient(
+                    to right,
+                    #001a66,
+                    #0055ff,
+                    #66ccff,
+                    #0055ff,
+                    #001a66
+                );animation: xpLoad 1.2s linear infinite;
+            }
 
-        .boot-block.active {
-            opacity: 1;
-            background: linear-gradient(to bottom, #5bbcff, #1e90ff);
-            box-shadow: 0 0 6px #4da6ff;
-        }
+            @keyframes xpLoad {
+                0% { left: -60px; }
+                100% { left: 220px; }
+            }
 
-        .boot-text {
-            margin-top: 18px;
-            font-size: 14px;
-            color: #cfd8ff;
-            letter-spacing: 0.5px;
-        }
+            .boot-footer {
+                margin-top: 25px;
+                font-size: 12px;
+                color: #888;
+            }
 
         </style>
         </head>
         <body>
 
         <!-- BOOT -->
-        <div id="boot-screen">
-            <div class="boot-content">
-                <img src="logo.png" id="boot-logo">
+                <div id="boot-screen">
+                <div class="boot-content">
 
-                <div class="boot-bar" id="boot-bar"></div>
+                    <img src="logo.png" id="boot-logo">
 
-                <p class="boot-text" id="boot-text">Iniciando...</p>
+                    <div class="boot-title">PWR-Operacional System</div>
+                    <div class="boot-sub">Personal</div>
+
+                    <div class="boot-bar">
+                        <div class="boot-progress"></div>
+                    </div>
+
+                    <div class="boot-footer">©PWM-MR Corporation</div>
+
+                </div>
             </div>
-        </div>
 
         <audio id="boot-audio" src="boot.mp3" preload="auto"></audio>
 
@@ -159,68 +150,24 @@ const texts = [
     "Finalizando boot...",
     "Bem vindo!"
 ];
-
-const bar = document.getElementById("boot-bar");
-const textEl = document.getElementById("boot-text");
 const audio = document.getElementById("boot-audio");
 
-/* criar blocos */
-const totalBlocks = 18;
-for (let i = 0; i < totalBlocks; i++) {
-    const b = document.createElement("div");
-    b.className = "boot-block";
-    bar.appendChild(b);
-}
-
-const blocks = document.querySelectorAll(".boot-block");
-
-let progress = 0;
-
-function getDelay(p) {
-    const base = 60;
-        //GET SLOW 
-    const slowdown = Math.pow(p, 2) * 400;
-        //SET RANDOM FrEEZE
-    const randomFreeze = Math.random() < 0.25 ? Math.random() * 400 : 0;
-
-    return base + slowdown + randomFreeze + Math.random() * 120;
-}
-
-function step() {
-    if (progress < blocks.length) {
-
-        blocks[progress].classList.add("active");
-
-        const ratio = progress / blocks.length;
-
-        textEl.textContent = texts[
-            Math.min(texts.length - 1, Math.floor(ratio * texts.length))
-        ];
-
-        progress++;
-
-        setTimeout(() => step(), getDelay(ratio));
-
-    } else {
-        finish();
-    }
-}
-
-function finish() {
-    const boot = document.getElementById("boot-screen");
-    setTimeout(() => {
-        boot.style.transition = "opacity 0.8s";
-        boot.style.opacity = "0";
-        setTimeout(() => boot.remove(), 800);
-    }, 500);
-    setTimeout(() => {
-        audio.currentTime = 0;
-        audio.play().catch(()=>{});
-    }, 800);
-}
 
 window.addEventListener("load", () => {
-    setTimeout(step, 300);
+    const boot = document.getElementById("boot-screen");
+    const audio = document.getElementById("boot-audio");
+
+    setTimeout(() => {
+        boot.style.transition = "opacity 1s";
+        boot.style.opacity = "0";
+
+        setTimeout(() => {
+            boot.remove();
+        }, 1000);
+
+        audio.currentTime = 0;
+        audio.play().catch(()=>{});
+    }, 2700); 
 });
 </script>
 

@@ -1159,3 +1159,5 @@ preciso implementar Listeners bem sigmas e unificar eles pra gerar um fluxograma
 terminar de implementar handler de arquivos de audio (nao sei se quero .wav tbm) >:P
 
 gerar handler de leitura tipo o do gamehub pros sites(que le dentro de pastas). assim fica mais facil de colocar os assets e nao polui tanto 
+
+excel

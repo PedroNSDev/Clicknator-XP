@@ -77,7 +77,7 @@
   {
     "id": "processadora",
     "nome": "Processadora.exe",
-    "icone": "⚙️",
+    "icone": "🚧",
     "html": "apps/processadora.html",
     "ram": 24,
     "instantiable": true,
@@ -90,23 +90,12 @@
   {
     "id": "loja",
     "nome": "PC Shop",
-    "icone": "🛒",
+    "icone": "🚧",
     "html": "apps/loja.html",
     "ram": 16,
+    "unlocked" : false,
     "ports": [
       { "dir": "in", "format": "dinheiro" } 
-    ]
-  },
-  {
-    "id": "conversor",
-    "nome": "Conversor.exe",
-    "icone": "💱",
-    "html": "apps/conversor.html",
-    "ram": 16,
-    "size": "medium",
-    "ports": [
-      { "dir": "in",  "format": "any" },
-      { "dir": "out", "format": "dinheiro" }
     ]
   },
   {
@@ -141,9 +130,26 @@
     "id": "music",
     "nome": "TYR4N.exe",
     "size": "fullscreen",
-    "icone": "⌨",
+    "icone": "🚧",
     "html": "apps/music.html",
     "unlocked": true
-  }
+  },   
+  {
+    "id": "GoEdit",
+    "nome": "Excel.exe",
+    "size": "fullscreen",
+    "icone": "🎥",
+    "html": "apps/videoeditor.html",
+    "unlocked": true
+  },
+    {
+      "id": "GoMusic",
+      "nome": "GoPlayer.exe",
+      "size": "medium",
+      "icone": "▶️",
+      "html": "apps/goplayer.html",
+      "unlocked": true
+    }
+  
 ]
   
