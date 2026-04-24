@@ -103,9 +103,9 @@ const WINDOW_SIZES = {
         #audio-toast {
             position:fixed;
             bottom:50px; right:12px;
-            background:linear-gradient(135deg,#1a1a2e,#12121e);
+            background:#d4d0c8;
             color:#e8e8e8;
-            border-radius:10px;
+            border-radius:1px;
             padding:10px 14px;
             z-index:99999;
             display:none;
@@ -126,8 +126,8 @@ const WINDOW_SIZES = {
             to   { opacity:1; transform:translateY(0)  scale(1); }
         }
         #audio-toast .toast-art {
-            width:38px; height:38px; border-radius:6px;
-            background:linear-gradient(135deg,#6c63ff,#a78bfa);
+            width:38px; height:38px; border-radius:2px;
+            background:linear-gradient(to top, #0058e6 50%, #3a93ff 100%);
             display:flex; align-items:center; justify-content:center;
             font-size:20px; flex-shrink:0;
         }
@@ -900,8 +900,8 @@ function createWindow(app) {
             <span style="flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${app.nome}</span>
             <div style="display:flex;gap:1px;margin-left:3px;align-items:center;">
                 ${rightBtns}
-                <button class="minimize-btn" title="Minimizar" style="padding:0 5px;font-size:11px;line-height:1;">_</button>
-                <button class="fullscreen-btn" title="Maximizar" style="padding:0 5px;font-size:10px;">⬜</button>
+                <button class="minimize-btn" title="Minimizar" style="padding:6px 6px;font-size:11px;line-height:1;color:#fff;background-color:#808080;border:1px solid #ffffff;">-</button>
+                <button class="fullscreen-btn" title="Maximizar" style="padding:0 6px;font-size:11px;color:#fff;background-color:#008000;border:1px solid #ffffff;">⬜</button>
                 <button class="close-btn">X</button>
             </div>
         </div>
@@ -1196,7 +1196,7 @@ function openFolder(fileId) {
             <span id="folder-title-${fileId}" style="flex:1;text-align:center;">📁 Pasta</span>
             <div style="display:flex;gap:1px;">
                 <button class="connect-btn connect-btn-right" data-port-dir="out" data-port-fmt="any" title="out:any">🔌</button>
-                <button class="minimize-btn" title="Minimizar" style="padding:0 5px;font-size:11px;">_</button>
+                <button class="minimize-btn" title="Minimizar" style="padding:0 5px;font-size:11px;background-color:#808080;color:#fff;border:1px solid #666;">-</button>
                 <button class="close-btn">X</button>
             </div>
         </div>
@@ -1336,8 +1336,7 @@ function baixar(id) {
     if (used + appSize > window.systemInfo.space) { alert(`Sem espaço!\nUsado: ${used}/${window.systemInfo.space} MB\nPrecisa: ${appSize} MB`); return; }
     const saved = addFile({ name: app.nome + '.exe', type: 'app', size: appSize, data: { appId: id } });
     if (!saved) return;
-    unlockApp(id); alert('Download concluído! 🎉');
-    setTimeout(() => openAppById(id), 250);
+    setTimeout(() => unlockApp(id), 250);
 }
 function baixarDireto(id) { unlockApp(id); alert('Download concluído! 🎉'); }
 
@@ -1466,6 +1465,7 @@ window.addEventListener('message', event => {
     }
 
     if (type === 'download-app'    && appId)          baixar(appId);
+    if (type === 'baixar-musga')                      ImportAudioFile(musga)
     if (type === 'open-app'        && appId)          openAppById(appId);
     if (type === 'delete-file'     && fileId != null) deleteFile(fileId);
     if (type === 'create-shortcut' && url)            createShortcut(name || url, url);

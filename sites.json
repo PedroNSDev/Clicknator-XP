@@ -38,8 +38,12 @@
     "nome": "Meme Meiker",
     "html":"../sites/ahnegao.html",
     "desc": "O MELHOR SITE DE MEMES "
+  },
+  {
+    "nome": "piratecove",
+    "html": "../sites/piratecove.html",
+    "desc": "AS MELHORES MUSICAS DO MOMENTO 100% GRÁTIS"
   }
-
 
 
 

@@ -80,6 +80,7 @@
     "icone": "🚧",
     "html": "apps/processadora.html",
     "ram": 24,
+    "unlocked" : false,
     "instantiable": true,
     "appType": "processor",
     "ports": [
@@ -132,7 +133,7 @@
     "size": "fullscreen",
     "icone": "🚧",
     "html": "apps/music.html",
-    "unlocked": true
+    "unlocked": false
   },   
   {
     "id": "GoEdit",
@@ -140,7 +141,7 @@
     "size": "fullscreen",
     "icone": "🎥",
     "html": "apps/videoeditor.html",
-    "unlocked": true
+    "unlocked": false
   },
     {
       "id": "GoMusic",

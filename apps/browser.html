@@ -270,6 +270,16 @@ async function resolveUrl(raw) {
             return { resolved: site.html, display: raw };
         } catch { alert('Erro ao carregar sites.json'); return null; }
     }
+    if (raw.endsWith('.vrs')) {
+        const nome = raw.replace('.vrs', '').toLowerCase();
+        try {
+            const res   = await fetch('../sites.json');
+            const sites = await res.json();
+            const site  = sites.find(s => s.nome.toLowerCase() === nome);
+            if (!site) { alert('Site .gogo não encontrado!'); return null; }
+            return { resolved: site.html, display: raw };
+        } catch { alert('Erro ao carregar sites.json'); return null; }
+    }
 
     const url = raw.startsWith('http') ? raw : 'https://' + raw;
     return { resolved: url, display: url };
