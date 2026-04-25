@@ -1161,3 +1161,6 @@ terminar de implementar handler de arquivos de audio (nao sei se quero .wav tbm)
 gerar handler de leitura tipo o do gamehub pros sites(que le dentro de pastas). assim fica mais facil de colocar os assets e nao polui tanto 
 
 excel
+
+
+padronizar css dos arquivos e gerar um handler melhor 

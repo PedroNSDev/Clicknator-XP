@@ -1134,22 +1134,132 @@ function createNotepadFile() {
     const saved = addFile({ name: 'Novo.txt', type: 'text', size: 1, data: { content: '' } });
     if (saved) renderDesktopFiles();
 }
-
 function openNotepad(fileId) {
-    const files = getFiles(); const file = files.find(f => f.id === fileId); if (!file) return;
+    const files = getFiles();
+    const file = files.find(f => f.id === fileId);
+    if (!file) return;
+
     const win = document.createElement('div');
-    win.className = 'window'; win.style.zIndex = ++zIndexCounter;
-    win.style.top = '120px'; win.style.left = '150px'; win.style.width = '320px'; win.style.height = '220px';
+    win.className = 'window';
+    win.style.zIndex = ++zIndexCounter;
+    win.style.top = '120px';
+    win.style.left = '150px';
+    win.style.width = '420px';
+    win.style.height = '300px';
+
     win.innerHTML = `
-        <div class="title-bar"><span>📝 ${file.name}</span><button class="close-btn">X</button></div>
-        <textarea class="notepad-area" style="width:100%;height:calc(100% - 34px);resize:none;box-sizing:border-box;padding:4px;">${file.data?.content || ''}</textarea>
-        <div class="resize-handle right"></div><div class="resize-handle bottom"></div><div class="resize-handle corner"></div>`;
+        <div class="title-bar">
+            <span>📝 ${file.name}</span>
+            <div class="win-buttons">
+                <button class="win-btn min-btn">_</button>
+                <button class="win-btn max-btn">□</button>
+                <button class="win-btn close-btn">X</button>
+            </div>
+        </div>
+
+        <div class="toolbar">
+            <label>Fonte:</label>
+            <select class="font-size">
+                <option>10</option>
+                <option>12</option>
+                <option selected>14</option>
+                <option>16</option>
+                <option>18</option>
+                <option>20</option>
+                <option>24</option>
+                <option>28</option>
+                 <option>32</option>
+                  <option>40</option>
+                   <option>60</option>
+                <option>80</option>
+            </select>
+
+            <button class="style-btn bold-btn"><b>B</b></button>
+            <button class="style-btn italic-btn"><i>I</i></button>
+        </div>
+
+        <textarea class="notepad-area">
+${file.data?.content || ''}
+        </textarea>
+
+        <div class="resize-handle right"></div>
+        <div class="resize-handle bottom"></div>
+        <div class="resize-handle corner"></div>
+    `;
+
     desktop.appendChild(win);
+
     const ta = win.querySelector('.notepad-area');
-    ta.addEventListener('mousedown', e => e.stopPropagation());
-    ta.addEventListener('input', () => { file.data.content = ta.value; saveFiles(files); });
+    const fontSelect = win.querySelector('.font-size');
+
+    ta.addEventListener('input', () => {
+        file.data.content = ta.value;
+        saveFiles(files);
+    });
+
+    fontSelect.addEventListener('change', () => {
+        ta.style.fontSize = fontSelect.value + 'px';
+    });
+
+    const boldBtn = win.querySelector('.bold-btn');
+    let isBold = false;
+    boldBtn.onclick = () => {
+        isBold = !isBold;
+        ta.style.fontWeight = isBold ? 'bold' : 'normal';
+        boldBtn.classList.toggle('active');
+    };
+
+    const italicBtn = win.querySelector('.italic-btn');
+    let isItalic = false;
+    italicBtn.onclick = () => {
+        isItalic = !isItalic;
+        ta.style.fontStyle = isItalic ? 'italic' : 'normal';
+        italicBtn.classList.toggle('active');
+    };
+
     win.querySelector('.close-btn').onclick = () => win.remove();
+
+    win.querySelector('.min-btn').onclick = () => {
+        win.style.display = 'none';
+
+        const task = document.createElement('div');
+        task.className = 'taskbar-app';
+        task.innerText = file.name;
+
+        task.onclick = () => {
+            win.style.display = 'block';
+            task.remove();
+        };
+
+        taskbarApps.appendChild(task);
+    };
+
+    const maxBtn = win.querySelector('.max-btn');
+    let isFull = false;
+
+    maxBtn.onclick = () => {
+        if (!isFull) {
+            win.dataset.prev = JSON.stringify({
+                top: win.style.top,
+                left: win.style.left,
+                width: win.style.width,
+                height: win.style.height
+            });
+
+            win.style.top = '0';
+            win.style.left = '0';
+            win.style.width = '100vw';
+            win.style.height = 'calc(100vh - 40px)';
+        } else {
+            const prev = JSON.parse(win.dataset.prev);
+            Object.assign(win.style, prev);
+        }
+        isFull = !isFull;
+    };
+
+    ta.addEventListener('mousedown', e => e.stopPropagation());
     win.addEventListener('mousedown', () => win.style.zIndex = ++zIndexCounter);
+
     makeDraggable(win, win.querySelector('.title-bar'));
     makeResizable(win);
 }

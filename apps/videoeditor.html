@@ -528,7 +528,7 @@ select{cursor:pointer;}
         </select>
       </div>
       <div style="padding:6px;background:#fffbe6;border:1px solid #e6c900;font-size:10px">
-        ⚠️ A exportação renderiza o canvas frame a frame. O processo pode ser lento dependendo da duração.
+        ⚠️ A exportação acontece em tempo real com áudio sincronizado. O arquivo será salvo em .webm.
       </div>
       <div class="progress-bar-wrap" id="exp-progress-wrap" style="display:none;margin-top:6px">
         <div class="progress-bar-fill" id="exp-progress-bar" style="width:0%"></div>
@@ -583,6 +583,51 @@ const CANVAS_W = 1280, CANVAS_H = 720;
 let canvas, ctx;
 
 // ============================================================
+// AUDIO ENGINE — singleton AudioContext for preview + export
+// ============================================================
+let _audioCtx = null;
+let _audioDestNode = null;         // MediaStreamAudioDestinationNode
+const _mediaSources = {};          // mediaId -> { gainNode }
+
+function ensureAudioCtx(){
+  if(!_audioCtx || _audioCtx.state === 'closed'){
+    _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    _audioDestNode = _audioCtx.createMediaStreamDestination();
+  }
+  if(_audioCtx.state === 'suspended') _audioCtx.resume();
+  return _audioCtx;
+}
+
+function connectMediaToAudio(mediaId){
+  if(_mediaSources[mediaId]) return;
+  const el = mediaElements[mediaId];
+  if(!el || typeof el.play !== 'function') return;
+  ensureAudioCtx();
+  try {
+    const src = _audioCtx.createMediaElementSource(el);
+    const gain = _audioCtx.createGain();
+    gain.gain.value = 0; // silent until actively playing
+    src.connect(gain);
+    gain.connect(_audioDestNode);
+    gain.connect(_audioCtx.destination);
+    _mediaSources[mediaId] = { gain };
+  } catch(e){
+    // element already connected to another context — ignore
+  }
+}
+
+function setClipGain(clip, active){
+  const media = STATE.media.find(m => m.id === clip.mediaId);
+  if(!media) return;
+  const src = _mediaSources[media.id];
+  if(src){
+    src.gain.gain.value = (active && !clip.muted)
+      ? Math.min(2, (clip.volume / 100) * STATE.masterVolume)
+      : 0;
+  }
+}
+
+// ============================================================
 // INIT
 // ============================================================
 window.addEventListener('load', () => {
@@ -620,7 +665,7 @@ function switchTab(name){
 // ============================================================
 // MEDIA IMPORT
 // ============================================================
-const mediaElements = {}; // mediaId -> HTMLVideoelement HTmLImageElement
+const mediaElements = {}; // mediaId -> HTMLVideoElement / HTMLAudioElement / HTMLImageElement
 
 function importFiles(files){
   files.forEach(file => {
@@ -648,8 +693,8 @@ function importFiles(files){
         const m = {id,name:file.name,type,url,duration:el.duration,
           width:type==='video'?el.videoWidth:0, height:type==='video'?el.videoHeight:0, file};
         STATE.media.push(m);
-        el.muted = true; // for canvas draw; audio handled separately
         mediaElements[id] = el;
+        connectMediaToAudio(id); // route through AudioContext for preview + export
         renderMediaList();
         setStatus(`Importado: ${file.name} (${fmtTime(el.duration)})`);
       };
@@ -1587,27 +1632,47 @@ function drawTextOverlay(targetCtx, tc, t){
 // ============================================================
 let animId=null, lastNow=0;
 
+function syncClipAudio(t){
+  Object.values(STATE.clips).forEach(clip=>{
+    const media=STATE.media.find(m=>m.id===clip.mediaId);
+    if(!media||(media.type!=='video'&&media.type!=='audio')) return;
+    const el=mediaElements[media.id];
+    if(!el||!el.play) return;
+    const dur=clipDuration(clip);
+    const active=t>=clip.startOnTimeline&&t<clip.startOnTimeline+dur;
+
+    setClipGain(clip, active);
+
+    if(active){
+      const ft=clip.trimStart+(t-clip.startOnTimeline)*(clip.speed/100);
+      if(el.paused){
+        if(Math.abs(el.currentTime-ft)>0.2) el.currentTime=ft;
+        if(media.type==='video') el.playbackRate=clip.speed/100;
+        el.play().catch(()=>{});
+      }
+    } else {
+      if(!el.paused) el.pause();
+    }
+  });
+}
+
+function muteAllMedia(){
+  Object.values(STATE.clips).forEach(clip=>{
+    const media=STATE.media.find(m=>m.id===clip.mediaId);
+    if(!media) return;
+    const el=mediaElements[media.id];
+    if(el&&!el.paused) el.pause();
+    setClipGain(clip, false);
+  });
+}
+
 function play(){
   if(STATE.playing) return;
   STATE.playing=true;
   document.getElementById('play-pause-btn').textContent='⏸';
   lastNow=performance.now();
-  // Sync video elements
-  Object.values(STATE.clips).forEach(clip=>{
-    const media=STATE.media.find(m=>m.id===clip.mediaId);
-    if(media?.type!=='video') return;
-    const el=mediaElements[media.id];
-    if(!el) return;
-    const dur=clipDuration(clip);
-    const t=STATE.currentTime;
-    if(t>=clip.startOnTimeline&&t<clip.startOnTimeline+dur){
-      const ft=clip.trimStart+(t-clip.startOnTimeline)*(clip.speed/100);
-      el.currentTime=ft;
-      el.volume=clip.muted?0:Math.min(1,(clip.volume/100)*STATE.masterVolume);
-      el.playbackRate=clip.speed/100;
-      el.play().catch(()=>{});
-    }
-  });
+  ensureAudioCtx(); // resume AudioContext on user gesture
+  syncClipAudio(STATE.currentTime);
   animId=requestAnimationFrame(animLoop);
 }
 
@@ -1616,7 +1681,7 @@ function pause(){
   STATE.playing=false;
   document.getElementById('play-pause-btn').textContent='▶';
   if(animId){ cancelAnimationFrame(animId); animId=null; }
-  Object.values(mediaElements).forEach(el=>{ if(el.pause) el.pause(); });
+  muteAllMedia();
   drawFrame();
 }
 
@@ -1632,6 +1697,7 @@ function animLoop(now){
     updatePlayheadPos(); updateTimeDisplay(); updateScrubber();
     return;
   }
+  syncClipAudio(STATE.currentTime);
   drawFrame();
   updatePlayheadPos(); updateTimeDisplay(); updateScrubber();
   animId=requestAnimationFrame(animLoop);
@@ -1838,13 +1904,18 @@ function handleKey(e){
 }
 
 // ============================================================
-// EXPORT
+// EXPORT — real-time capture with audio via AudioContext
 // ============================================================
 function showExportModal(){ document.getElementById('export-modal').classList.add('show'); }
 function hideModal(id){ document.getElementById(id).classList.remove('show'); }
 
+let _exporting = false;
+
 async function startExport(){
+  if(_exporting){ alert('Exportação já em andamento.'); return; }
   if(STATE.duration<=0){ alert('Adicione clipes à timeline antes de exportar.'); return; }
+
+  _exporting = true;
   const name=document.getElementById('exp-name').value||'meu_video';
   const [ew,eh]=document.getElementById('exp-res').value.split(',').map(Number);
   const fps=parseInt(document.getElementById('exp-fps').value);
@@ -1854,24 +1925,33 @@ async function startExport(){
   expCanvas.width=ew; expCanvas.height=eh;
   const expCtx=expCanvas.getContext('2d');
 
-  const chunks=[];
-  let stream, recorder;
-  try{
-    stream=expCanvas.captureStream(fps);
-    recorder=new MediaRecorder(stream,{mimeType:'video/webm;codecs=vp9',videoBitsPerSecond:bitrate});
-  } catch(err){
-    try{
-      recorder=new MediaRecorder(stream,{mimeType:'video/webm',videoBitsPerSecond:bitrate});
-    } catch(err2){
-      alert('Seu navegador não suporta gravação de vídeo via canvas.\nUse Chrome ou Edge.'); return;
-    }
-  }
-
-  recorder.ondataavailable=e=>{ if(e.data.size>0) chunks.push(e.data); };
   const statusEl=document.getElementById('exp-status');
   const progressBar=document.getElementById('exp-progress-bar');
   document.getElementById('exp-progress-wrap').style.display='block';
+  progressBar.style.width='0%';
 
+  // Ensure AudioContext is live and get its capture stream
+  ensureAudioCtx();
+  const videoStream=expCanvas.captureStream(fps);
+  if(_audioDestNode){
+    _audioDestNode.stream.getAudioTracks().forEach(t=>videoStream.addTrack(t));
+  }
+
+  const chunks=[];
+  let recorder;
+  const mimeTypes=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+  for(const mime of mimeTypes){
+    if(MediaRecorder.isTypeSupported(mime)){
+      recorder=new MediaRecorder(videoStream,{mimeType:mime,videoBitsPerSecond:bitrate});
+      break;
+    }
+  }
+  if(!recorder){
+    alert('Seu navegador não suporta gravação de vídeo via canvas.\nUse Chrome ou Edge.');
+    _exporting=false; return;
+  }
+
+  recorder.ondataavailable=e=>{ if(e.data.size>0) chunks.push(e.data); };
   recorder.onstop=()=>{
     const blob=new Blob(chunks,{type:'video/webm'});
     const url=URL.createObjectURL(blob);
@@ -1880,33 +1960,54 @@ async function startExport(){
     URL.revokeObjectURL(url);
     statusEl.textContent='✅ Exportação concluída!';
     setStatus('Exportação concluída: '+name+'.webm');
+    _exporting=false;
   };
-
-  recorder.start(100);
-  statusEl.textContent='Renderizando...';
-
-  const totalFrames=Math.ceil(STATE.duration*fps);
-  const frameMs=1000/fps;
-  const scalex=ew/CANVAS_W, scaley=eh/CANVAS_H;
 
   const was=STATE.playing; if(was) pause();
   const origTime=STATE.currentTime;
 
-  for(let f=0;f<totalFrames;f++){
-    STATE.currentTime=f/fps;
+  // Seek all media to beginning silently
+  muteAllMedia();
+  STATE.currentTime=0;
+
+  recorder.start(200);
+  statusEl.textContent='Iniciando renderização...';
+
+  // Real-time render loop — audio plays through AudioContext captured in videoStream
+  const wallStart=performance.now();
+  const totalDur=STATE.duration;
+
+  function exportLoop(){
+    const elapsed=(performance.now()-wallStart)/1000;
+    STATE.currentTime=elapsed;
+
+    if(elapsed>=totalDur){
+      // Final frame
+      STATE.currentTime=totalDur;
+      syncClipAudio(totalDur);
+      drawFrame();
+      expCtx.drawImage(canvas,0,0,ew,eh);
+      muteAllMedia();
+      setTimeout(()=>recorder.stop(), 300);
+      STATE.currentTime=origTime;
+      drawFrame();
+      updatePlayheadPos(); updateTimeDisplay(); updateScrubber();
+      return;
+    }
+
+    syncClipAudio(elapsed);
     drawFrame();
-    expCtx.clearRect(0,0,ew,eh);
     expCtx.drawImage(canvas,0,0,ew,eh);
-    const pct=Math.round((f/totalFrames)*100);
+
+    const pct=Math.round((elapsed/totalDur)*100);
     progressBar.style.width=pct+'%';
-    statusEl.textContent=`Renderizando ${fmtTime(STATE.currentTime)} / ${fmtTime(STATE.duration)} (${pct}%)`;
-    await new Promise(r=>setTimeout(r,1));
+    statusEl.textContent=`Exportando ${fmtTime(elapsed)} / ${fmtTime(totalDur)} (${pct}%)`;
+    updatePlayheadPos(); updateTimeDisplay(); updateScrubber();
+
+    requestAnimationFrame(exportLoop);
   }
 
-  recorder.stop();
-  STATE.currentTime=origTime;
-  drawFrame();
-  if(was) play();
+  requestAnimationFrame(exportLoop);
 }
 
 // ============================================================

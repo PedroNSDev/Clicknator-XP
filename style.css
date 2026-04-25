@@ -375,3 +375,59 @@ body {
     background: linear-gradient(#4caf50, #2e7d32);
     border: 1px solid #1b5e20;
 }
+.win-buttons {
+    display: flex;
+    gap: 2px;
+}
+
+.win-btn {
+    width: 22px;
+    height: 20px;
+    background: #d4d0c8;
+    border: 2px solid #fff;
+    border-right-color: #808080;
+    border-bottom-color: #808080;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 0;
+}
+
+.win-btn:active {
+    border: 2px solid #808080;
+    border-right-color: #fff;
+    border-bottom-color: #fff;
+}
+
+.toolbar {
+    background: #d4d0c8;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.notepad-area {
+    width: 100%;
+    height: calc(100% - 70px);
+    resize: none;
+    box-sizing: border-box;
+    padding: 6px;
+    font-size: 14px;
+    font-family: monospace;
+}
+
+.style-btn {
+    width: 26px;
+    height: 24px;
+    border: 2px solid #fff;
+    border-right-color: #808080;
+    border-bottom-color: #808080;
+    background: #d4d0c8;
+    cursor: pointer;
+}
+
+.style-btn.active {
+    border: 2px solid #808080;
+    border-right-color: #fff;
+    border-bottom-color: #fff;
+}
