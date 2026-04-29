@@ -1,0 +1,23 @@
+[
+  {
+    "name": "Espada",
+    "type": "weapon",
+    "atk": 5
+  },
+  {
+    "name": "Armadura",
+    "type": "armor",
+    "hp": 20
+  },
+  {
+    "name": "Adaga",
+    "type": "weapon",
+    "atk": 3,
+    "speed": 10
+  },
+  {
+    "name": "Essência",
+    "type": "consumable",
+    "effect": "mana"
+  }
+]

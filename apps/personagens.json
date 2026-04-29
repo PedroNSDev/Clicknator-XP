@@ -1,0 +1,14 @@
+{
+  "name": "Cavaleiro",
+  "hp": 120,
+  "atk": 12,
+  "speed": 80,
+  "mana": 40,
+  "idle": "idle.png",
+  "atkImg": "atk.png",
+  "dmgImg": "dmg.png",
+  "deadImg": "dead.png"
+}
+
+
+

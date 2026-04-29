@@ -197,9 +197,58 @@ select{cursor:pointer;}
 /* COLOR SECTION */
 .color-swatch{width:24px;height:24px;border:2px solid;border-color:var(--xp-highlight) var(--xp-dark-shadow) var(--xp-dark-shadow) var(--xp-highlight);cursor:pointer;}
 
+/* HOME SCREEN */
+#home-screen{position:fixed;inset:0;background:#008080;z-index:9000;display:flex;flex-direction:column;overflow:hidden;}
+#home-screen .title-bar{background:linear-gradient(to right,var(--xp-blue),var(--xp-light-blue));color:#fff;padding:4px 8px;display:flex;align-items:center;gap:8px;font-weight:bold;font-size:13px;border-bottom:2px solid var(--xp-dark-shadow);}
+#home-screen .home-body{flex:1;display:flex;flex-direction:column;align-items:center;padding:24px 16px;overflow-y:auto;gap:16px;}
+.home-logo{font-size:48px;text-shadow:2px 2px 0 #000;}
+.home-title{font-size:22px;font-weight:bold;color:#fff;text-shadow:1px 1px 0 #000;}
+.home-subtitle{font-size:11px;color:#c8e8ff;}
+.home-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+.home-actions .xp-btn{font-size:12px;padding:6px 16px;}
+.home-window{background:var(--xp-gray);border:2px solid;border-color:var(--xp-highlight) var(--xp-dark-shadow) var(--xp-dark-shadow) var(--xp-highlight);width:100%;max-width:720px;box-shadow:2px 2px 0 #000;}
+.home-window-header{background:linear-gradient(to right,var(--xp-blue),var(--xp-light-blue));color:#fff;font-weight:bold;font-size:11px;padding:3px 6px;}
+.home-window-body{padding:8px;display:flex;flex-direction:column;gap:6px;min-height:80px;}
+.proj-card{background:var(--xp-white);border:2px solid;border-color:var(--xp-highlight) var(--xp-dark-shadow) var(--xp-dark-shadow) var(--xp-highlight);padding:6px 8px;display:flex;align-items:center;gap:8px;cursor:pointer;}
+.proj-card:hover{background:#ddeeff;}
+.proj-card-icon{font-size:22px;flex-shrink:0;}
+.proj-card-info{flex:1;overflow:hidden;}
+.proj-card-name{font-weight:bold;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.proj-card-meta{font-size:9px;color:var(--xp-dark-gray);}
+.proj-card-actions{display:flex;gap:4px;}
+.proj-card-del{background:var(--xp-gray);border:1px solid;border-color:var(--xp-highlight) var(--xp-dark-shadow) var(--xp-dark-shadow) var(--xp-highlight);cursor:pointer;padding:2px 5px;font-size:10px;}
+.proj-card-del:hover{background:#c00;color:#fff;}
+.home-empty{text-align:center;color:var(--xp-dark-gray);font-size:11px;padding:16px;}
+#autosave-indicator{position:fixed;bottom:22px;right:8px;background:rgba(0,0,0,0.7);color:#0f0;font-size:9px;padding:2px 6px;border-radius:2px;display:none;z-index:8999;}
+
 </style>
 </head>
 <body>
+
+<!-- HOME SCREEN -->
+<div id="home-screen">
+  <div class="title-bar">🎬 GoEdit – Editor de Vídeo</div>
+  <div class="home-body">
+    <div class="home-logo">🎬</div>
+    <div class="home-title">GoEdit</div>
+    <div class="home-subtitle">Editor de Vídeo</div>
+    <div class="home-actions">
+      <button class="xp-btn primary" onclick="homeNewProject()">✨ Novo Projeto</button>
+      <button class="xp-btn" onclick="document.getElementById('proj-file-input').click()">📂 Abrir .vidproj</button>
+      <input type="file" id="proj-file-input" accept=".vidproj" style="display:none" onchange="homeOpenProjFile(this)">
+    </div>
+    <div class="home-window">
+      <div class="home-window-header">📁 Projetos Recentes</div>
+      <div class="home-window-body" id="home-proj-list">
+        <div class="home-empty">Nenhum projeto encontrado.</div>
+      </div>
+    </div>
+    <div style="font-size:9px;color:#aad4ff;margin-top:4px">Os projetos são salvos automaticamente no seu navegador (IndexedDB)</div>
+  </div>
+</div>
+
+<!-- AUTOSAVE INDICATOR -->
+<div id="autosave-indicator">💾 Salvo</div>
 
 <!-- TITLE BAR -->
 
@@ -220,8 +269,15 @@ select{cursor:pointer;}
   <button class="xp-btn" onclick="undo()">↩ Desfazer</button>
   <button class="xp-btn" onclick="redo()">↪ Refazer</button>
   <div class="menu-sep"></div>
-  <button class="xp-btn" onclick="showExportModal()" style="margin-left:auto;">📤 Exportar MP4</button>
-  <input type="file" id="file-input" class="hidden" accept="video/*,audio/*,image/*" multiple>
+  <span id="proj-name-display" style="font-size:11px;font-weight:bold;padding:0 6px;color:#000044;cursor:pointer;border:1px solid transparent;" title="Clique para renomear" onclick="renameProject()">Projeto sem título</span>
+  <button class="xp-btn" onclick="saveProjectManual()" title="Salvar projeto">💾 Salvar</button>
+  <button class="xp-btn" onclick="exportVidproj()" title="Exportar .vidproj">📦 .vidproj</button>
+  <button class="xp-btn" onclick="document.getElementById('proj-import-input').click()" title="Importar .vidproj">📂 .vidproj</button>
+  <input type="file" id="proj-import-input" accept=".vidproj" style="display:none" onchange="homeOpenProjFile(this)">
+  <button class="xp-btn" onclick="goHome()" title="Tela inicial">🏠 Início</button>
+  <div class="menu-sep"></div>
+  <button class="xp-btn" onclick="showExportModal()" style="margin-left:auto;">📤 Exportar Vídeo</button>
+  <input type="file" id="file-input" class="hidden" accept="video/*,audio/*,image/*,.gif" multiple>
 </div>
 
 <!-- MAIN LAYOUT -->
@@ -381,8 +437,9 @@ select{cursor:pointer;}
         <button class="title-bar-button" onclick="toggleFullPreview()" title="Tela cheia">⛶</button>
       </div>
     </div>
-    <div class="video-wrapper" id="preview-box">
+    <div class="video-wrapper" id="preview-box" style="position:relative;">
       <canvas id="preview-canvas"></canvas>
+      <canvas id="transform-overlay" style="position:absolute;top:0;left:0;width:100%;height:100%;cursor:default;"></canvas>
     </div>
     <div class="preview-controls">
       <button class="xp-btn" onclick="seekRelative(-10)" title="–10s">⏮</button>
@@ -407,6 +464,11 @@ select{cursor:pointer;}
       </div>
       <div id="clip-props" class="hidden">
         <div style="font-size:10px;font-weight:bold;margin-bottom:4px;" id="props-clip-name">Clipe selecionado</div>
+        <div style="padding:5px;background:#e8f0ff;border:1px solid #aac;font-size:9px;margin-bottom:4px;line-height:1.5">
+          🖱 <b>Arraste</b> no monitor para mover<br>
+          ↔ <b>Alças</b> nas bordas para redimensionar<br>
+          🔄 <b>Alça</b> superior para girar
+        </div>
         <div class="prop-group">
           <span class="prop-label">Opacidade</span>
           <div class="prop-row"><input type="range" id="p-opacity" min="0" max="100" value="100" oninput="setProp('opacity',this.value)"><span class="prop-val" id="p-opacity-v">100%</span></div>
@@ -424,20 +486,15 @@ select{cursor:pointer;}
           <input type="number" id="p-img-dur" min="0.5" max="60" step="0.5" value="5" oninput="setImgDuration(this.value)">
         </div>
         <div class="prop-group">
-          <span class="prop-label">Escala</span>
-          <div class="prop-row"><input type="range" id="p-scale" min="10" max="300" value="100" oninput="setProp('scale',this.value)"><span class="prop-val" id="p-scale-v">100%</span></div>
-        </div>
-        <div class="prop-group">
-          <span class="prop-label">Posição X</span>
-          <div class="prop-row"><input type="range" id="p-posx" min="0" max="100" value="50" oninput="setProp('posX',this.value)"><span class="prop-val" id="p-posx-v">50%</span></div>
-        </div>
-        <div class="prop-group">
-          <span class="prop-label">Posição Y</span>
-          <div class="prop-row"><input type="range" id="p-posy" min="0" max="100" value="50" oninput="setProp('posY',this.value)"><span class="prop-val" id="p-posy-v">50%</span></div>
+          <span class="prop-label">Escala: <span id="p-scale-v">100%</span></span>
+          <div class="prop-row"><input type="range" id="p-scale" min="10" max="300" value="100" oninput="setProp('scale',this.value)"></div>
         </div>
         <div class="prop-group">
           <span class="prop-label">Rotação: <span id="p-rot-v">0°</span></span>
           <input type="range" id="p-rotation" min="-180" max="180" value="0" oninput="setProp('rotation',this.value)">
+        </div>
+        <div class="prop-group">
+          <span class="prop-label">Posição X: <span id="p-posx-v">50%</span> &nbsp; Y: <span id="p-posy-v">50%</span></span>
         </div>
         <div class="prop-group">
           <span class="prop-label">Início (trim s)</span>
@@ -496,11 +553,18 @@ select{cursor:pointer;}
 <!-- EXPORT MODAL -->
 <div class="modal" id="export-modal">
   <div class="modal-win">
-    <div class="modal-header">📤 Exportar Projeto<button class="title-bar-button" onclick="hideModal('export-modal')">✕</button></div>
+    <div class="modal-header">📤 Exportar Projeto<button class="title-bar-button" onclick="document.getElementById('export-modal').classList.remove('show')">✕</button></div>
     <div class="modal-body">
       <div class="prop-group">
         <span class="prop-label">Nome do Arquivo</span>
         <input type="text" id="exp-name" value="meu_video">
+      </div>
+      <div class="prop-group">
+        <span class="prop-label">Formato de Saída</span>
+        <select id="exp-format">
+          <option value="webm">WebM (VP9) — nativo, mais rápido</option>
+          <option value="mp4">MP4 (H.264) — via conversão no browser*</option>
+        </select>
       </div>
       <div class="prop-group">
         <span class="prop-label">Resolução</span>
@@ -528,7 +592,7 @@ select{cursor:pointer;}
         </select>
       </div>
       <div style="padding:6px;background:#fffbe6;border:1px solid #e6c900;font-size:10px">
-        ⚠️ A exportação acontece em tempo real com áudio sincronizado. O arquivo será salvo em .webm.
+        ⚠️ A exportação renderiza frame a frame. WebM funciona em todos os navegadores modernos. *MP4/H.264 requer Chrome 130+ com suporte experimental a <b>video/mp4</b> codec. Se não funcionar, exporte como WebM e converta offline.
       </div>
       <div class="progress-bar-wrap" id="exp-progress-wrap" style="display:none;margin-top:6px">
         <div class="progress-bar-fill" id="exp-progress-bar" style="width:0%"></div>
@@ -536,7 +600,7 @@ select{cursor:pointer;}
       <div id="exp-status" style="font-size:10px;margin-top:4px"></div>
     </div>
     <div class="modal-footer">
-      <button class="xp-btn" onclick="hideModal('export-modal')">Cancelar</button>
+      <button class="xp-btn" onclick="cancelExport()">Cancelar</button>
       <button class="xp-btn primary" onclick="startExport()">📤 Exportar</button>
     </div>
   </div>
@@ -544,6 +608,7 @@ select{cursor:pointer;}
 
 <!-- CONTEXT MENU -->
 <div class="ctx-menu" id="ctx-menu">
+  <div class="ctx-item" id="ctx-split-here" onclick="ctxSplitHere()">✂️ Cortar aqui</div>
   <div class="ctx-item" onclick="ctxSplit()">✂️ Dividir no Playhead</div>
   <div class="ctx-item" onclick="ctxDuplicate()">📋 Duplicar</div>
   <div class="ctx-sep"></div>
@@ -552,9 +617,11 @@ select{cursor:pointer;}
   <div class="ctx-item" onclick="ctxDelete()">🗑️ Deletar</div>
   <div class="ctx-item" onclick="ctxDeselect()">✖ Desselecionar</div>
 </div>
-
 <script>
 'use strict';
+// Always-available modal
+function hideModal(id){ const el=document.getElementById(id); if(el) el.classList.remove('show'); }
+
 // ============================================================
 // STATE
 // ============================================================
@@ -569,6 +636,7 @@ const STATE = {
   playing: false,
   zoom: 100,
   selectedClipId: null,
+  selectedClipIds: new Set(), // multi-selection
   snap: true,
   undoStack: [],
   redoStack: [],
@@ -586,8 +654,8 @@ let canvas, ctx;
 // AUDIO ENGINE — singleton AudioContext for preview + export
 // ============================================================
 let _audioCtx = null;
-let _audioDestNode = null;         // MediaStreamAudioDestinationNode
-const _mediaSources = {};          // mediaId -> { gainNode }
+let _audioDestNode = null;      // MediaStreamAudioDestinationNode
+const _mediaSources = {};       // mediaId -> { gainNode }
 
 function ensureAudioCtx(){
   if(!_audioCtx || _audioCtx.state === 'closed'){
@@ -606,13 +674,13 @@ function connectMediaToAudio(mediaId){
   try {
     const src = _audioCtx.createMediaElementSource(el);
     const gain = _audioCtx.createGain();
-    gain.gain.value = 0; // silent until actively playing
+    gain.gain.value = 0; // Silent til play
     src.connect(gain);
     gain.connect(_audioDestNode);
     gain.connect(_audioCtx.destination);
     _mediaSources[mediaId] = { gain };
   } catch(e){
-    // element already connected to another context — ignore
+    // Ignore if already conecte
   }
 }
 
@@ -630,29 +698,31 @@ function setClipGain(clip, active){
 // ============================================================
 // INIT
 // ============================================================
-window.addEventListener('load', () => {
+window.addEventListener('load', async () => {
   canvas = document.getElementById('preview-canvas');
   ctx = canvas.getContext('2d');
   canvas.width = CANVAS_W;
   canvas.height = CANVAS_H;
 
-  // generate defalut tracks
-  addTrack('video', 'V1', false);
-  addTrack('video', 'V2', false);
-  addTrack('audio', 'A1', false);
-
   buildTransitionsPanel();
   buildEffectsPanel();
-  renderTimeline();
-  drawEmptyFrame();
-  setupPlayheadDrag();
   setupTextAnimBtns();
 
-  document.getElementById('file-input').addEventListener('change', e => importFiles([...e.target.files]));
+  document.getElementById('file-input').addEventListener('change', e => { importFiles([...e.target.files]); scheduleAutosave(); });
   document.addEventListener('click', hideContextMenu);
   document.addEventListener('keydown', handleKey);
-  setStatus('Pronto. Importe mídia para começar.');
+  // Open dDB
+  try { await openDB(); } catch(e){ console.warn('IndexedDB unavailable:', e); }
+  // Home Screen
+  document.getElementById('home-screen').style.display='flex';
+  renderHomeProjects();
+
+  // Autosave 
+  window.addEventListener('beforeunload', ()=>{ autosave(); });
 });
+
+// Hook saveHistory to also schedule autosave
+
 
 // ============================================================
 // TABS
@@ -665,11 +735,30 @@ function switchTab(name){
 // ============================================================
 // MEDIA IMPORT
 // ============================================================
-const mediaElements = {}; // mediaId -> HTMLVideoElement / HTMLAudioElement / HTMLImageElement
+const mediaElements = {}; // HTMLVideoElement / HTMLAudioElement / HTMLImageElement
+const mediaThumbs   = {}; //data URL -> (thumbnail)
+
+function generateThumb(mediaId){
+  const m=STATE.media.find(x=>x.id===mediaId); if(!m) return;
+  const el=mediaElements[mediaId]; if(!el) return;
+  const tc=document.createElement('canvas'); tc.width=72; tc.height=40;
+  const tctx=tc.getContext('2d');
+  try {
+    if(m.type==='video'||m.type==='gif'){
+      if(el.readyState>=2) tctx.drawImage(el,0,0,72,40);
+      else { el.addEventListener('loadeddata',()=>{ try{ tctx.drawImage(el,0,0,72,40); mediaThumbs[mediaId]=tc.toDataURL(); renderMediaList(); }catch(e){} },{once:true}); return; }
+    } else if(m.type==='image'){
+      tctx.drawImage(el,0,0,72,40);
+    } else { return; }
+    mediaThumbs[mediaId]=tc.toDataURL();
+  } catch(e){}
+}
 
 function importFiles(files){
   files.forEach(file => {
-    const type = file.type.startsWith('video/') ? 'video' :
+    const isGif = file.type==='image/gif' || file.name.toLowerCase().endsWith('.gif');
+    const type = isGif ? 'gif' :
+                 file.type.startsWith('video/') ? 'video' :
                  file.type.startsWith('audio/') ? 'audio' :
                  file.type.startsWith('image/') ? 'image' : null;
     if(!type){ alert('Tipo de arquivo não suportado: '+file.name); return; }
@@ -682,21 +771,40 @@ function importFiles(files){
         const m = {id,name:file.name,type,url,duration:5,width:img.width,height:img.height,file};
         STATE.media.push(m);
         mediaElements[id] = img;
+        generateThumb(id);
         renderMediaList();
         setStatus(`Importado: ${file.name}`);
+        scheduleAutosave();
+      };
+      img.src = url;
+    } else if(type==='gif'){
+  
+      const img = new Image();
+      img.onload = ()=>{
+        const m = {id,name:file.name,type:'gif',url,duration:3,width:img.naturalWidth,height:img.naturalHeight,file};
+        STATE.media.push(m);
+        mediaElements[id] = img;
+        generateThumb(id);
+        renderMediaList();
+        setStatus(`Importado GIF: ${file.name}`);
+        scheduleAutosave();
       };
       img.src = url;
     } else {
       const el = document.createElement(type==='audio'?'audio':'video');
-      el.src = url;
+      el.src = url; el.crossOrigin='anonymous';
       el.onloadedmetadata = ()=>{
         const m = {id,name:file.name,type,url,duration:el.duration,
           width:type==='video'?el.videoWidth:0, height:type==='video'?el.videoHeight:0, file};
         STATE.media.push(m);
         mediaElements[id] = el;
-        connectMediaToAudio(id); // route through AudioContext for preview + export
+        connectMediaToAudio(id);
+        // seek thumbnail
+        el.currentTime=Math.min(1, el.duration*0.1);
+        el.addEventListener('seeked',()=>{ generateThumb(id); renderMediaList(); },{once:true});
         renderMediaList();
         setStatus(`Importado: ${file.name} (${fmtTime(el.duration)})`);
+        scheduleAutosave();
       };
       el.load();
     }
@@ -709,16 +817,23 @@ function renderMediaList(){
     list.innerHTML='<div style="text-align:center;color:var(--xp-dark-gray);font-size:10px;padding:8px">Nenhum arquivo importado</div>';
     return;
   }
-  list.innerHTML = STATE.media.map(m=>`
+  list.innerHTML = STATE.media.map(m=>{
+    const thumb = mediaThumbs[m.id];
+    const icon = m.type==='video'?'🎬':m.type==='audio'?'🎵':m.type==='gif'?'🎞':'🖼';
+    const thumbHtml = thumb
+      ? `<img src="${thumb}" style="width:36px;height:26px;object-fit:cover;border:1px solid var(--xp-dark-gray);">`
+      : `<div style="width:36px;height:26px;background:#000;display:flex;align-items:center;justify-content:center;font-size:16px;border:1px solid var(--xp-dark-gray)">${icon}</div>`;
+    return `
     <div class="media-item" draggable="true"
       ondragstart="mediaDragStart(event,'${m.id}')"
       ondblclick="addMediaToTimeline('${m.id}')">
-      <div class="media-thumb">${m.type==='video'?'🎬':m.type==='audio'?'🎵':'🖼'}</div>
+      <div class="media-thumb" style="padding:0;background:transparent;border:none">${thumbHtml}</div>
       <div class="media-info">
         <div class="media-name" title="${m.name}">${m.name}</div>
         <div class="media-meta">${m.type.toUpperCase()} · ${fmtTime(m.duration)} · ${m.width?m.width+'×'+m.height:'–'}</div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 // ============================================================
@@ -762,7 +877,7 @@ function addMediaToTimeline(mediaId, trackId){
   }
   if(!track){ alert('Nenhuma faixa compatível encontrada.'); return; }
 
-  // Find end of track
+  // Find end of a track
   const existing = getTrackClips(track.id);
   const startTime = existing.length ? Math.max(...existing.map(c=>c.startOnTimeline+clipDuration(c))) : 0;
 
@@ -823,14 +938,12 @@ function renderTimeline(){
     h.innerHTML=`<span class="track-header-label">${track.label}</span>
       <button class="track-delete-btn" onclick="deleteTrack('${track.id}')">✕</button>`;
     headersEl.appendChild(h);
-
     // Track body
     const t = document.createElement('div');
     t.className=`track ${track.type}-track`;
     t.dataset.trackId = track.id;
     t.style.width = Math.max(Math.ceil(STATE.duration*pxPerSec)+400, 3000)+'px';
     t.innerHTML='<div class="track-drop-indicator"></div>';
-
     // drag over track to drop media add //PIMP handler for PWM OS later >:P
     t.addEventListener('dragover', e=>{ e.preventDefault(); t.classList.add('dragover'); });
     t.addEventListener('dragleave', ()=>t.classList.remove('dragover'));
@@ -842,8 +955,7 @@ function renderTimeline(){
         addMediaToTimelineAt(mediaId, track.id, dropX/pxPerSec);
       }
     });
-
-    // Render clips
+  
     getTrackClips(track.id).forEach((clip,i,arr)=>{
       renderClipEl(t, clip, pxPerSec, arr, i);
     });
@@ -851,7 +963,7 @@ function renderTimeline(){
     innerEl.appendChild(t);
   });
 
-  // Text clips (on a virtual row)
+  // Text clips 
   if(STATE.textClips.length){
     let textTrack = innerEl.querySelector('.text-track-row');
     if(!textTrack){
@@ -894,17 +1006,15 @@ function renderClipEl(container, clip, pxPerSec, allClips, index){
     <div class="clip-dur">${fmtTime(dur)}</div>
     <div class="resize-handle right" data-side="right" data-clip="${clip.id}"></div>`;
 
-  el.addEventListener('mousedown', e=>{ if(e.button===0 && !e.target.classList.contains('resize-handle')){ selectClip(clip.id); startClipDrag(e,clip,el,pxPerSec); } });
+  el.addEventListener('mousedown', e=>{ if(e.button===0 && !e.target.classList.contains('resize-handle')){ selectClip(clip.id, e.shiftKey||e.ctrlKey||e.metaKey); startClipDrag(e,clip,el,pxPerSec); } });
   el.addEventListener('contextmenu', e=>{ e.preventDefault(); selectClip(clip.id); showContextMenu(e); });
 
   // Resize handles
   el.querySelectorAll('.resize-handle').forEach(h=>{
     h.addEventListener('mousedown', e=>{ e.stopPropagation(); startResizeDrag(e, clip, h.dataset.side, pxPerSec); });
   });
-
+  //TRANSITION ontrim icon 
   container.appendChild(el);
-
-  // Transition badge
   const trans = STATE.transitions[clip.id];
   if(trans && trans.type !== 'none' && index < allClips.length-1){
     const badge = document.createElement('div');
@@ -955,19 +1065,27 @@ function drawRuler(pxPerSec){
 }
 
 // ============================================================
-// CLIP DRAG (move)
+// CLIP DRAG (move) — MULTI SUPPORT
 // ============================================================
 function startClipDrag(e, clip, el, pxPerSec){
   e.preventDefault();
   const startX = e.clientX;
-  const startTime = clip.startOnTimeline;
+  // Capture start positions of ALL selected clips
+  const selectedIds = STATE.selectedClipIds.size > 0 ? [...STATE.selectedClipIds] : [clip.id];
+  const startTimes = {};
+  selectedIds.forEach(id=>{ if(STATE.clips[id]) startTimes[id]=STATE.clips[id].startOnTimeline; });
 
   function onMove(ev){
     const dx = ev.clientX - startX;
-    let newStart = Math.max(0, startTime + dx/pxPerSec);
-    if(STATE.snap) newStart = snapToNearest(newStart, clip.id, clip.trackId, pxPerSec);
-    clip.startOnTimeline = newStart;
-    el.style.left = Math.round(newStart*pxPerSec)+'px';
+    selectedIds.forEach(id=>{
+      const c=STATE.clips[id]; if(!c) return;
+      let newStart = Math.max(0, startTimes[id] + dx/pxPerSec);
+      if(STATE.snap && id===clip.id) newStart = snapToNearest(newStart, id, c.trackId, pxPerSec);
+      else if(STATE.snap){ const snapped=snapToNearest(startTimes[clip.id]+dx/pxPerSec, clip.id, clip.trackId, pxPerSec); newStart=Math.max(0,startTimes[id]+(snapped-startTimes[clip.id])); }
+      c.startOnTimeline = newStart;
+      const cel=document.getElementById('clip-'+id);
+      if(cel) cel.style.left=Math.round(newStart*pxPerSec)+'px';
+    });
     updateDuration();
   }
   function onUp(){ document.removeEventListener('mousemove',onMove); document.removeEventListener('mouseup',onUp); renderTimeline(); saveHistory(); }
@@ -1056,13 +1174,30 @@ function addMediaToTimelineAt(mediaId, trackId, startTime){
 }
 
 // ============================================================
-// SELECT CLIP
+// SELECT CLIP — Multi-support
 // ============================================================
-function selectClip(id){
-  STATE.selectedClipId=id;
-  document.querySelectorAll('.clip').forEach(el=>el.classList.remove('selected'));
-  if(id) document.getElementById('clip-'+id)?.classList.add('selected');
+function selectClip(id, addToSelection=false){
+  if(!id){
+    STATE.selectedClipId=null;
+    STATE.selectedClipIds.clear();
+  } else if(addToSelection){
+    if(STATE.selectedClipIds.has(id)){
+      STATE.selectedClipIds.delete(id);
+      STATE.selectedClipId=[...STATE.selectedClipIds].at(-1)||null;
+    } else {
+      STATE.selectedClipIds.add(id);
+      STATE.selectedClipId=id;
+    }
+  } else {
+    STATE.selectedClipId=id;
+    STATE.selectedClipIds=new Set([id]);
+  }
+  document.querySelectorAll('.clip').forEach(el=>{
+    const cid=el.dataset.clipId;
+    el.classList.toggle('selected', STATE.selectedClipIds.has(cid));
+  });
   updatePropsPanel();
+  drawTransformOverlay();
 }
 
 function updatePropsPanel(){
@@ -1081,22 +1216,20 @@ function updatePropsPanel(){
   const clip=STATE.clips[id]; if(!clip) return;
   const media=STATE.media.find(m=>m.id===clip.mediaId);
   document.getElementById('props-clip-name').textContent=(media?.name||'Clipe').substring(0,28);
-
   setRangeVal('p-opacity','p-opacity-v',clip.opacity,'%');
   setRangeVal('p-volume','p-volume-v',clip.volume,'%');
   setRangeVal('p-speed','p-speed-v',clip.speed,'%');
   setRangeVal('p-scale','p-scale-v',clip.scale,'%');
-  setRangeVal('p-posx','p-posx-v',clip.posX,'%');
-  setRangeVal('p-posy','p-posy-v',clip.posY,'%');
+  // Update position display text
+  const pxv=document.getElementById('p-posx-v'); if(pxv) pxv.textContent=Math.round(clip.posX)+'%';
+  const pyv=document.getElementById('p-posy-v'); if(pyv) pyv.textContent=Math.round(clip.posY)+'%';
   document.getElementById('p-rotation').value=clip.rotation;
-  document.getElementById('p-rot-v').textContent=clip.rotation+'°';
+  document.getElementById('p-rot-v').textContent=Math.round(clip.rotation||0)+'°';
   document.getElementById('p-trim-s').value=clip.trimStart.toFixed(2);
   document.getElementById('p-trim-e').value=clip.trimEnd.toFixed(2);
-
   const isImg = media?.type==='image';
   document.getElementById('p-img-dur-group').style.display=isImg?'block':'none';
   if(isImg) document.getElementById('p-img-dur').value=media.duration;
-
   // Sync color tab
   document.getElementById('col-brightness').value=clip.brightness;
   document.getElementById('col-brightness-val').textContent=clip.brightness;
@@ -1332,7 +1465,7 @@ function drawFrame(){
 
   const t=STATE.currentTime;
 
-  // Draw video tracks (last to first so V1 is on top)
+  // Draw video tracks 
   const videoTracks=[...STATE.tracks.filter(tr=>tr.type==='video')].reverse();
   for(const track of videoTracks){
     const clips=getTrackClips(track.id);
@@ -1357,14 +1490,13 @@ function drawFrame(){
     }
   }
 
-  // Draw text overlays
+  // Draw text 
   for(const tc of STATE.textClips){
     if(t>=tc.startOnTimeline&&t<tc.startOnTimeline+tc.duration){
       drawTextOverlay(ctx,tc,t);
     }
   }
 
-  // Draw vignette overlays
   Object.values(STATE.clips).forEach(clip=>{
     if(clip.vignette>0){
       const dur=clipDuration(clip);
@@ -1373,6 +1505,8 @@ function drawFrame(){
       }
     }
   });
+
+  if(!_transformDragging) requestAnimationFrame(drawTransformOverlay);
 }
 
 function drawClipFrame(targetCtx, clip, t){
@@ -1408,7 +1542,7 @@ function drawClipFrame(targetCtx, clip, t){
       targetCtx.fillStyle='#222';
       targetCtx.fillRect(dx,dy,dw,dh);
     }
-  } else if(media.type==='image'){
+  } else if(media.type==='image'||media.type==='gif'){
     if(el.complete) targetCtx.drawImage(el,dx,dy,dw,dh);
   }
 
@@ -1435,6 +1569,180 @@ function drawVignette(strength){
   ctx.fillStyle=grad;
   ctx.fillRect(0,0,CANVAS_W,CANVAS_H);
   ctx.restore();
+}
+
+// ============================================================
+// TRANSFORM OVERLAY — (drag/resize/rotate clips) 
+// ============================================================
+let _overlayCanvas=null, _overlayCtx=null;
+let _transformDragging=false;
+
+function initTransformOverlay(){
+  _overlayCanvas=document.getElementById('transform-overlay');
+  if(!_overlayCanvas) return;
+  function resizeOverlay(){
+    const rect=_overlayCanvas.parentElement.getBoundingClientRect();
+    _overlayCanvas.width=rect.width;
+    _overlayCanvas.height=rect.height;
+    drawTransformOverlay();
+  }
+  new ResizeObserver(resizeOverlay).observe(_overlayCanvas.parentElement);
+  resizeOverlay();
+
+  _overlayCanvas.addEventListener('mousedown', overlayMouseDown);
+  _overlayCanvas.addEventListener('mousemove', overlayMouseMove);
+  _overlayCanvas.style.cursor='default';
+}
+
+function canvasToOverlay(cx,cy){
+  if(!_overlayCanvas) return {x:0,y:0};
+  const sx=_overlayCanvas.width/CANVAS_W;
+  const sy=_overlayCanvas.height/CANVAS_H;
+  return {x:cx*sx, y:cy*sy};
+}
+function overlayToCanvas(ox,oy){
+  if(!_overlayCanvas) return {x:0,y:0};
+  const sx=CANVAS_W/_overlayCanvas.width;
+  const sy=CANVAS_H/_overlayCanvas.height;
+  return {x:ox*sx, y:oy*sy};
+}
+
+function getClipBounds(clip){// -> Corners
+  const scale=clip.scale/100;
+  const cx=(clip.posX/100)*CANVAS_W;
+  const cy=(clip.posY/100)*CANVAS_H;
+  const hw=CANVAS_W*scale/2, hh=CANVAS_H*scale/2;
+  return {cx,cy,hw,hh,rotation:clip.rotation||0};
+}
+
+function drawTransformOverlay(){
+  if(!_overlayCanvas||!_overlayCtx) return;
+  _overlayCtx.clearRect(0,0,_overlayCanvas.width,_overlayCanvas.height);
+  const id=STATE.selectedClipId; if(!id) return;
+  const clip=STATE.clips[id]; if(!clip) return;
+  const dur=clipDuration(clip);
+  if(STATE.currentTime<clip.startOnTimeline||STATE.currentTime>=clip.startOnTimeline+dur) return;
+
+  const {cx,cy,hw,hh,rotation}=getClipBounds(clip);
+  const sx=_overlayCanvas.width/CANVAS_W, sy=_overlayCanvas.height/CANVAS_H;
+  const ocx=cx*sx, ocy=cy*sy, ohw=hw*sx, ohh=hh*sy;
+  const rot=rotation*Math.PI/180;
+
+  _overlayCtx.save();
+  _overlayCtx.translate(ocx,ocy);
+  _overlayCtx.rotate(rot);
+
+  // Dashed border
+  _overlayCtx.setLineDash([4,3]);
+  _overlayCtx.strokeStyle='rgba(255,255,0,0.9)';
+  _overlayCtx.lineWidth=1.5;
+  _overlayCtx.strokeRect(-ohw,-ohh,ohw*2,ohh*2);
+  _overlayCtx.setLineDash([]);
+
+  // Corner handles (resize)
+  const hs=6;
+  [[-ohw,-ohh],[ohw,-ohh],[ohw,ohh],[-ohw,ohh]].forEach(([hx,hy])=>{
+    _overlayCtx.fillStyle='#fff';
+    _overlayCtx.strokeStyle='#000';
+    _overlayCtx.lineWidth=1;
+    _overlayCtx.fillRect(hx-hs/2,hy-hs/2,hs,hs);
+    _overlayCtx.strokeRect(hx-hs/2,hy-hs/2,hs,hs);
+  });
+
+  // Rotation handle (top center)
+  _overlayCtx.beginPath();
+  _overlayCtx.moveTo(0,-ohh);
+  _overlayCtx.lineTo(0,-ohh-20);
+  _overlayCtx.strokeStyle='rgba(255,255,0,0.9)';
+  _overlayCtx.lineWidth=1.5;
+  _overlayCtx.stroke();
+  _overlayCtx.beginPath();
+  _overlayCtx.arc(0,-ohh-20,5,0,Math.PI*2);
+  _overlayCtx.fillStyle='#ffff00';
+  _overlayCtx.fill();
+  _overlayCtx.strokeStyle='#000';
+  _overlayCtx.lineWidth=1;
+  _overlayCtx.stroke();
+
+  _overlayCtx.restore();
+}
+
+function getOverlayHit(ox,oy,clip){
+  const {cx,cy,hw,hh,rotation}=getClipBounds(clip);
+  const sx=_overlayCanvas.width/CANVAS_W, sy=_overlayCanvas.height/CANVAS_H;
+  const ocx=cx*sx, ocy=cy*sy, ohw=hw*sx, ohh=hh*sy;
+  const rot=rotation*Math.PI/180;
+  // Rotate point into clip local space
+  const dx=ox-ocx, dy=oy-ocy;
+  const lx=dx*Math.cos(-rot)-dy*Math.sin(-rot);
+  const ly=dx*Math.sin(-rot)+dy*Math.cos(-rot);
+  const hs=8;
+
+  const rdx=ox-ocx, rdy=oy-(ocy-ohh-20);
+  if(Math.sqrt(rdx*rdx+rdy*rdy)<10) return 'rotate';
+  const corners=[[-ohw,-ohh,'nw'],[ohw,-ohh,'ne'],[ohw,ohh,'se'],[-ohw,ohh,'sw']];
+  for(const[hx,hy,name] of corners){
+    if(Math.abs(lx-hx)<hs&&Math.abs(ly-hy)<hs) return 'resize-'+name;
+  }
+  if(Math.abs(lx)<ohw&&Math.abs(ly)<ohh) return 'move';
+  return null;
+}
+
+function overlayMouseMove(e){
+  if(_transformDragging) return;
+  const id=STATE.selectedClipId; if(!id) return;
+  const clip=STATE.clips[id]; if(!clip) return;
+  const rect=_overlayCanvas.getBoundingClientRect();
+  const ox=e.clientX-rect.left, oy=e.clientY-rect.top;
+  const hit=getOverlayHit(ox,oy,clip);
+  const cursors={move:'move',rotate:'crosshair','resize-nw':'nw-resize','resize-ne':'ne-resize','resize-se':'se-resize','resize-sw':'sw-resize'};
+  _overlayCanvas.style.cursor=hit?(cursors[hit]||'default'):'default';
+}
+
+function overlayMouseDown(e){
+  if(e.button!==0) return;
+  const id=STATE.selectedClipId; if(!id) return;
+  const clip=STATE.clips[id]; if(!clip) return;
+  const rect=_overlayCanvas.getBoundingClientRect();
+  const ox=e.clientX-rect.left, oy=e.clientY-rect.top;
+  const hit=getOverlayHit(ox,oy,clip);
+  if(!hit) return;
+
+  e.preventDefault(); e.stopPropagation();
+  _transformDragging=true;
+
+  const startOx=ox, startOy=oy;
+  const origPosX=clip.posX, origPosY=clip.posY;
+  const origScale=clip.scale, origRot=clip.rotation||0;
+  const {cx,cy}=getClipBounds(clip);
+  const sx=CANVAS_W/_overlayCanvas.width, sy=CANVAS_H/_overlayCanvas.height;
+
+  function onMove(ev){
+    const r=_overlayCanvas.getBoundingClientRect();
+    const ox2=ev.clientX-r.left, oy2=ev.clientY-r.top;
+    if(hit==='move'){
+      clip.posX=Math.max(0,Math.min(100,origPosX+(ox2-startOx)*sx/CANVAS_W*100));
+      clip.posY=Math.max(0,Math.min(100,origPosY+(oy2-startOy)*sy/CANVAS_H*100));
+    } else if(hit==='rotate'){
+      const acx=cx*(_overlayCanvas.width/CANVAS_W), acy=cy*(_overlayCanvas.height/CANVAS_H);
+      const angle=Math.atan2(oy2-acy,ox2-acx)*180/Math.PI+90;
+      clip.rotation=Math.round(angle);
+    } else if(hit.startsWith('resize')){
+      const acx=cx*(_overlayCanvas.width/CANVAS_W), acy=cy*(_overlayCanvas.height/CANVAS_H);
+      const dist=Math.sqrt((ox2-acx)**2+(oy2-acy)**2);
+      const origDist=Math.sqrt((CANVAS_W/2*origScale/100)**2+(CANVAS_H/2*origScale/100)**2)*(_overlayCanvas.width/CANVAS_W);
+      if(origDist>0) clip.scale=Math.max(10,Math.min(300,origScale*dist/origDist));
+    }
+    drawFrame(); drawTransformOverlay(); updatePropsPanel();
+  }
+  function onUp(){
+    document.removeEventListener('mousemove',onMove);
+    document.removeEventListener('mouseup',onUp);
+    _transformDragging=false;
+    saveHistory();
+  }
+  document.addEventListener('mousemove',onMove);
+  document.addEventListener('mouseup',onUp);
 }
 
 function drawTransition(clipA, clipB, type, progress){
@@ -1727,20 +2035,19 @@ function updatePlayheadPos(){
 }
 
 // ============================================================
-// PLAYHEAD DRAG (on ruler)
+// PLAYHEAD DRAG 
 // ============================================================
 function setupPlayheadDrag(){
   const top=document.getElementById('playhead-top');
   const scroll=document.getElementById('tracks-scroll');
 
-  // Click on ruler to seek
+  // Search 
   document.getElementById('ruler').addEventListener('click',e=>{
     const rect=document.getElementById('ruler').getBoundingClientRect();
     const x=e.clientX-rect.left+scroll.scrollLeft;
     seekTo(x/STATE.zoom);
   });
-
-  // Drag playhead handle
+  // Drag playhead 
   top.addEventListener('mousedown',e=>{
     e.preventDefault();
     const scrollEl=document.getElementById('tracks-scroll');
@@ -1762,7 +2069,7 @@ function syncHeaders(){
 }
 
 // ============================================================
-// ZOOM
+// ZOOM ontrim
 // ============================================================
 function adjustZoom(factor){
   STATE.zoom=Math.max(10,Math.min(600,STATE.zoom*factor));
@@ -1776,7 +2083,7 @@ function fitToWindow(){
 }
 
 // ============================================================
-// CLIP OPERATIONS
+// CLIP Possible OPS
 // ============================================================
 function splitSelected(){
   const id=STATE.selectedClipId; if(!id) return;
@@ -1852,13 +2159,53 @@ function ctxDeselect(){ selectClip(null); hideContextMenu(); }
 // ============================================================
 // CONTEXT MENU
 // ============================================================
+let _ctxRightClickTime = null; // timeline time where user right-clicked
+
 function showContextMenu(e){
+  // TRACK CLICK POS
+  const scroll=document.getElementById('tracks-scroll');
+  const rect=scroll.getBoundingClientRect();
+  const x=e.clientX-rect.left+scroll.scrollLeft;
+  _ctxRightClickTime = Math.max(0, x/STATE.zoom);
+  const splitHereEl=document.getElementById('ctx-split-here');
+  const clip=STATE.clips[STATE.selectedClipId];
+  if(clip){
+    const dur=clipDuration(clip);
+    const inClip=_ctxRightClickTime>clip.startOnTimeline && _ctxRightClickTime<clip.startOnTimeline+dur;
+    splitHereEl.style.display=inClip?'':'none';
+  } else {
+    splitHereEl.style.display='none';
+  }
+
   const menu=document.getElementById('ctx-menu');
-  menu.style.left=Math.min(e.clientX,window.innerWidth-170)+'px';
-  menu.style.top=Math.min(e.clientY,window.innerHeight-120)+'px';
+  menu.style.left=Math.min(e.clientX,window.innerWidth-180)+'px';
+  menu.style.top=Math.min(e.clientY,window.innerHeight-150)+'px';
   menu.classList.add('show');
 }
 function hideContextMenu(){ document.getElementById('ctx-menu').classList.remove('show'); }
+
+function ctxSplitHere(){
+  hideContextMenu();
+  if(_ctxRightClickTime===null) return;
+  const id=STATE.selectedClipId; if(!id) return;
+  const clip=STATE.clips[id]; if(!clip) return;
+  const t=_ctxRightClickTime;
+  const dur=clipDuration(clip);
+  if(t<=clip.startOnTimeline||t>=clip.startOnTimeline+dur){ alert('Posição fora do clipe.'); return; }
+  const relT=t-clip.startOnTimeline;
+  const media=STATE.media.find(m=>m.id===clip.mediaId);
+  const origTrimE=clip.trimEnd;
+  clip.trimEnd=media.duration-clip.trimStart-relT*(clip.speed/100);
+  const newId=uid('clip');
+  STATE.clips[newId]={
+    ...clip, id:newId,
+    startOnTimeline:t,
+    trimStart:clip.trimStart+relT*(clip.speed/100),
+    trimEnd:origTrimE,
+  };
+  updateDuration(); renderTimeline(); saveHistory();
+  setStatus('Clipe cortado na posição clicada.');
+}
 
 // ============================================================
 // UNDO / REDO
@@ -1868,6 +2215,7 @@ function saveHistory(){
   STATE.undoStack.push(snap);
   if(STATE.undoStack.length>50) STATE.undoStack.shift();
   STATE.redoStack=[];
+  scheduleAutosave();
 }
 function undo(){
   if(!STATE.undoStack.length) return;
@@ -1900,14 +2248,20 @@ function handleKey(e){
     case '+': case '=': adjustZoom(1.2); break;
     case '-': adjustZoom(0.8); break;
     case 'f': case 'F': fitToWindow(); break;
-  }
+  }//PIMP ADD 
 }
 
 // ============================================================
-// EXPORT — real-time capture with audio via AudioContext
+// EXPORT — (frame b frame)
 // ============================================================
 function showExportModal(){ document.getElementById('export-modal').classList.add('show'); }
-function hideModal(id){ document.getElementById(id).classList.remove('show'); }
+function cancelExport(){
+  if(_exporting){
+    _exporting=false;
+    document.getElementById('exp-status').textContent='❌ Exportação cancelada.';
+  }
+  hideModal('export-modal');
+}
 
 let _exporting = false;
 
@@ -1920,94 +2274,127 @@ async function startExport(){
   const [ew,eh]=document.getElementById('exp-res').value.split(',').map(Number);
   const fps=parseInt(document.getElementById('exp-fps').value);
   const bitrate=parseInt(document.getElementById('exp-quality').value);
-
-  const expCanvas=document.createElement('canvas');
-  expCanvas.width=ew; expCanvas.height=eh;
-  const expCtx=expCanvas.getContext('2d');
+  const fmt=document.getElementById('exp-format')?.value||'webm';
 
   const statusEl=document.getElementById('exp-status');
   const progressBar=document.getElementById('exp-progress-bar');
   document.getElementById('exp-progress-wrap').style.display='block';
   progressBar.style.width='0%';
+  statusEl.textContent='Preparando exportação...';
 
-  // Ensure AudioContext is live and get its capture stream
+  // Pause playback
+  const wasPlaying=STATE.playing; if(wasPlaying) pause();
+  const origTime=STATE.currentTime;
+
+  // Stop all media
+  Object.values(STATE.clips).forEach(clip=>{
+    const media=STATE.media.find(m=>m.id===clip.mediaId);
+    if(!media) return;
+    const el=mediaElements[media.id];
+    if(el&&el.pause) el.pause();
+    setClipGain(clip, false);
+  });
+
+  // Create export canvas
+  const expCanvas=document.createElement('canvas');
+  expCanvas.width=ew; expCanvas.height=eh;
+  const expCtx=expCanvas.getContext('2d');
+
+  // Set up audio capture
   ensureAudioCtx();
   const videoStream=expCanvas.captureStream(fps);
   if(_audioDestNode){
     _audioDestNode.stream.getAudioTracks().forEach(t=>videoStream.addTrack(t));
   }
-
   const chunks=[];
   let recorder;
-  const mimeTypes=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+  const mp4Types=['video/mp4;codecs=avc1,mp4a.40.2','video/mp4;codecs=avc1','video/mp4'];
+  const webmTypes=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+  const mimeTypes = fmt==='mp4' ? [...mp4Types,...webmTypes] : webmTypes;
   for(const mime of mimeTypes){
     if(MediaRecorder.isTypeSupported(mime)){
       recorder=new MediaRecorder(videoStream,{mimeType:mime,videoBitsPerSecond:bitrate});
       break;
     }
   }
+  const actualExt = recorder?.mimeType?.includes('mp4') ? 'mp4' : 'webm';
   if(!recorder){
     alert('Seu navegador não suporta gravação de vídeo via canvas.\nUse Chrome ou Edge.');
     _exporting=false; return;
   }
-
   recorder.ondataavailable=e=>{ if(e.data.size>0) chunks.push(e.data); };
   recorder.onstop=()=>{
-    const blob=new Blob(chunks,{type:'video/webm'});
+    const blob=new Blob(chunks,{type:recorder.mimeType||'video/webm'});
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
-    a.href=url; a.download=name+'.webm'; a.click();
-    URL.revokeObjectURL(url);
-    statusEl.textContent='✅ Exportação concluída!';
-    setStatus('Exportação concluída: '+name+'.webm');
+    a.href=url; a.download=name+'.'+actualExt; a.click();
+    setTimeout(()=>URL.revokeObjectURL(url), 5000);
+    statusEl.textContent='✅ Exportação concluída! Arquivo: '+name+'.'+actualExt;
+    progressBar.style.width='100%';
+    setStatus('Exportação concluída: '+name+'.'+actualExt);
     _exporting=false;
+    STATE.currentTime=origTime;
+    drawFrame(); updatePlayheadPos(); updateTimeDisplay(); updateScrubber();
   };
 
-  const was=STATE.playing; if(was) pause();
-  const origTime=STATE.currentTime;
+  recorder.start(100);
+  statusEl.textContent='Renderizando...';
 
-  // Seek all media to beginning silently
-  muteAllMedia();
-  STATE.currentTime=0;
-
-  recorder.start(200);
-  statusEl.textContent='Iniciando renderização...';
-
-  // Real-time render loop — audio plays through AudioContext captured in videoStream
-  const wallStart=performance.now();
-  const totalDur=STATE.duration;
-
-  function exportLoop(){
-    const elapsed=(performance.now()-wallStart)/1000;
-    STATE.currentTime=elapsed;
-
-    if(elapsed>=totalDur){
-      // Final frame
-      STATE.currentTime=totalDur;
-      syncClipAudio(totalDur);
-      drawFrame();
-      expCtx.drawImage(canvas,0,0,ew,eh);
+  const totalFrames=Math.ceil(STATE.duration*fps);
+  const frameStep=1/fps;
+  let frameIdx=0;
+  // Seek all video elements to start
+  await seekAllMediaTo(0);
+  function exportNextFrame(){
+    if(!_exporting){ recorder.stop(); return; }
+    if(frameIdx>totalFrames){
       muteAllMedia();
       setTimeout(()=>recorder.stop(), 300);
-      STATE.currentTime=origTime;
-      drawFrame();
-      updatePlayheadPos(); updateTimeDisplay(); updateScrubber();
       return;
     }
-
-    syncClipAudio(elapsed);
+    const t=frameIdx*frameStep;
+    STATE.currentTime=t;
+    // Sync audio
+    syncClipAudio(t);
+    // Draw into main canvas then copy to export canvas
     drawFrame();
-    expCtx.drawImage(canvas,0,0,ew,eh);
+    expCtx.drawImage(canvas, 0, 0, ew, eh);
 
-    const pct=Math.round((elapsed/totalDur)*100);
+    const pct=Math.min(100,Math.round((frameIdx/totalFrames)*100));
     progressBar.style.width=pct+'%';
-    statusEl.textContent=`Exportando ${fmtTime(elapsed)} / ${fmtTime(totalDur)} (${pct}%)`;
-    updatePlayheadPos(); updateTimeDisplay(); updateScrubber();
+    statusEl.textContent=`Exportando frame ${frameIdx}/${totalFrames} — ${fmtTime(t)} / ${fmtTime(STATE.duration)} (${pct}%)`;
 
-    requestAnimationFrame(exportLoop);
+    frameIdx++;
+    // Use rAF for speed but yield every 30 frames to let video decode
+    if(frameIdx%30===0){
+      setTimeout(exportNextFrame, 0);
+    } else {
+      requestAnimationFrame(exportNextFrame);
+    }
   }
 
-  requestAnimationFrame(exportLoop);
+  requestAnimationFrame(exportNextFrame);
+}
+
+// Auxiliar - "Fetch Media"
+function seekAllMediaTo(t){
+  const promises=[];
+  Object.values(STATE.clips).forEach(clip=>{
+    const media=STATE.media.find(m=>m.id===clip.mediaId);
+    if(!media||(media.type!=='video'&&media.type!=='audio')) return;
+    const el=mediaElements[media.id];
+    if(!el||!el.fastSeek) return;
+    const ft=clip.trimStart+(t-clip.startOnTimeline)*(clip.speed/100);
+    if(t>=clip.startOnTimeline && t<clip.startOnTimeline+clipDuration(clip)){
+      promises.push(new Promise(resolve=>{
+        const handler=()=>{ el.removeEventListener('seeked',handler); resolve(); };
+        el.addEventListener('seeked',handler);
+        el.currentTime=Math.max(0,ft);
+        setTimeout(resolve, 200); // fallback timeout
+      }));
+    }
+  });
+  return Promise.all(promises);
 }
 
 // ============================================================
@@ -2028,6 +2415,389 @@ function toggleFullPreview(){
   const box=document.getElementById('preview-box');
   if(!document.fullscreenElement) box.requestFullscreen().catch(()=>{});
   else document.exitFullscreen();
+}
+
+// ============================================================
+// PROJECT MANAGEMENT
+// ============================================================
+// .vidproj format: JSON containing project metadata + serialised STATE
+// Media files are stored as base64 data inside .vidproj so the file is self-contained.//
+
+const DB_NAME = 'GoEditDB';
+const DB_VER  = 2;
+let _db = null;
+let _currentProjectId = null;
+let _currentProjectName = 'Projeto sem título';
+let _autosaveTimer = null;
+
+function openDB(){
+  return new Promise((res,rej)=>{
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if(!db.objectStoreNames.contains('projects')) db.createObjectStore('projects', {keyPath:'id'});
+      if(!db.objectStoreNames.contains('media'))    db.createObjectStore('media',    {keyPath:'id'});
+    };
+    req.onsuccess = e => { _db = e.target.result; res(_db); };
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+
+function dbPut(store, obj){ return new Promise((res,rej)=>{ const t=_db.transaction(store,'readwrite'); t.objectStore(store).put(obj); t.oncomplete=res; t.onerror=e=>rej(e.target.error); }); }
+function dbGet(store, key){ return new Promise((res,rej)=>{ const t=_db.transaction(store,'readonly'); const r=t.objectStore(store).get(key); r.onsuccess=()=>res(r.result); r.onerror=e=>rej(e.target.error); }); }
+function dbGetAll(store){ return new Promise((res,rej)=>{ const t=_db.transaction(store,'readonly'); const r=t.objectStore(store).getAll(); r.onsuccess=()=>res(r.result); r.onerror=e=>rej(e.target.error); }); }
+function dbDelete(store, key){ return new Promise((res,rej)=>{ const t=_db.transaction(store,'readwrite'); t.objectStore(store).delete(key); t.oncomplete=res; t.onerror=e=>rej(e.target.error); }); }
+
+function serialiseProject(){// Build media manifest (no binary data for autosave)
+  const mediaManifest = STATE.media.map(m=>({
+    id:m.id, name:m.name, type:m.type, duration:m.duration,
+    width:m.width||0, height:m.height||0,
+  }));
+  return {
+    id: _currentProjectId,
+    name: _currentProjectName,
+    savedAt: Date.now(),
+    version: 2,
+    zoom: STATE.zoom,
+    duration: STATE.duration,
+    currentTime: STATE.currentTime,
+    masterVolume: STATE.masterVolume,
+    snap: STATE.snap,
+    tracks: STATE.tracks,
+    clips: STATE.clips,
+    textClips: STATE.textClips,
+    transitions: STATE.transitions,
+    media: mediaManifest,
+  };
+}
+
+// Autosave: save project record + all media ArrayBuffrs into IndexedDB
+async function autosave(){
+  if(!_db || !_currentProjectId) return;
+  try {
+    const proj = serialiseProject();
+    await dbPut('projects', proj);
+
+    // Save media files as ArrayBuffers
+    for(const m of STATE.media){
+      if(!m.file) continue; // already saved previously 
+      const already = await dbGet('media', m.id);
+      if(already) continue;
+      const buf = await m.file.arrayBuffer();
+      await dbPut('media', {id:m.id, projectId:_currentProjectId, name:m.name, type:m.type, mimeType:m.file.type, data:buf});
+    }
+
+    showAutosaveIndicator();
+  } catch(e){ console.warn('Autosave failed:', e); }
+}
+
+function showAutosaveIndicator(){
+  const el = document.getElementById('autosave-indicator');
+  el.style.display='block';
+  clearTimeout(el._timer);
+  el._timer = setTimeout(()=>el.style.display='none', 1800);
+}
+
+function scheduleAutosave(){
+  clearTimeout(_autosaveTimer);
+  _autosaveTimer = setTimeout(autosave, 1500);
+}
+
+// Load project from DB record = restore State
+async function loadProjectFromDB(projId){
+  const proj = await dbGet('projects', projId);
+  if(!proj){ alert('Projeto não encontrado.'); return; }
+
+  // Reset engine
+  if(STATE.playing) pause();
+  Object.keys(mediaElements).forEach(k=>{ const el=mediaElements[k]; if(el&&el.pause) el.pause(); delete mediaElements[k]; });
+  Object.keys(_mediaSources).forEach(k=>delete _mediaSources[k]);
+  STATE.media=[]; STATE.tracks=proj.tracks||[]; STATE.clips=proj.clips||{};
+  STATE.textClips=proj.textClips||[]; STATE.transitions=proj.transitions||{};
+  STATE.zoom=proj.zoom||100; STATE.currentTime=0; STATE.duration=proj.duration||0;
+  STATE.masterVolume=proj.masterVolume??0.8; STATE.snap=proj.snap??true;
+  STATE.undoStack=[]; STATE.redoStack=[]; STATE.selectedClipId=null;
+  _currentProjectId=proj.id; _currentProjectName=proj.name||'Projeto';
+
+  document.getElementById('proj-name-display').textContent=_currentProjectName;
+
+  // Reload media from DB
+  const allMedia = await dbGetAll('media');
+  const projMedia = allMedia.filter(m=>m.projectId===projId);
+  const mediaMap = {};
+  projMedia.forEach(m=>mediaMap[m.id]=m);
+
+  let pending = proj.media.length;
+  if(pending===0){ finishLoad(); return; }
+
+  proj.media.forEach(mInfo=>{
+    const stored = mediaMap[mInfo.id];
+    if(!stored){ pending--; if(pending===0) finishLoad(); return; }
+    const blob = new Blob([stored.data], {type: stored.mimeType});
+    const url  = URL.createObjectURL(blob);
+
+    if(mInfo.type==='image'){
+      const img = new Image();
+      img.onload = ()=>{
+        STATE.media.push({...mInfo, url, file:null});
+        mediaElements[mInfo.id]=img;
+        pending--; if(pending===0) finishLoad();
+      };
+      img.onerror = ()=>{ pending--; if(pending===0) finishLoad(); };
+      img.src=url;
+    } else {
+      const el = document.createElement(mInfo.type==='audio'?'audio':'video');
+      el.src=url;
+      el.onloadedmetadata=()=>{
+        STATE.media.push({...mInfo, url, duration:el.duration, file:null});
+        mediaElements[mInfo.id]=el;
+        connectMediaToAudio(mInfo.id);
+        pending--; if(pending===0) finishLoad();
+      };
+      el.onerror=()=>{ pending--; if(pending===0) finishLoad(); };
+      el.load();
+    }
+  });
+
+  function finishLoad(){
+    renderMediaList(); renderTimeline(); drawFrame();
+    setupPlayheadDrag();
+    updatePlayheadPos(); updateTimeDisplay(); updateScrubber();
+    setStatus(`Projeto "${_currentProjectName}" carregado.`);
+    scheduleAutosave();
+  }
+}
+
+// ---- HOME SCREEN ----
+function goHome(){
+  if(STATE.playing) pause();
+  renderHomeProjects();
+  document.getElementById('home-screen').style.display='flex';
+}
+
+function hideHome(){
+  document.getElementById('home-screen').style.display='none';
+}
+
+async function renderHomeProjects(){
+  const list = document.getElementById('home-proj-list');
+  list.innerHTML='<div class="home-empty" style="color:#808080">Carregando...</div>';
+  const projects = await dbGetAll('projects');
+  projects.sort((a,b)=>(b.savedAt||0)-(a.savedAt||0));
+  if(!projects.length){
+    list.innerHTML='<div class="home-empty">Nenhum projeto encontrado.<br>Crie um novo projeto para começar.</div>';
+    return;
+  }
+  list.innerHTML = projects.map(p=>`
+    <div class="proj-card" onclick="homeOpenProject('${p.id}')">
+      <div class="proj-card-icon">🎬</div>
+      <div class="proj-card-info">
+        <div class="proj-card-name">${escHtml(p.name||'Sem título')}</div>
+        <div class="proj-card-meta">
+          ${p.duration?fmtTime(p.duration)+' · ':''} 
+          ${p.media?p.media.length+' arquivo(s) · ':''}
+          Salvo: ${p.savedAt?new Date(p.savedAt).toLocaleString('pt-BR'):'—'}
+        </div>
+      </div>
+      <div class="proj-card-actions">
+        <button class="proj-card-del" title="Deletar projeto" onclick="event.stopPropagation();homeDeleteProject('${p.id}')">🗑</button>
+      </div>
+    </div>`).join('');
+}
+
+function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+async function homeOpenProject(id){
+  hideHome();
+  await loadProjectFromDB(id);
+}
+
+async function homeDeleteProject(id){
+  if(!confirm('Deletar este projeto permanentemente?')) return;
+  await dbDelete('projects', id);
+  // Cascade Delete
+  const allMedia = await dbGetAll('media');
+  for(const m of allMedia){ if(m.projectId===id) await dbDelete('media', m.id); }
+  renderHomeProjects();
+}
+
+function homeNewProject(){
+  hideHome();
+  newProject();
+}
+
+function newProject(){
+  if(STATE.playing) pause();
+  // Clear state
+  Object.keys(mediaElements).forEach(k=>{ const el=mediaElements[k]; if(el&&el.pause) el.pause(); delete mediaElements[k]; });
+  Object.keys(_mediaSources).forEach(k=>delete _mediaSources[k]);
+  STATE.media=[]; STATE.tracks=[]; STATE.clips={};
+  STATE.textClips=[]; STATE.transitions={};
+  STATE.zoom=100; STATE.currentTime=0; STATE.duration=0;
+  STATE.masterVolume=0.8; STATE.snap=true;
+  STATE.undoStack=[]; STATE.redoStack=[]; STATE.selectedClipId=null;
+
+  _currentProjectId = uid('proj');
+  _currentProjectName = 'Projeto sem título';
+  document.getElementById('proj-name-display').textContent=_currentProjectName;
+
+  addTrack('video','V1',false);
+  addTrack('video','V2',false);
+  addTrack('audio','A1',false);
+  renderTimeline(); renderMediaList(); drawEmptyFrame();
+  setupPlayheadDrag();
+  if(!_overlayCtx){ _overlayCtx=document.getElementById('transform-overlay')?.getContext('2d'); initTransformOverlay(); }
+  updatePlayheadPos(); updateTimeDisplay(); updateScrubber();
+  setStatus('Novo projeto criado. Importe mídia para começar.');
+  scheduleAutosave();
+}
+
+function renameProject(){
+  const name = prompt('Nome do projeto:', _currentProjectName);
+  if(name && name.trim()){
+    _currentProjectName = name.trim();
+    document.getElementById('proj-name-display').textContent=_currentProjectName;
+    scheduleAutosave();
+  }
+}
+
+function saveProjectManual(){
+  autosave().then(()=>setStatus('Projeto salvo: '+_currentProjectName));
+}
+
+// ---- .vidproj EXPORT---- //PIMP rework later json that giver argument of clip size,trans,pos(trim) of clips. and compact project as .zip with assets folder>img1.png,img2.png,project.vidproj
+async function exportVidproj(){
+  setStatus('Preparando arquivo .vidproj...');
+  const proj = serialiseProject();
+
+  // Embed media as base64
+  const mediaWithData = [];
+  for(const m of STATE.media){
+    let dataUri = null;
+    if(m.file){
+      // Freshy file object
+      const buf = await m.file.arrayBuffer();
+      const b64 = bufToBase64(buf);
+      dataUri = `data:${m.file.type};base64,${b64}`;
+    } else {
+      // Try to load from IndexedDB (if data = load(data))
+      const stored = await dbGet('media', m.id);
+      if(stored){
+        const b64 = bufToBase64(stored.data);
+        dataUri = `data:${stored.mimeType};base64,${b64}`;
+      }
+    }
+    mediaWithData.push({...m, file:undefined, url:undefined, dataUri});
+  }
+
+  const exportObj = {...proj, media:mediaWithData, exportFormat:'vidproj', appVersion:'GoEdit-1.0'};
+  const json = JSON.stringify(exportObj);
+  const blob = new Blob([json], {type:'application/json'});
+  const url  = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=(_currentProjectName||'projeto')+'.vidproj'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url), 5000);
+  setStatus('Arquivo .vidproj exportado: '+_currentProjectName+'.vidproj');
+}
+
+function bufToBase64(buf){
+  let binary='';
+  const bytes=new Uint8Array(buf);
+  for(let i=0;i<bytes.byteLength;i++) binary+=String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+
+function base64ToBuf(b64){
+  const binary=atob(b64);
+  const buf=new ArrayBuffer(binary.length);
+  const view=new Uint8Array(buf);
+  for(let i=0;i<binary.length;i++) view[i]=binary.charCodeAt(i);
+  return buf;
+}
+
+// ---- .vidproj IMPORT ----
+function homeOpenProjFile(input){
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async e => {
+    try {
+      const proj = JSON.parse(e.target.result);
+      if(proj.exportFormat!=='vidproj') throw new Error('Formato inválido');
+      await importVidproj(proj);
+    } catch(err){
+      alert('Erro ao abrir arquivo .vidproj:\n'+err.message);
+    }
+  };
+  reader.readAsText(file);
+  input.value='';
+}
+
+async function importVidproj(proj){
+  hideHome();
+  if(STATE.playing) pause();
+
+  // Link project to Id so doest collide 
+  _currentProjectId = uid('proj');
+  _currentProjectName = proj.name || 'Projeto importado';
+  document.getElementById('proj-name-display').textContent=_currentProjectName;
+
+  //Reset state
+  Object.keys(mediaElements).forEach(k=>{ const el=mediaElements[k]; if(el&&el.pause) el.pause(); delete mediaElements[k]; });
+  Object.keys(_mediaSources).forEach(k=>delete _mediaSources[k]);
+  STATE.media=[]; STATE.tracks=proj.tracks||[]; STATE.clips=proj.clips||{};
+  STATE.textClips=proj.textClips||[]; STATE.transitions=proj.transitions||{};
+  STATE.zoom=proj.zoom||100; STATE.currentTime=0; STATE.duration=proj.duration||0;
+  STATE.masterVolume=proj.masterVolume??0.8; STATE.snap=proj.snap??true;
+  STATE.undoStack=[]; STATE.redoStack=[]; STATE.selectedClipId=null;
+
+  const mediaArr = proj.media || [];
+  let pending = mediaArr.length;
+  if(pending===0){ finishImport(); return; }
+
+  for(const mInfo of mediaArr){
+    if(!mInfo.dataUri){ pending--; if(pending===0) finishImport(); continue; }
+    const [header, b64] = mInfo.dataUri.split(',');
+    const mimeType = header.replace('data:','').replace(';base64','');
+    const buf = base64ToBuf(b64);
+
+    // Store in IndexedDB 
+    await dbPut('media', {id:mInfo.id, projectId:_currentProjectId, name:mInfo.name, type:mInfo.type, mimeType, data:buf});
+
+    const blob = new Blob([buf], {type:mimeType});
+    const url  = URL.createObjectURL(blob);
+
+    if(mInfo.type==='image'){
+      const img=new Image();
+      img.onload=()=>{
+        STATE.media.push({id:mInfo.id,name:mInfo.name,type:mInfo.type,url,duration:mInfo.duration||5,width:mInfo.width||0,height:mInfo.height||0,file:null});
+        mediaElements[mInfo.id]=img;
+        pending--; if(pending===0) finishImport();
+      };
+      img.onerror=()=>{ pending--; if(pending===0) finishImport(); };
+      img.src=url;
+    } else {
+      const el=document.createElement(mInfo.type==='audio'?'audio':'video');
+      el.src=url;
+      el.onloadedmetadata=()=>{
+        STATE.media.push({id:mInfo.id,name:mInfo.name,type:mInfo.type,url,duration:el.duration,width:mInfo.width||0,height:mInfo.height||0,file:null});
+        mediaElements[mInfo.id]=el;
+        connectMediaToAudio(mInfo.id);
+        pending--; if(pending===0) finishImport();
+      };
+      el.onerror=()=>{ pending--; if(pending===0) finishImport(); };
+      el.load();
+    }
+  }
+
+  async function finishImport(){
+    // Save project record to DB
+    const snap = serialiseProject();
+    await dbPut('projects', snap);
+    renderMediaList(); renderTimeline(); drawFrame();
+    updatePlayheadPos(); updateTimeDisplay(); updateScrubber();
+    setStatus(`Projeto "${_currentProjectName}" importado com sucesso.`);
+    scheduleAutosave();
+  }
 }
 
 //PIMP Rebuild Drawcanvas func so its less laggy

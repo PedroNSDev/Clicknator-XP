@@ -1,0 +1,35 @@
+[
+  {
+    "name": "Cavaleiro",
+    "hp": 140,
+    "atk": 10,
+    "speed": 70,
+    "role": "tank",
+    "idle": "sprites/cavaleiro_idle.png",
+    "atkImg": "sprites/cavaleiro_atk.png",
+    "dmgImg": "sprites/cavaleiro_dmg.png",
+    "deadImg": "sprites/cavaleiro_dead.png"
+  },
+  {
+    "name": "Mago",
+    "hp": 80,
+    "atk": 20,
+    "speed": 65,
+    "role": "caster",
+    "idle": "sprites/mago_idle.png",
+    "atkImg": "sprites/mago_atk.png",
+    "dmgImg": "sprites/mago_dmg.png",
+    "deadImg": "sprites/mago_dead.png"
+  },
+  {
+    "name": "Arqueiro",
+    "hp": 90,
+    "atk": 14,
+    "speed": 110,
+    "role": "dps",
+    "idle": "sprites/arqueiro_idle.png",
+    "atkImg": "sprites/arqueiro_atk.png",
+    "dmgImg": "sprites/arqueiro_dmg.png",
+    "deadImg": "sprites/arqueiro_dead.png"
+  }
+]

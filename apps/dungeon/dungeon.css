@@ -1,0 +1,15 @@
+body { background:#0b0b0b; color:#ddd; font-family:monospace; margin:0; overflow:hidden }
+.nav { display:flex; gap:20px; padding:10px; background:#111 }
+.nav button { background:#222; color:#fff; border:none; padding:8px }
+#battle { position:relative; width:100vw; height:90vh }
+.enemy { position:absolute; top:20%; left:50%; transform:translateX(-50%); text-align:center }
+.enemy img { width:180px }
+.party { position:absolute; bottom:5%; left:50%; transform:translateX(-50%); display:flex; gap:20px }
+.card { width:100px; text-align:center }
+.card img { width:80px }
+.bar { height:6px; background:#222; margin:2px 0 }
+.fill { height:100%; background:#0f0 }
+.mana { background:#00f }
+.xp { background:#ff0 }
+.atk { background:#f00 }
+

@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Slime",
+    "type": "tank",
+    "hp": 100,
+    "atk": 6,
+    "speed": 50,
+    "idle": "sprites/slime.png",
+    "drops": [
+      { "item": "Gel", "chance": 0.8 },
+      { "item": "Essência", "chance": 0.2 }
+    ]
+  },
+  {
+    "name": "Goblin",
+    "type": "dps",
+    "hp": 90,
+    "atk": 10,
+    "speed": 90,
+    "idle": "sprites/goblin.png",
+    "drops": [
+      { "item": "Adaga", "chance": 0.4 },
+      { "item": "Ouro", "chance": 0.9 }
+    ]
+  }
+]

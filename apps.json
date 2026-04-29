@@ -150,6 +150,14 @@
       "icone": "▶️",
       "html": "apps/goplayer.html",
       "unlocked": true
+    },
+        {
+      "id": "Go3D",
+      "nome": "Go3D.exe",
+      "size": "fullscreen",
+      "icone": "🧊",
+      "html": "apps/3DStudio.html",
+      "unlocked": true
     }
   
 ]

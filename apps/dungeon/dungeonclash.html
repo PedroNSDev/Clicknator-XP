@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dungeon Clash</title>
+
+<style>
+body { 
+  background:#0b0b0b; 
+  color:#ddd; 
+  font-family:monospace; 
+  margin:0; 
+  overflow:hidden;
+}
+
+.nav { 
+  display:flex; 
+  gap:20px; 
+  padding:10px; 
+  background:#111;
+  justify-content: center;
+  border-bottom: 1px solid #333;
+}
+
+.nav button { 
+  background:#222; 
+  color:#fff; 
+  border:none; 
+  padding:8px 15px; 
+  cursor:pointer;
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+
+.nav button:hover { 
+  background:#444;
+  box-shadow: 0 0 10px #ffd700;
+}
+
+#dungeon-container {
+  position: relative;
+  width: 100vw;
+  height: calc(100vh - 50px);
+  overflow: hidden;
+}
+
+#battle { 
+  position:absolute;
+  top: 0;
+  left: 0;
+  width:100%;
+  height:100%;
+  display: none;
+}
+
+#battle.active {
+  display: block;
+}
+
+#menu-screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding: 40px 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  z-index: 1;
+}
+
+.enemy { 
+  position:absolute; 
+  top:20%; 
+  left:50%; 
+  transform:translateX(-50%); 
+  text-align:center;
+}
+
+.enemy img { 
+  width:180px;
+}
+
+.party { 
+  position:absolute; 
+  bottom:5%; 
+  left:50%; 
+  transform:translateX(-50%); 
+  display:flex; 
+  gap:20px;
+}
+
+.card { 
+  width:100px; 
+  text-align:center;
+}
+
+.card img { 
+  width:80px;
+}
+
+.bar { 
+  height:6px; 
+  background:#222; 
+  margin:2px 0;
+}
+
+.fill { 
+  height:100%; 
+  background:#ffd700; 
+  transition: width 0.2s;
+}
+
+.atk { 
+  background:#f00;
+}
+
+.menu-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 900px;
+}
+
+.menu-buttons { 
+  display: flex; 
+  gap: 15px; 
+  flex-wrap: wrap; 
+  margin-top: 20px;
+  justify-content: center;
+}
+
+.char-btn { 
+  background: none; 
+  border: 2px solid #555; 
+  padding: 10px; 
+  cursor: pointer; 
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.char-btn img { 
+  width: 80px; 
+  height: 80px; 
+  object-fit: cover; 
+  border-radius: 4px;
+}
+
+.char-btn div {
+  margin-top: 8px;
+  font-size: 12px;
+  text-align: center;
+}
+
+.char-btn:hover:not(:disabled) { 
+  border-color: #aaa; 
+  transform: scale(1.05);
+}
+
+.char-btn.selected { 
+  border-color: #ffd700; 
+  box-shadow: 0 0 20px #ffd700, inset 0 0 15px rgba(255, 215, 0, 0.2);
+  animation: glow 1.5s ease-in-out infinite;
+}
+
+.char-btn:disabled { 
+  opacity: 0.6; 
+  cursor: not-allowed;
+}
+
+@keyframes glow {
+  0%, 100% { 
+    box-shadow: 0 0 20px #ffd700, inset 0 0 15px rgba(255, 215, 0, 0.2);
+  }
+  50% { 
+    box-shadow: 0 0 30px #ffd700, inset 0 0 20px rgba(255, 215, 0, 0.3);
+  }
+}
+
+.start-btn { 
+  background: #282 !important; 
+  margin-top: 20px !important;
+  padding: 12px 30px !important;
+  border: 1px solid #ffd700 !important;
+  border-radius: 4px;
+  font-size: 14px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.start-btn:hover {
+  background: #3a3 !important;
+  box-shadow: 0 0 10px #ffd700;
+}
+
+.reset-btn {
+  background: #822 !important;
+  border: 1px solid #f00 !important;
+  padding: 12px 30px !important;
+  border-radius: 4px;
+  font-size: 14px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.reset-btn:hover {
+  background: #a33 !important;
+  box-shadow: 0 0 10px #f00;
+}
+
+.controls {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  justify-content: center;
+}
+
+.controls button {
+  color: white;
+  cursor: pointer;
+  border: none;
+}
+
+h2 {
+  color: #ffd700;
+  text-shadow: 0 0 10px #ffd700;
+  margin-bottom: 10px;
+}
+
+h3 {
+  color: #88f;
+  margin-top: 20px;
+}
+
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay.active {
+  display: flex;
+}
+
+.modal {
+  background: #0b0b0b;
+  border: 2px solid #ffd700;
+  border-radius: 8px;
+  padding: 30px;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+  width: 90%;
+  box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modal-header h2 {
+  margin: 0;
+}
+
+.close-btn {
+  background: #822;
+  border: 1px solid #f00;
+  color: white;
+  padding: 5px 15px;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.3s;
+}
+
+.close-btn:hover {
+  background: #a33;
+  box-shadow: 0 0 10px #f00;
+}
+
+.items-container {
+  width: 100%;
+}
+
+.item-row {
+  margin: 10px 0;
+  padding: 10px;
+  background: #1a1a1a;
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.item-row button {
+  background: #333;
+  color: #fff;
+  border: 1px solid #555;
+  padding: 5px 15px;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.3s;
+}
+
+.item-row button:hover {
+  background: #ffd700;
+  color: #000;
+}
+
+.shop-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin: 15px 0;
+  padding: 15px;
+  background: #1a1a1a;
+  border-radius: 4px;
+  border: 1px solid #333;
+}
+
+.shop-item img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.shop-item-info {
+  flex: 1;
+}
+
+.shop-item-info h4 {
+  margin: 0 0 5px 0;
+  color: #ffd700;
+}
+
+.shop-item-info p {
+  margin: 0;
+  font-size: 12px;
+  color: #aaa;
+}
+
+.shop-item button {
+  background: #282;
+  color: #fff;
+  border: 1px solid #ffd700;
+  padding: 8px 15px;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.3s;
+}
+
+.shop-item button:hover {
+  background: #3a3;
+  box-shadow: 0 0 10px #ffd700;
+}
+
+.empty-message {
+  color: #888;
+  font-size: 14px;
+  margin-top: 20px;
+}
+
+.char-selector-buttons {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+  justify-content: center;
+}
+</style>
+</head>
+
+<body>
+
+<div class="nav">
+<button onclick="toggleDungeon()">Dungeon</button>
+<button onclick="openInventory()">Inventário</button>
+<button onclick="openShop()">Loja</button>
+</div>
+
+<div id="dungeon-container">
+  <div id="menu-screen">
+    <div class="menu-container">
+      <h2>Escolha seu time (até 5 personagens únicos)</h2>
+      <div id="char-selector" class="char-selector-buttons"></div>
+      <div class="controls">
+        <button id="start-btn" class="start-btn">Iniciar Jogo</button>
+        <button id="reset-btn" class="reset-btn">Limpar Time</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="battle"></div>
+</div>
+
+<div id="inventory-modal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Inventário - Seu Time</h2>
+      <button class="close-btn" onclick="closeInventory()">Fechar</button>
+    </div>
+    <div id="inventory-chars" class="menu-buttons"></div>
+    <div id="inventory-items" class="items-container"></div>
+  </div>
+</div>
+
+<div id="shop-modal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="shop-title">Loja - Ouro: 0</h2>
+      <button class="close-btn" onclick="closeShop()">Fechar</button>
+    </div>
+    <div id="shop-items" class="items-container"></div>
+  </div>
+</div>
+
+<script>
+const state = {
+  personagens: [],
+  inimigos: [],
+  itens: [],
+  
+  party: [],
+  inventory: [],
+  selectedChar: null,
+  enemy: null,
+  room: 0,
+  loop: null,
+  gold: 0,
+  inBattle: false,
+  menuVisible: true,
+  shopItems: [
+    { name: "Espada", type: "weapon", atk: 5, price: 100 },
+    { name: "Armadura", type: "armor", hp: 20, price: 150 },
+    { name: "Adaga", type: "weapon", atk: 3, speed: 10, price: 50 },
+    { name: "Essência", type: "consumable", effect: "mana", price: 75 }
+  ]
+}
+
+function toggleDungeon(){
+  if (state.inBattle) return;
+  
+  const menuScreen = document.getElementById('menu-screen');
+  
+  state.menuVisible = !state.menuVisible;
+  
+  if (state.menuVisible) {
+    menuScreen.style.display = 'flex';
+  } else {
+    menuScreen.style.display = 'none';
+  }
+}
+
+function renderMenuScreen(){
+  const charSelector = document.getElementById('char-selector');
+  charSelector.innerHTML = '';
+
+  state.personagens.forEach(p => {
+    const b = document.createElement('button')
+    b.className = 'char-btn';
+    
+    const isAlreadyInParty = state.party.some(member => member.name === p.name);
+    const img = document.createElement('img');
+    img.src = p.idle;
+    img.alt = p.name;
+    img.onerror = function() { this.src = 'sites/images (4).jpg' + p.name[0]; };
+    b.appendChild(img);
+    
+    const label = document.createElement('div');
+    label.innerText = p.name;
+    b.appendChild(label);
+    
+    if (isAlreadyInParty) {
+      b.classList.add('selected');
+      b.disabled = true;
+    }
+    
+    b.onclick = () => {
+      if(state.party.length < 5 && !state.party.some(member => member.name === p.name)){
+        const clone = JSON.parse(JSON.stringify(p))
+        clone.equip = { weapon: null, armor: null }
+        clone.baseAtk = clone.atk
+        clone.baseHp = clone.hp
+        clone.maxHp = clone.hp
+        state.party.push(clone)
+        renderMenuScreen();
+      }
+    }
+    charSelector.appendChild(b)
+  })
+}
+
+function openInventory(){
+  const modal = document.getElementById('inventory-modal');
+  modal.classList.add('active');
+  
+  if (!state.selectedChar && state.party.length > 0) {
+    state.selectedChar = state.party[0];
+  }
+
+  const charsDiv = document.getElementById('inventory-chars');
+  charsDiv.innerHTML = '';
+
+  state.party.forEach((c) => {
+    const btn = document.createElement('button')
+    btn.className = 'char-btn';
+    
+    const img = document.createElement('img');
+    img.src = c.idle;
+    img.alt = c.name;
+    img.onerror = function() { this.src = 'sites/images (4).jpg' + c.name[0]; };
+    btn.appendChild(img);
+    
+    const label = document.createElement('div');
+    label.innerText = c.name;
+    btn.appendChild(label);
+    
+    if (state.selectedChar === c) {
+      btn.classList.add('selected');
+    }
+    
+    btn.onclick = () => {
+      state.selectedChar = c
+      openInventory();
+    }
+    charsDiv.appendChild(btn)
+  })
+
+  renderInventoryItems();
+}
+
+function renderInventoryItems(){
+  const container = document.getElementById('inventory-items');
+  container.innerHTML = '<h3>Itens Disponíveis</h3>'
+  if (state.inventory.length === 0) {
+    const msg = document.createElement('div');
+    msg.className = 'empty-message';
+    msg.innerText = 'Nenhum item no inventário.';
+    container.appendChild(msg);
+    return;
+  }
+
+  state.inventory.forEach((item, index) => {
+    const div = document.createElement('div')
+    div.className = 'item-row';
+    
+    const info = document.createElement('span');
+    info.innerText = `${item.name} (${item.type}) ${item.atk ? '+'+item.atk+' ATK' : ''} ${item.hp ? '+'+item.hp+' HP' : ''}`;
+    div.appendChild(info);
+    
+    const btn = document.createElement('button');
+    btn.innerText = 'Equipar';
+    btn.onclick = () => {
+      if(!state.selectedChar){
+        alert('Escolha um personagem primeiro')
+        return
+      }
+      equipItemToChar(item, state.selectedChar);
+      state.inventory.splice(index, 1);
+      openInventory();
+    };
+    div.appendChild(btn);
+    
+    container.appendChild(div)
+  })
+}
+
+function closeInventory(){
+  document.getElementById('inventory-modal').classList.remove('active');
+}
+
+function openShop(){
+  const modal = document.getElementById('shop-modal');
+  modal.classList.add('active');
+  
+  document.getElementById('shop-title').innerText = 'Loja - Ouro: ' + state.gold;
+  
+  const itemsDiv = document.getElementById('shop-items');
+  itemsDiv.innerHTML = '';
+  
+  state.shopItems.forEach((item) => {
+    const div = document.createElement('div');
+    div.className = 'shop-item';
+    
+    const img = document.createElement('img');
+    img.src = 'sites/images (4).jpg' + item.name[0];
+    div.appendChild(img);
+    
+    const info = document.createElement('div');
+    info.className = 'shop-item-info';
+    
+    const name = document.createElement('h4');
+    name.innerText = item.name;
+    info.appendChild(name);
+    
+    const desc = document.createElement('p');
+    desc.innerText = `${item.type} - ${item.atk ? 'ATK: +'+item.atk : ''} ${item.hp ? 'HP: +'+item.hp : ''} ${item.speed ? 'SPD: +'+item.speed : ''}`;
+    info.appendChild(desc);
+    
+    const price = document.createElement('p');
+    price.style.color = '#ffd700';
+    price.innerText = 'Preço: ' + item.price + ' ouro';
+    info.appendChild(price);
+    div.appendChild(info);
+    const btn = document.createElement('button');
+    btn.innerText = 'Comprar';
+    btn.onclick = () => {
+      if (state.gold >= item.price) {
+        state.gold -= item.price;
+        const newItem = JSON.parse(JSON.stringify(item));
+        state.inventory.push(newItem);
+        openShop();
+      } else {
+        alert('Ouro insuficiente!');
+      }
+    }
+    div.appendChild(btn);
+    
+    itemsDiv.appendChild(div);
+  });
+}
+
+function closeShop(){
+  document.getElementById('shop-modal').classList.remove('active');
+}
+
+function equipItemToChar(item, char) {
+  if (item.type === 'weapon') char.equip.weapon = item;
+  if (item.type === 'armor') char.equip.armor = item;
+  recalcStats(char);
+}
+
+function startGame(){
+  state.inBattle = true;
+  state.menuVisible = false;
+  document.getElementById('menu-screen').style.display = 'none';
+  document.getElementById('battle').classList.add('active');
+  state.room = 0
+  nextRoom()
+}
+
+function nextRoom(){
+  state.room++
+  spawnEnemy()
+  state.party.forEach(c => recalcStats(c))
+  renderBattle()
+  renderMonster()
+  startLoop()
+}
+
+function spawnEnemy(){
+  const base = state.inimigos[Math.floor(Math.random()*state.inimigos.length)]
+  state.enemy = JSON.parse(JSON.stringify(base))
+
+  state.enemy.maxHp = base.hp + (state.room - 1) * 15
+  state.enemy.hp = state.enemy.maxHp
+  state.enemy.atk += (state.room - 1) * 2
+  state.enemy.atkProg = 0
+}
+
+function renderBattle() {
+  const el = document.getElementById('battle');
+  
+  let battleDiv = el.querySelector('#battle-content');
+  if (!battleDiv) {
+    el.innerHTML = `
+      <div id='battle-content' style="position:relative; width:100%; height:100%;">
+        <div id='enemy-container'></div> 
+        <div class='party'></div>
+      </div>`;
+    battleDiv = el.querySelector('#battle-content');
+    
+    const pdiv = battleDiv.querySelector('.party');
+    state.party.forEach((c, i) => {
+      c.atkProg = 0;
+      const d = document.createElement('div');
+      d.className = 'card';
+      d.innerHTML = `
+        <img id='pimg-${i}' src='${c.idle}' onerror="this.src='sites/images (4).jpg'">
+        <div class='bar'><div id='php-${i}' class='fill'></div></div>
+        <div class='bar'><div id='patk-${i}' class='fill atk'></div></div>
+      `;
+      pdiv.appendChild(d);
+    });
+  } else {
+    state.party.forEach((c, i) => {
+      c.atkProg = 0;
+    });
+  }
+}
+
+function renderMonster() {
+  const container = document.getElementById('enemy-container');// PIMP Ajustar dps
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class='enemy'>
+      <img id='enemy-img' src='${state.enemy.idle}' onerror="this.src='https://via.placeholder.com/150?text=${state.enemy.name}'">
+      <div class='bar'>
+        <div id='enemy-hp' class='fill' style="width: 100%"></div>
+      </div>
+      <div class='bar'>
+        <div id='enemy-atk' class='fill atk' style="width: 0%"></div>
+      </div>
+      <div style="margin-top:5px">${state.enemy.name} (Sala ${state.room})</div>
+    </div>
+  `;
+}
+
+function startLoop(){
+  if(state.loop) clearInterval(state.loop)
+
+  state.loop = setInterval(()=>{
+    if (!state.inBattle) {
+      return;
+    }
+    
+    if(state.party.length === 0){
+      clearInterval(state.loop)
+      state.inBattle = false;
+      state.menuVisible = true;
+      document.getElementById('battle').classList.remove('active');
+      document.getElementById('menu-screen').style.display = 'flex';
+      alert("Game Over! Seu time foi derrotado.");
+      return
+    }
+
+    if(state.enemy.hp <= 0){
+      clearInterval(state.loop)
+      state.gold += state.room * 10;
+      dropLoot()
+      setTimeout(nextRoom, 1000);
+      return
+    }
+
+    updateCombat()
+    updateUI()
+  }, 50)
+}
+
+function recalcStats(char) {
+  const baseAtk = char.baseAtk || char.atk;
+  const baseHp = char.baseHp || char.hp;
+
+  char.atk = baseAtk + (char.equip?.weapon?.atk || 0);
+  
+  const oldMaxHp = char.maxHp || baseHp;
+  char.maxHp = baseHp + (char.equip?.armor?.hp || 0);
+  
+  if (char.hp === undefined) {
+    char.hp = char.maxHp;
+  } else {
+    const ratio = char.hp / oldMaxHp;
+    char.hp = char.maxHp * ratio;
+  }
+}
+
+function updateCombat(){
+  state.party.forEach((c,i)=>{
+    c.atkProg += c.speed/50
+
+    if(c.atkProg >= 100){
+      c.atkProg = 0
+      const img = document.getElementById(`pimg-${i}`)
+      if(img){
+        const originalSrc = img.src;
+        img.src = c.atkImg;
+        setTimeout(()=> { if(img) img.src = originalSrc }, 150)
+      }
+
+      flashEnemy()
+      createDamage(window.innerWidth/2, window.innerHeight*0.25, c.atk)
+      state.enemy.hp -= c.atk
+    }
+  })
+
+  if (state.enemy.hp > 0) {
+    state.enemy.atkProg += state.enemy.speed/50
+    if(state.enemy.atkProg >= 100){
+      state.enemy.atkProg = 0
+      const i = Math.floor(Math.random()*state.party.length)
+      const target = state.party[i]
+
+      if(target){
+        flashPlayer(i)
+        createDamage(window.innerWidth/2 - 100 + i*100, window.innerHeight*0.7, state.enemy.atk)
+        target.hp -= state.enemy.atk
+        if(target.hp <= 0) state.party.splice(i,1)
+      }
+    }
+  }
+}
+
+function updateUI(){
+  state.party.forEach((c,i)=>{
+    const hp = document.getElementById(`php-${i}`)
+    const atk = document.getElementById(`patk-${i}`)
+    if(hp) hp.style.width = Math.max(0, (c.hp / c.maxHp) * 100) + '%'
+    if(atk) atk.style.width = c.atkProg + '%'
+  })
+
+  const e = document.getElementById('enemy-hp')
+  if(e) e.style.width = Math.max(0, (state.enemy.hp / state.enemy.maxHp) * 100) + '%'
+  
+  const eAtk = document.getElementById('enemy-atk')
+  if(eAtk) eAtk.style.width = state.enemy.atkProg + '%'
+}
+
+function dropLoot(){
+  if (!state.enemy.drops) return;
+  state.enemy.drops.forEach(d => {
+    if(Math.random() < d.chance){
+      const itemData = state.itens.find(i => i.name === d.item)
+      if(itemData) {
+        state.inventory.push(JSON.parse(JSON.stringify(itemData)));
+      }
+    }
+  })
+}
+
+function flashEnemy(){
+  const el = document.getElementById('enemy-img')
+  if(!el) return
+  el.style.filter = 'brightness(2)'
+  setTimeout(()=> { if(el) el.style.filter = 'none' }, 80)
+}
+
+function flashPlayer(i){
+  const el = document.getElementById(`pimg-${i}`)
+  if(!el) return
+  el.style.filter = 'brightness(2)'
+  setTimeout(()=> { if(el) el.style.filter = 'none' }, 80)
+}
+
+function createDamage(x,y,val){
+  const d = document.createElement('div')
+  d.innerText = val
+  d.style.position='fixed'
+  d.style.left=x+'px'
+  d.style.top=y+'px'
+  d.style.color='#ffd700'
+  d.style.fontWeight='bold'
+  d.style.fontSize='24px'
+  d.style.pointerEvents='none'
+  d.style.transition='all 0.6s ease-out'
+  d.style.textShadow='0 0 5px #ffd700'
+  d.style.zIndex='50'
+  document.body.appendChild(d)
+
+  setTimeout(()=>{
+    d.style.top=(y-80)+'px'
+    d.style.opacity='0'
+  },50)
+  setTimeout(()=>d.remove(),600)
+}
+
+async function loadData(){
+  try {
+    const [p, i, it] = await Promise.all([
+      fetch('personagens.json').then(r=>r.json()),
+      fetch('inimigos.json').then(r=>r.json()),
+      fetch('itens.json').then(r=>r.json())
+    ])
+
+    state.personagens = p
+    state.inimigos = i
+    state.itens = it
+    
+    renderMenuScreen();
+    
+    document.getElementById('start-btn').onclick = () => {
+      if (state.party.length > 0) {
+        startGame();
+      } else {
+        alert("Escolha pelo menos um personagem!");
+      }
+    }
+    
+    document.getElementById('reset-btn').onclick = () => {
+      state.party = [];
+      state.selectedChar = null;
+      renderMenuScreen();
+    }
+  } catch (err) {
+    console.error("Erro ao carregar JSONs:", err);
+    document.getElementById('menu-screen').innerHTML = "Erro ao carregar arquivos JSON";
+  }
+}
+
+loadData()
+</script>
+
+</body>
+</html>
