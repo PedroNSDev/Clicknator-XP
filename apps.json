@@ -34,7 +34,7 @@
     "id": "dungeonclash",
     "nome": "DungeonClash",
     "icone": "🤺",
-    "html": "apps/dungeon.html",
+    "html": "apps/dungeon/dungeon.html",
     "ram": 100
   },
   {

@@ -1,35 +1,75 @@
 [
   {
-    "name": "Cavaleiro",
-    "hp": 140,
+    "name": "Punchy",
+    "hp": 60,
     "atk": 10,
-    "speed": 70,
-    "role": "tank",
-    "idle": "sprites/cavaleiro_idle.png",
-    "atkImg": "sprites/cavaleiro_atk.png",
-    "dmgImg": "sprites/cavaleiro_dmg.png",
-    "deadImg": "sprites/cavaleiro_dead.png"
-  },
-  {
-    "name": "Mago",
-    "hp": 80,
-    "atk": 20,
-    "speed": 65,
-    "role": "caster",
-    "idle": "sprites/mago_idle.png",
-    "atkImg": "sprites/mago_atk.png",
-    "dmgImg": "sprites/mago_dmg.png",
-    "deadImg": "sprites/mago_dead.png"
-  },
-  {
-    "name": "Arqueiro",
-    "hp": 90,
-    "atk": 14,
-    "speed": 110,
+    "speed": 400,
     "role": "dps",
-    "idle": "sprites/arqueiro_idle.png",
-    "atkImg": "sprites/arqueiro_atk.png",
-    "dmgImg": "sprites/arqueiro_dmg.png",
-    "deadImg": "sprites/arqueiro_dead.png"
+    "idle":    "assets/characters/punchy_idle.png",
+    "icon":    "assets/characters/punchy.png",
+    "atkImg":  "assets/characters/punchy_atk.png",
+    "dmgImg":  "assets/characters/punchy_dmg.png",
+    "deadImg": "assets/characters/deadfb.png"
+  },
+  {
+    "name": "Stonkius",
+    "hp": 130,
+    "atk": 7,
+    "speed": 75,
+    "role": "tank",
+    "idle":    "assets/characters/stonk_idle.png",
+    "icon":    "assets/characters/knight.png",
+    "atkImg":  "assets/characters/stonk_atk.png",
+    "dmgImg":  "assets/characters/stonk_dmg.png",
+    "deadImg": "assets/characters/deadfb.png"
+  },
+  {
+    "name": "Mage",
+    "hp": 45,
+    "atk": 16,
+    "speed": 130,
+    "role": "mage",
+    "idle":    "assets/characters/mage_idle.webp",
+    "icon":    "assets/characters/mage.png",
+    "atkImg":  "assets/characters/wiz_atk.png",
+    "dmgImg":  "assets/characters/wiz_dmg.png",
+    "deadImg": "assets/characters/deadfb.png"
+  },
+  {
+    "name": "Gambler",
+    "hp": 55,
+    "atk": 14,
+    "speed": 200,
+    "role": "rogue",
+    "idle":    "assets/characters/shade_idle.png",
+    "icon":    "assets/icons/shade_icon.png",
+    "atkImg":  "assets/characters/shade_atk.png",
+    "dmgImg":  "assets/characters/shade_dmg.png",
+    "deadImg": "assets/characters/deadfb.png"
+  },
+  {
+    "name": "Healer",
+    "hp": 70,
+    "atk": 8,
+    "speed": 90,
+    "role": "healer",
+    "idle":    "assets/characters/lyra_idle.png",
+    "icon":    "assets/icons/lyra_icon.png",
+    "atkImg":  "assets/characters/lyra_atk.png",
+    "dmgImg":  "assets/characters/lyra_dmg.png",
+    "deadImg": "assets/characters/deadfb.png"
+  },
+    {
+    "name": "Automato",
+    "hp": 70,
+    "atk": 8,
+    "speed": 90,
+    "role": "VERS",
+    "idle":    "assets/characters/lyra_idle.png",
+    "icon":    "assets/icons/lyra_icon.png",
+    "atkImg":  "assets/characters/lyra_atk.png",
+    "dmgImg":  "assets/characters/lyra_dmg.png",
+    "deadImg": "assets/characters/deadfb.png"
   }
+  
 ]

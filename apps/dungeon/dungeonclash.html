@@ -4,912 +4,1026 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dungeon Clash</title>
-
 <style>
-body { 
-  background:#0b0b0b; 
-  color:#ddd; 
-  font-family:monospace; 
-  margin:0; 
-  overflow:hidden;
+@import url('https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=Share+Tech+Mono&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --gold:    #c8a84b;
+  --gold-lo: #7a6224;
+  --bg:      #0a0a0a;
+  --bg2:     #111;
+  --bg3:     #1a1a1a;
+  --border:  #252525;
+  --text:    #bbb;
+  --text2:   #666;
 }
 
-.nav { 
-  display:flex; 
-  gap:20px; 
-  padding:10px; 
-  background:#111;
-  justify-content: center;
-  border-bottom: 1px solid #333;
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: var(--bg); color: var(--text);
+  font-family: 'Share Tech Mono', monospace; font-size: 13px;
 }
 
-.nav button { 
-  background:#222; 
-  color:#fff; 
-  border:none; 
-  padding:8px 15px; 
-  cursor:pointer;
-  border-radius: 4px;
-  transition: all 0.3s;
+/* NAV */
+#nav {
+  display: flex; align-items: stretch; height: 44px;
+  background: #080808; border-bottom: 1px solid var(--border);
+  position: relative; z-index: 10;
+}
+.nav-tab {
+  display: flex; align-items: center; gap: 6px; padding: 0 18px;
+  background: none; border: none; border-right: 1px solid var(--border);
+  border-bottom: 2px solid transparent; color: var(--text2); cursor: pointer;
+  font-family: inherit; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase;
+  transition: color .2s, border-color .2s, background .2s;
+}
+.nav-tab:hover { color: var(--text); background: var(--bg2); }
+.nav-tab.active { color: var(--gold); border-bottom-color: var(--gold); background: var(--bg2); }
+#nav-gold {
+  margin-left: auto; display: flex; align-items: center; padding: 0 18px;
+  color: var(--gold); font-size: 13px; border-left: 1px solid var(--border); gap: 5px;
 }
 
-.nav button:hover { 
-  background:#444;
-  box-shadow: 0 0 10px #ffd700;
-}
+/* SCREENS */
+#app { position: relative; width: 100%; height: calc(100vh - 44px); }
+.screen { position: absolute; inset: 0; display: none; overflow: hidden; }
+.screen.active { display: block; }
 
-#dungeon-container {
-  position: relative;
-  width: 100vw;
-  height: calc(100vh - 50px);
-  overflow: hidden;
-}
-
-#battle { 
-  position:absolute;
-  top: 0;
-  left: 0;
-  width:100%;
-  height:100%;
-  display: none;
-}
-
-#battle.active {
-  display: block;
-}
-
+/* MENU */
 #menu-screen {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  padding: 40px 20px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  z-index: 1;
+  overflow-y: auto; display: flex; flex-direction: column; align-items: center;
+  padding: 28px 20px 40px; gap: 20px;
+  background: radial-gradient(ellipse at top, #110a00 0%, var(--bg) 70%);
 }
-
-.enemy { 
-  position:absolute; 
-  top:20%; 
-  left:50%; 
-  transform:translateX(-50%); 
-  text-align:center;
+#menu-screen.active { display: flex; }
+.menu-logo {
+  font-family: 'UnifrakturMaguntia', cursive; font-size: 38px; color: var(--gold);
+  text-shadow: 0 0 30px #c8a84b55, 0 2px 0 #000; letter-spacing: 3px;
 }
-
-.enemy img { 
-  width:180px;
+.menu-sub { color: var(--text2); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin-top: -12px; }
+.party-slots { display: flex; gap: 6px; }
+.p-slot {
+  width: 44px; height: 44px; border: 1px solid var(--border); border-radius: 3px;
+  background: var(--bg2); display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: var(--text2); overflow: hidden; transition: border-color .2s;
 }
-
-.party { 
-  position:absolute; 
-  bottom:5%; 
-  left:50%; 
-  transform:translateX(-50%); 
-  display:flex; 
-  gap:20px;
+.p-slot.filled { border-color: var(--gold-lo); }
+.p-slot img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
+.char-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; max-width: 680px; }
+.char-tile {
+  width: 96px; background: var(--bg2); border: 1px solid var(--border); border-radius: 3px;
+  padding: 10px 8px 8px; cursor: pointer; display: flex; flex-direction: column;
+  align-items: center; gap: 5px; transition: border-color .2s, background .2s, transform .15s; position: relative;
 }
+.char-tile:hover:not(.in-party) { border-color: #444; background: var(--bg3); transform: translateY(-2px); }
+.char-tile.in-party { border-color: var(--gold-lo); background: #150f00; cursor: default; }
+.char-tile.in-party::after { content: '✓'; position: absolute; top: 4px; right: 6px; color: var(--gold); font-size: 11px; }
+.char-tile .tile-icon { width: 60px; height: 60px; object-fit: cover; object-position: top; image-rendering: auto; border-radius: 2px; }
+.char-tile .tile-name { font-size: 11px; color: var(--text); text-align: center; }
+.char-tile .tile-role { font-size: 9px; color: var(--text2); letter-spacing: 1px; text-transform: uppercase; }
+.char-tile .tile-lv   { font-size: 10px; color: var(--gold); }
+.menu-controls { display: flex; gap: 10px; }
+.btn { font-family: inherit; font-size: 12px; letter-spacing: 1px; padding: 9px 22px; border-radius: 2px; cursor: pointer; transition: all .2s; text-transform: uppercase; }
+.btn-go  { background: #0f1f0f; color: #4d9; border: 1px solid #4d9; }
+.btn-go:hover { background: #162a16; box-shadow: 0 0 12px #2d93; }
+.btn-go:disabled { opacity: .3; cursor: not-allowed; }
+.btn-del { background: #1f0f0f; color: #e55; border: 1px solid #a33; }
+.btn-del:hover { background: #2a1515; }
 
-.card { 
-  width:100px; 
-  text-align:center;
+/* BATTLE */
+#battle-screen { background: radial-gradient(ellipse at 50% 30%, #140800 0%, var(--bg) 65%); }
+.battle-hud { position: absolute; top: 10px; right: 14px; text-align: right; color: var(--text2); font-size: 11px; letter-spacing: 1px; z-index: 5; }
+.battle-hud .room-label { color: var(--text); font-size: 13px; }
+
+/* ENEMY ZONE */
+.enemy-zone {
+  position: absolute; top: 8%; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 6px; z-index: 2;
 }
-
-.card img { 
-  width:80px;
+/* Wrapper persists between rooms; only its CONTENTS change */
+.enemy-img-wrap {
+  width: 160px; height: 160px;
+  display: flex; align-items: center; justify-content: center;
 }
+.enemy-img-wrap img { max-width: 160px; max-height: 160px; image-rendering: pixelated; display: block; }
+.e-ph { width: 120px; height: 120px; border-radius: 4px; background: #1a0000; display: flex; align-items: center; justify-content: center; font-size: 40px; color: #500; font-family: 'UnifrakturMaguntia', cursive; }
+.enemy-info { text-align: center; }
+.enemy-title { color: var(--text); font-size: 12px; letter-spacing: 1px; }
+.enemy-bars { display: flex; flex-direction: column; gap: 3px; width: 160px; }
 
-.bar { 
-  height:6px; 
-  background:#222; 
-  margin:2px 0;
+/* BARS */
+.bar { height: 5px; background: #161616; border-radius: 1px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 1px; transition: width .15s linear; }
+.bar-wide { height: 6px; width: 160px; }
+.b-hp   .bar-fill { background: linear-gradient(90deg,#27ae60,#2ecc71); }
+.b-eatk .bar-fill { background: linear-gradient(90deg,#922,#e44); }
+.b-ehp  .bar-fill { background: linear-gradient(90deg,#b22,#e33); }
+.b-xp   .bar-fill { background: linear-gradient(90deg,#1a4a8a,#3498db); }
+.b-atk  .bar-fill { background: linear-gradient(90deg,#811,#c33); }
+
+/* PARTY SECTION */
+.party-section {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  display: flex; justify-content: center; align-items: flex-end; gap: 8px; padding: 0 12px 12px;
+  background: linear-gradient(transparent, rgba(0,0,0,.75) 50%); z-index: 3;
 }
-
-.fill { 
-  height:100%; 
-  background:#ffd700; 
-  transition: width 0.2s;
+.battle-card {
+  display: flex; flex-direction: column; align-items: center; width: 76px; gap: 3px;
+  transition: opacity .4s, filter .4s; position: relative; cursor: default;
 }
+.battle-card.dead { opacity: .28; filter: grayscale(1); }
 
-.atk { 
-  background:#f00;
+/* Wrappers — same node stays in DOM, only innerHTML changes on onerror */
+.card-body-wrap {
+  width: 72px; height: 148px; display: flex; align-items: flex-end; justify-content: center; overflow: hidden;
 }
+.card-body-wrap img { max-width: 72px; max-height: 148px; image-rendering: pixelated; object-fit: cover; object-position: top; display: block; }
+.c-ph { width: 72px; height: 148px; background: var(--bg3); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 28px; color: var(--text2); }
+.card-icon-wrap { width: 70px; height: 70px; border: 1px solid var(--border); border-radius: 2px; overflow: hidden;}
+.card-icon-wrap img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; display: block; image-rendering: auto; }
+.ci-ph { width: 100%; height: 100%; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--text2); }
+.card-bars { width: 100%; display: flex; flex-direction: column; gap: 2px; }
 
-.menu-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  max-width: 900px;
+/* HOVER TOOLTIP */
+#char-tooltip {
+  display: none; position: fixed; z-index: 400;
+  background: rgba(6,6,6,.97); border: 1px solid var(--gold-lo); border-radius: 3px;
+  padding: 12px 14px; min-width: 185px; max-width: 230px; pointer-events: none;
+  box-shadow: 0 4px 28px rgba(0,0,0,.8), 0 0 0 1px #000;
 }
-
-.menu-buttons { 
-  display: flex; 
-  gap: 15px; 
-  flex-wrap: wrap; 
-  margin-top: 20px;
-  justify-content: center;
+#char-tooltip.visible { display: block; }
+.tt-name { color: var(--gold); font-size: 13px; letter-spacing: 1px; margin-bottom: 3px; }
+.tt-role { font-size: 9px; color: #3a8; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 5px; }
+.tt-lv   { font-size: 10px; color: var(--text2); margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.tt-bar-row { margin-bottom: 5px; }
+.tt-bar-label { font-size: 9px; color: var(--text2); letter-spacing: 1px; margin-bottom: 2px; }
+.tt-bar { height: 5px; background: #1a1a1a; border-radius: 1px; overflow: hidden; }
+.tt-fill { height: 100%; border-radius: 1px; }
+.tt-fill.hp-fill { background: linear-gradient(90deg,#1a7a3a,#2ecc71); }
+.tt-fill.xp-fill { background: linear-gradient(90deg,#1a4a8a,#3498db); }
+.tt-bar-val { font-size: 9px; color: var(--text2); margin-top: 1px; text-align: right; }
+.tt-slots { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); }
+.tt-slot-label { font-size: 9px; color: var(--text2); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px; }
+.tt-slot-row {
+  display: flex; align-items: center; gap: 7px; margin-bottom: 4px;
+  padding: 4px 6px; background: var(--bg3); border-radius: 2px; border: 1px solid var(--border);
 }
+.tt-slot-icon { font-size: 12px; width: 16px; text-align: center; }
+.tt-slot-text { font-size: 10px; }
+.tt-slot-text.empty  { color: var(--text2); }
+.tt-slot-text.filled { color: var(--gold); }
 
-.char-btn { 
-  background: none; 
-  border: 2px solid #555; 
-  padding: 10px; 
-  cursor: pointer; 
-  transition: all 0.3s ease;
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+/* MODALS */
+.modal-wrap { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.82); z-index: 100; align-items: center; justify-content: center; }
+.modal-wrap.open { display: flex; }
+.modal-box { background: var(--bg2); border: 1px solid #333; border-radius: 4px; width: 90%; max-width: 520px; max-height: 82vh; overflow-y: auto; display: flex; flex-direction: column; }
+.modal-head { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg2); z-index: 1; }
+.modal-head h2 { color: var(--gold); font-size: 14px; letter-spacing: 2px; font-weight: normal; }
+.btn-close { font-family: inherit; font-size: 11px; letter-spacing: 1px; background: #1f0f0f; color: #e55; border: 1px solid #633; padding: 4px 12px; border-radius: 2px; cursor: pointer; transition: all .2s; }
+.btn-close:hover { background: #2a1515; }
+.modal-body { padding: 18px 20px 24px; }
+.section-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text2); border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 12px; }
+.inv-chars { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.inv-char-btn { display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--bg3); border: 1px solid var(--border); border-radius: 3px; padding: 8px; cursor: pointer; font-family: inherit; font-size: 10px; color: var(--text2); transition: all .2s; }
+.inv-char-btn img { width: 44px; height: 44px; object-fit: cover; image-rendering: pixelated; }
+.inv-char-btn:hover { border-color: #444; color: var(--text); }
+.inv-char-btn.sel   { border-color: var(--gold); color: var(--gold); }
+.inv-char-btn .role-tag { color: #3a8; font-size: 9px; letter-spacing: 1px; }
+.item-row { display: flex; align-items: center; gap: 12px; background: var(--bg3); border: 1px solid var(--border); border-radius: 3px; padding: 10px 12px; margin-bottom: 7px; }
+.item-row .item-info { flex: 1; }
+.item-name-label { color: var(--text); font-size: 12px; }
+.item-stat-label { color: var(--text2); font-size: 10px; margin-top: 2px; }
+.item-role-label { color: #3a8; font-size: 10px; margin-top: 2px; }
+.btn-equip { font-family: inherit; font-size: 11px; background: #0f1f0f; color: #4d9; border: 1px solid #2a7a4a; padding: 5px 12px; border-radius: 2px; cursor: pointer; transition: all .2s; white-space: nowrap; }
+.btn-equip:hover:not(:disabled) { background: #162a16; }
+.btn-equip:disabled { opacity: .35; cursor: not-allowed; }
+.btn-equip.role-mismatch { color: #e55; border-color: #633; background: #1f0f0f; cursor: not-allowed; }
+.shop-row { display: flex; align-items: center; gap: 12px; background: var(--bg3); border: 1px solid var(--border); border-radius: 3px; padding: 12px; margin-bottom: 8px; }
+.shop-info { flex: 1; }
+.shop-name  { color: var(--gold); font-size: 12px; margin-bottom: 3px; }
+.shop-stats { color: var(--text2); font-size: 10px; }
+.shop-roles { color: #3a8; font-size: 10px; margin-top: 2px; }
+.shop-price { color: var(--gold); font-size: 11px; margin-top: 4px; }
+.btn-buy { font-family: inherit; font-size: 11px; background: #0f1f0f; color: #4d9; border: 1px solid #2a7a4a; padding: 7px 14px; border-radius: 2px; cursor: pointer; transition: all .2s; white-space: nowrap; }
+.btn-buy:hover:not(:disabled) { background: #162a16; box-shadow: 0 0 8px #2d82; }
+.btn-buy:disabled { opacity: .35; cursor: not-allowed; }
+.empty-note { color: var(--text2); font-size: 12px; text-align: center; padding: 24px 0; letter-spacing: 1px; }
+
+/* FLOATING DAMAGE */
+.dmg { position: fixed; pointer-events: none; z-index: 201; font-size: 22px; font-weight: bold; text-shadow: 0 1px 4px #000; transition: top .65s ease-out, opacity .65s ease-out; }
+
+/* NOTIF */
+.notif { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: var(--bg2); border: 1px solid var(--gold); color: var(--gold); padding: 7px 20px; border-radius: 3px; font-size: 12px; letter-spacing: 1px; z-index: 300; pointer-events: none; animation: notifIn .4s ease; }
+@keyframes notifIn { from { opacity:0; transform:translateX(-50%) translateY(10px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+
+@keyframes lv-flash { 0%,100%{filter:brightness(1);} 40%{filter:brightness(4) drop-shadow(0 0 12px #ffd700);} }
+.lv-flash { animation: lv-flash .6s ease; }
+
+/* EXIT BUTTON */
+#btn-exit {
+  position: absolute; top: 10px; left: 14px; z-index: 20;
+  font-family: inherit; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+  background: #1a0a0a; color: #c55; border: 1px solid #622;
+  padding: 7px 16px; border-radius: 2px; cursor: pointer;
+  transition: all .25s;
 }
+#btn-exit:hover { background: #2a1010; color: #e77; border-color: #944; box-shadow: 0 0 10px #8002; }
 
-.char-btn img { 
-  width: 80px; 
-  height: 80px; 
-  object-fit: cover; 
+/* RUN SUMMARY MODAL */
+#summary-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.88); z-index:500; align-items:center; justify-content:center; }
+#summary-modal.open { display:flex; }
+
+.summary-box {
+  background: #0c0c0c;
+  border: 1px solid var(--gold-lo);
   border-radius: 4px;
+  width: 90%; max-width: 460px;
+  overflow: hidden;
+  box-shadow: 0 0 60px rgba(200,168,75,.08), 0 8px 40px rgba(0,0,0,.8);
+  animation: summaryIn .35s ease;
+}
+@keyframes summaryIn {
+  from { opacity:0; transform:translateY(20px) scale(.97); }
+  to   { opacity:1; transform:translateY(0) scale(1); }
 }
 
-.char-btn div {
-  margin-top: 8px;
-  font-size: 12px;
+.summary-head {
+  background: linear-gradient(135deg, #150e00, #0c0c0c);
+  border-bottom: 1px solid var(--gold-lo);
+  padding: 22px 24px 18px;
   text-align: center;
 }
+.summary-title {
+  font-family: 'UnifrakturMaguntia', cursive;
+  font-size: 28px; color: var(--gold);
+  text-shadow: 0 0 20px #c8a84b44;
+  letter-spacing: 3px; margin-bottom: 4px;
+}
+.summary-sub { font-size: 10px; color: var(--text2); letter-spacing: 2px; text-transform: uppercase; }
 
-.char-btn:hover:not(:disabled) { 
-  border-color: #aaa; 
-  transform: scale(1.05);
+.summary-body { padding: 22px 24px 28px; display: flex; flex-direction: column; gap: 18px; }
+
+/* Stat row: icon + label + value */
+.sum-stat {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px;
+  background: #111; border: 1px solid #1e1e1e; border-radius: 3px;
+}
+.sum-stat-icon { font-size: 20px; width: 28px; text-align: center; flex-shrink: 0; }
+.sum-stat-info { flex: 1; }
+.sum-stat-label { font-size: 9px; color: var(--text2); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 3px; }
+.sum-stat-val   { font-size: 18px; color: var(--gold); }
+.sum-stat-val.big { font-size: 22px; }
+
+/* Items list inside summary */
+.sum-items-list { display: flex; flex-direction: column; gap: 5px; margin-top: 4px; }
+.sum-item-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px; background: #0e0e0e;
+  border: 1px solid #1c1c1c; border-radius: 2px;
+  font-size: 11px; color: var(--text);
+}
+.sum-item-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--gold-lo); flex-shrink: 0; }
+.sum-empty { color: var(--text2); font-size: 11px; letter-spacing: 1px; }
+
+/* Survivors */
+.sum-survivors { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
+.sum-survivor {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 10px; background: #0e1a0e;
+  border: 1px solid #1a301a; border-radius: 2px;
+  font-size: 11px; color: #4d9;
+}
+.sum-dead {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 10px; background: #1a0e0e;
+  border: 1px solid #301a1a; border-radius: 2px;
+  font-size: 11px; color: #c55;
 }
 
-.char-btn.selected { 
-  border-color: #ffd700; 
-  box-shadow: 0 0 20px #ffd700, inset 0 0 15px rgba(255, 215, 0, 0.2);
-  animation: glow 1.5s ease-in-out infinite;
+.summary-footer { padding: 0 24px 24px; }
+.btn-return {
+  width: 100%; font-family: inherit; font-size: 12px; letter-spacing: 2px;
+  text-transform: uppercase; background: #0f1a0f; color: #4d9;
+  border: 1px solid #2a7a4a; padding: 12px; border-radius: 2px;
+  cursor: pointer; transition: all .25s;
 }
-
-.char-btn:disabled { 
-  opacity: 0.6; 
-  cursor: not-allowed;
-}
-
-@keyframes glow {
-  0%, 100% { 
-    box-shadow: 0 0 20px #ffd700, inset 0 0 15px rgba(255, 215, 0, 0.2);
-  }
-  50% { 
-    box-shadow: 0 0 30px #ffd700, inset 0 0 20px rgba(255, 215, 0, 0.3);
-  }
-}
-
-.start-btn { 
-  background: #282 !important; 
-  margin-top: 20px !important;
-  padding: 12px 30px !important;
-  border: 1px solid #ffd700 !important;
-  border-radius: 4px;
-  font-size: 14px;
-  color: white;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.start-btn:hover {
-  background: #3a3 !important;
-  box-shadow: 0 0 10px #ffd700;
-}
-
-.reset-btn {
-  background: #822 !important;
-  border: 1px solid #f00 !important;
-  padding: 12px 30px !important;
-  border-radius: 4px;
-  font-size: 14px;
-  color: white;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.reset-btn:hover {
-  background: #a33 !important;
-  box-shadow: 0 0 10px #f00;
-}
-
-.controls {
-  display: flex;
-  gap: 10px;
-  margin-top: 20px;
-  justify-content: center;
-}
-
-.controls button {
-  color: white;
-  cursor: pointer;
-  border: none;
-}
-
-h2 {
-  color: #ffd700;
-  text-shadow: 0 0 10px #ffd700;
-  margin-bottom: 10px;
-}
-
-h3 {
-  color: #88f;
-  margin-top: 20px;
-}
-
-.modal-overlay {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.7);
-  z-index: 100;
-  align-items: center;
-  justify-content: center;
-}
-
-.modal-overlay.active {
-  display: flex;
-}
-
-.modal {
-  background: #0b0b0b;
-  border: 2px solid #ffd700;
-  border-radius: 8px;
-  padding: 30px;
-  max-width: 600px;
-  max-height: 80vh;
-  overflow-y: auto;
-  width: 90%;
-  box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.modal-header h2 {
-  margin: 0;
-}
-
-.close-btn {
-  background: #822;
-  border: 1px solid #f00;
-  color: white;
-  padding: 5px 15px;
-  cursor: pointer;
-  border-radius: 3px;
-  transition: all 0.3s;
-}
-
-.close-btn:hover {
-  background: #a33;
-  box-shadow: 0 0 10px #f00;
-}
-
-.items-container {
-  width: 100%;
-}
-
-.item-row {
-  margin: 10px 0;
-  padding: 10px;
-  background: #1a1a1a;
-  border-radius: 4px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.item-row button {
-  background: #333;
-  color: #fff;
-  border: 1px solid #555;
-  padding: 5px 15px;
-  cursor: pointer;
-  border-radius: 3px;
-  transition: all 0.3s;
-}
-
-.item-row button:hover {
-  background: #ffd700;
-  color: #000;
-}
-
-.shop-item {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  margin: 15px 0;
-  padding: 15px;
-  background: #1a1a1a;
-  border-radius: 4px;
-  border: 1px solid #333;
-}
-
-.shop-item img {
-  width: 60px;
-  height: 60px;
-  object-fit: cover;
-  border-radius: 4px;
-}
-
-.shop-item-info {
-  flex: 1;
-}
-
-.shop-item-info h4 {
-  margin: 0 0 5px 0;
-  color: #ffd700;
-}
-
-.shop-item-info p {
-  margin: 0;
-  font-size: 12px;
-  color: #aaa;
-}
-
-.shop-item button {
-  background: #282;
-  color: #fff;
-  border: 1px solid #ffd700;
-  padding: 8px 15px;
-  cursor: pointer;
-  border-radius: 3px;
-  transition: all 0.3s;
-}
-
-.shop-item button:hover {
-  background: #3a3;
-  box-shadow: 0 0 10px #ffd700;
-}
-
-.empty-message {
-  color: #888;
-  font-size: 14px;
-  margin-top: 20px;
-}
-
-.char-selector-buttons {
-  display: flex;
-  gap: 15px;
-  flex-wrap: wrap;
-  margin-top: 20px;
-  justify-content: center;
-}
+.btn-return:hover { background: #162a16; box-shadow: 0 0 16px #2d83; }
 </style>
 </head>
-
 <body>
 
-<div class="nav">
-<button onclick="toggleDungeon()">Dungeon</button>
-<button onclick="openInventory()">Inventário</button>
-<button onclick="openShop()">Loja</button>
+<!-- NAV -->
+<div id="nav">
+  <button class="nav-tab active" id="tab-dungeon"   onclick="navDungeon()">⚔ Dungeon</button>
+  <button class="nav-tab"        id="tab-inventory" onclick="openInventory()">⚗ Inventário</button>
+  <button class="nav-tab"        id="tab-shop"      onclick="openShop()">◈ Loja</button>
+  <div id="nav-gold"> <span id="nav-gold-val">0</span></div>
 </div>
 
-<div id="dungeon-container">
-  <div id="menu-screen">
-    <div class="menu-container">
-      <h2>Escolha seu time (até 5 personagens únicos)</h2>
-      <div id="char-selector" class="char-selector-buttons"></div>
-      <div class="controls">
-        <button id="start-btn" class="start-btn">Iniciar Jogo</button>
-        <button id="reset-btn" class="reset-btn">Limpar Time</button>
+<div id="app">
+  <!-- MENU -->
+  <div id="menu-screen" class="screen active">
+    <div class="menu-logo">Dungeon Clash</div>
+    <div class="menu-sub">Escolha seu time</div>
+    <div class="party-slots" id="party-slots"></div>
+    <div class="char-grid"   id="char-grid"></div>
+    <div class="menu-controls">
+      <button class="btn btn-go"  id="btn-start" disabled>▶ ENTRAR NO DUNGEON</button>
+      <button class="btn btn-del" id="btn-reset">✕ LIMPAR TIME</button>
+    </div>
+  </div>
+
+  <!-- BATTLE -->
+  <div id="battle-screen" class="screen">
+    <div class="battle-hud">
+      <div class="room-label" id="hud-room">Sala 1</div>    
+    </div>
+
+    <div class="enemy-zone">
+      <div class="enemy-img-wrap" id="enemy-img-wrap"></div>
+      <div class="enemy-bars">
+        <div class="bar bar-wide b-ehp">
+          <div class="bar-fill" id="enemy-hp-fill" style="width:100%"></div>
+        </div>
+        <div class="bar bar-wide b-eatk">
+          <div class="bar-fill" id="enemy-atk-fill" style="width:0%"></div>
+        </div>
       </div>
+      <div class="enemy-info"><span class="enemy-title" id="enemy-title"></span></div>
     </div>
-  </div>
 
-  <div id="battle"></div>
-</div>
-
-<div id="inventory-modal" class="modal-overlay">
-  <div class="modal">
-    <div class="modal-header">
-      <h2>Inventário - Seu Time</h2>
-      <button class="close-btn" onclick="closeInventory()">Fechar</button>
-    </div>
-    <div id="inventory-chars" class="menu-buttons"></div>
-    <div id="inventory-items" class="items-container"></div>
+    <div class="party-section" id="party-section"></div>
   </div>
 </div>
 
-<div id="shop-modal" class="modal-overlay">
-  <div class="modal">
-    <div class="modal-header">
-      <h2 id="shop-title">Loja - Ouro: 0</h2>
-      <button class="close-btn" onclick="closeShop()">Fechar</button>
+<!-- END SCREN MODAL -->
+<div class="modal-wrap" id="end-screen-modal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2>⚗ RESULTADOS </h2>
+      <button class="btn-close" onclick="renderMenu()">IR PARA O INICIO</button>
     </div>
-    <div id="shop-items" class="items-container"></div>
+    <div class="modal-body">
+      
+    </div>
+  </div> 
+</div>
+
+<!-- INVENTORY MODAL -->
+<div class="modal-wrap" id="inv-modal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2>⚗ INVENTÁRIO</h2>
+      <button class="btn-close" onclick="closeInventory()">FECHAR</button>
+    </div>
+    <div class="modal-body">
+      <div class="section-label">Seu Time</div>
+      <div class="inv-chars" id="inv-chars"></div>
+      <div class="section-label">Itens Disponíveis</div>
+      <div id="inv-items"></div>
+    </div>
+  </div> 
+</div>
+
+<!-- SHOP MODAL -->
+<div class="modal-wrap" id="shop-modal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2 id="shop-head">◈ LOJA</h2>
+      <button class="btn-close" onclick="closeShop()">FECHAR</button>
+    </div>
+    <div class="modal-body" id="shop-body"></div>
+  </div>
+</div>
+
+<!-- SHARED TOOLTIP — never removed from DOM -->
+<div id="char-tooltip">
+  <div class="tt-name" id="tt-name"></div>
+  <div class="tt-role" id="tt-role"></div>
+  <div class="tt-lv"   id="tt-lv"></div>
+  <div class="tt-bar-row">
+    <div class="tt-bar-label">HP</div>
+    <div class="tt-bar"><div class="tt-fill hp-fill" id="tt-hp-fill" style="width:100%"></div></div>
+    <div class="tt-bar-val" id="tt-hp-val"></div>
+  </div>
+  <div class="tt-bar-row">
+    <div class="tt-bar-label">XP</div>
+    <div class="tt-bar"><div class="tt-fill xp-fill" id="tt-xp-fill" style="width:0%"></div></div>
+    <div class="tt-bar-val" id="tt-xp-val"></div>
+  </div>
+  <div class="tt-slots">
+    <div class="tt-slot-label">Equipamentos</div>
+    <div class="tt-slot-row"><span class="tt-slot-icon">⚔</span><span class="tt-slot-text" id="tt-weapon">— vazio —</span></div>
+    <div class="tt-slot-row"><span class="tt-slot-icon">🛡</span><span class="tt-slot-text" id="tt-armor">— vazio —</span></div>
+    <div class="tt-slot-row"><span class="tt-slot-icon">💍</span><span class="tt-slot-text" id="tt-acc">— vazio —</span></div>
   </div>
 </div>
 
 <script>
-const state = {
-  personagens: [],
-  inimigos: [],
-  itens: [],
-  
-  party: [],
-  inventory: [],
-  selectedChar: null,
-  enemy: null,
-  room: 0,
-  loop: null,
-  gold: 0,
-  inBattle: false,
-  menuVisible: true,
-  shopItems: [
-    { name: "Espada", type: "weapon", atk: 5, price: 100 },
-    { name: "Armadura", type: "armor", hp: 20, price: 150 },
-    { name: "Adaga", type: "weapon", atk: 3, speed: 10, price: 50 },
-    { name: "Essência", type: "consumable", effect: "mana", price: 75 }
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let reward_list = [];
+
+let UID = 0;
+const S = {
+  chars: [], enemies: [], itemsDB: [],
+  party: [], inventory: [],
+  selChar: null, enemy: null,
+  room: 0, loop: null, gold: 0,
+  inBattle: false, charSave: {},
+
+  shop: [
+    { name:"Espada Longa",          type:"weapon",    atk:6,                 price:110, allowedRoles:["dps","tank"]          },
+    { name:"Adaga Sombria",         type:"weapon",    atk:4,                 price: 65, allowedRoles:["dps","rogue"]         },
+    { name:"Cajado do Caos",        type:"weapon",    atk:5,                 price: 90, allowedRoles:["mage","healer"]       },
+    { name:"Armadura de Placas",    type:"armor",     hp:30,                 price:180, allowedRoles:["tank"]                },
+    { name:"Capa de Couro",         type:"armor",     hp:12,                 price: 75, allowedRoles:["dps","rogue"]         },
+    { name:"Manto Arcano",          type:"armor",     hp:18,                 price:120, allowedRoles:["mage","healer"]       },
+    { name:"Escudo Sagrado",        type:"armor",     hp:22,                 price:140, allowedRoles:["tank","healer"]       },
+    { name:"Amuleto da Celeridade", type:"accessory", speedBoost:0.10,       price:200, allowedRoles:[]                     },
+    { name:"Anel de Força",         type:"accessory", atk:3,                 price:130, allowedRoles:["dps","tank"]         },
+    { name:"Pingente Arcano",       type:"accessory", atk:4,                 price:150, allowedRoles:["mage","healer"]      },
   ]
+};
+
+// ═══════════════════════════════════════════
+// SAVE / LOAD FLOAD
+// ═══════════════════════════════════════════
+const KEY = 'dungeonClash_v3';
+function saveGame() {
+  S.party.forEach(c => { S.charSave[c.name] = { level:c.level, xp:c.xp, xpToNext:c.xpToNext }; });
+  try { localStorage.setItem(KEY, JSON.stringify({ gold:S.gold, charSave:S.charSave, inventory:S.inventory })); } catch(_){}
+}
+function loadGame() {
+  try {
+    const d = JSON.parse(localStorage.getItem(KEY)||'null');
+    if (!d) return;
+    S.gold = d.gold||0; S.charSave = d.charSave||{}; S.inventory = d.inventory||[];
+  } catch(_){}
 }
 
-function toggleDungeon(){
-  if (state.inBattle) return;
-  
-  const menuScreen = document.getElementById('menu-screen');
-  
-  state.menuVisible = !state.menuVisible;
-  
-  if (state.menuVisible) {
-    menuScreen.style.display = 'flex';
-  } else {
-    menuScreen.style.display = 'none';
+// ═══════════════════════════════════════════
+// NAV FNAV
+// ═══════════════════════════════════════════
+function navDungeon() {
+  if (!S.inBattle) {
+    document.getElementById('menu-screen').classList.add('active');
+    document.getElementById('battle-screen').classList.remove('active');
   }
+  setActiveTab('tab-dungeon');
+}
+function setActiveTab(id) {
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function refreshGold() {
+  document.getElementById('nav-gold-val').textContent = S.gold;
+  const el = document.getElementById('hud-gold');
+  if (el) el.textContent = S.gold;
 }
 
-function renderMenuScreen(){
-  const charSelector = document.getElementById('char-selector');
-  charSelector.innerHTML = '';
-
-  state.personagens.forEach(p => {
-    const b = document.createElement('button')
-    b.className = 'char-btn';
-    
-    const isAlreadyInParty = state.party.some(member => member.name === p.name);
-    const img = document.createElement('img');
-    img.src = p.idle;
-    img.alt = p.name;
-    img.onerror = function() { this.src = 'sites/images (4).jpg' + p.name[0]; };
-    b.appendChild(img);
-    
-    const label = document.createElement('div');
-    label.innerText = p.name;
-    b.appendChild(label);
-    
-    if (isAlreadyInParty) {
-      b.classList.add('selected');
-      b.disabled = true;
-    }
-    
-    b.onclick = () => {
-      if(state.party.length < 5 && !state.party.some(member => member.name === p.name)){
-        const clone = JSON.parse(JSON.stringify(p))
-        clone.equip = { weapon: null, armor: null }
-        clone.baseAtk = clone.atk
-        clone.baseHp = clone.hp
-        clone.maxHp = clone.hp
-        state.party.push(clone)
-        renderMenuScreen();
-      }
-    }
-    charSelector.appendChild(b)
-  })
-}
-
-function openInventory(){
-  const modal = document.getElementById('inventory-modal');
-  modal.classList.add('active');
-  
-  if (!state.selectedChar && state.party.length > 0) {
-    state.selectedChar = state.party[0];
+// ═══════════════════════════════════════════
+// FMENU
+// ═══════════════════════════════════════════
+function renderMenu() {
+  refreshGold();
+  const slotDiv = document.getElementById('party-slots');
+  slotDiv.innerHTML = '';
+  for (let i=0;i<5;i++) {
+    const s = document.createElement('div');
+    s.className = 'p-slot' + (i<S.party.length?' filled':'');
+    if (i<S.party.length) {
+      const img = document.createElement('img');
+      img.src = imgSrc(S.party[i].icon||S.party[i].idle, 44, S.party[i].name[0]);
+      img.onerror = function(){ this.src = fallback(44,44,this._l); };
+      img._l = S.party[i].name[0];
+      s.appendChild(img);
+    } else s.textContent = i+1;
+    slotDiv.appendChild(s);
   }
 
-  const charsDiv = document.getElementById('inventory-chars');
-  charsDiv.innerHTML = '';
-
-  state.party.forEach((c) => {
-    const btn = document.createElement('button')
-    btn.className = 'char-btn';
-    
+  const grid = document.getElementById('char-grid');
+  grid.innerHTML = '';
+  S.chars.forEach(p => {
+    const inParty = S.party.some(m=>m.name===p.name);
+    const lv = S.charSave[p.name]?.level || 1;
+    const tile = document.createElement('div');
+    tile.className = 'char-tile'+(inParty?' in-party':'');
     const img = document.createElement('img');
-    img.src = c.idle;
-    img.alt = c.name;
-    img.onerror = function() { this.src = 'sites/images (4).jpg' + c.name[0]; };
+    img.className = 'tile-icon';
+    img.src = imgSrc(p.icon||p.idle, 60, p.name[0]);
+    img.onerror = function(){ this.src = fallback(60,60,p.name[0]); };
+    tile.appendChild(img);
+    addEl(tile,'div','tile-name',p.name);
+    addEl(tile,'div','tile-role',p.role||'—');
+    addEl(tile,'div','tile-lv','Lv.'+lv);
+    if (!inParty) tile.onclick = ()=>addToParty(p);
+    grid.appendChild(tile);
+  });
+  document.getElementById('btn-start').disabled = S.party.length===0;
+}
+
+function addToParty(p) {
+  if (S.party.length>=5 || S.party.some(m=>m.name===p.name)) return;
+  const c = JSON.parse(JSON.stringify(p));
+  c.uid = UID++;
+  c.equip = { weapon:null, armor:null, accessory:null };
+  c.baseAtk   = c.atk;
+  c.baseHp    = c.hp;
+  c.baseSpeed = c.speed;
+  c.atkProg   = 0;
+  c.dead      = false;
+  const sv = S.charSave[p.name];
+  c.level    = sv?.level    || 1;
+  c.xp       = sv?.xp       || 0;
+  c.xpToNext = sv?.xpToNext || 100;
+  for (let i=1; i<c.level; i++) { c.baseAtk+=2; c.baseHp+=10; }
+  recalc(c); c.hp = c.maxHp;
+  S.party.push(c);
+  renderMenu();
+}
+
+// ═══════════════════════════════════════════
+// FSTATS 
+// ═══════════════════════════════════════════
+function recalc(c) {
+  const wa  = c.equip?.weapon?.atk       || 0;
+  const aa  = c.equip?.accessory?.atk    || 0;
+  c.atk = (c.baseAtk||c.atk) + wa + aa;
+  const prevMax = c.maxHp || c.baseHp || c.hp;
+  c.maxHp = (c.baseHp||c.hp) + (c.equip?.armor?.hp||0);
+  c.hp = (c.hp==null) ? c.maxHp : Math.min(c.maxHp, (c.hp/prevMax)*c.maxHp);
+  const boost = c.equip?.accessory?.speedBoost || 0;
+  c.speed = Math.round((c.baseSpeed||c.speed) * (1+boost));
+}
+
+// ═══════════════════════════════════════════
+// FEQUIP ( 'weapon' | 'armor' | 'accessory' | 'consumable')
+// ═══════════════════════════════════════════
+function equipItem(item, chr) {
+  if (item.allowedRoles?.length && !item.allowedRoles.includes(chr.role)) {
+    alert(`"${item.name}" exige: ${item.allowedRoles.join(', ')}\n${chr.name} é [${chr.role}] — incompatível.`);
+    return false;
+  }
+  const slot = item.type; 
+  if (slot==='weapon'||slot==='armor'||slot==='accessory') {
+    if (chr.equip[slot]) S.inventory.push(chr.equip[slot]);
+    chr.equip[slot] = item;
+  } else if (slot==='consumable') {
+    if (item.effect==='heal') chr.hp = Math.min(chr.maxHp,(chr.hp||0)+(item.healAmt||30));
+    if (item.effect==='mana') chr.atkProg = Math.min(100,(chr.atkProg||0)+50);
+  }
+  recalc(chr);
+  return true;
+}
+
+// ═══════════════════════════════════════════
+// FINVENTORY
+// ═══════════════════════════════════════════
+function openInventory() {
+  if (!S.selChar && S.party.length>0) S.selChar = S.party[0];
+  document.getElementById('inv-modal').classList.add('open');
+  renderInv();
+}
+function closeInventory() { document.getElementById('inv-modal').classList.remove('open'); }
+
+function renderInv() {
+  const cd = document.getElementById('inv-chars');
+  cd.innerHTML = '';
+  if (!S.party.length) { cd.innerHTML='<div class="empty-note">Nenhum personagem no time.</div>'; }
+  S.party.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'inv-char-btn'+(S.selChar===c?' sel':'');
+    const img = document.createElement('img');
+    img.src = imgSrc(c.icon||c.idle,44,c.name[0]);
+    img.onerror = function(){ this.src=fallback(44,44,c.name[0]); };
     btn.appendChild(img);
-    
-    const label = document.createElement('div');
-    label.innerText = c.name;
-    btn.appendChild(label);
-    
-    if (state.selectedChar === c) {
-      btn.classList.add('selected');
-    }
-    
-    btn.onclick = () => {
-      state.selectedChar = c
-      openInventory();
-    }
-    charsDiv.appendChild(btn)
-  })
+    addEl(btn,'div','',c.name);
+    const rt=document.createElement('div'); rt.className='role-tag'; rt.textContent='['+(c.role||'?')+']';
+    btn.appendChild(rt);
+    btn.onclick=()=>{ S.selChar=c; renderInv(); };
+    cd.appendChild(btn);
+  });
 
-  renderInventoryItems();
-}
+  const id = document.getElementById('inv-items');
+  id.innerHTML = '';
+  if (!S.inventory.length) { id.innerHTML='<div class="empty-note">Inventário vazio.</div>'; return; }
+  S.inventory.forEach((item,idx) => {
+    const row = document.createElement('div'); row.className='item-row';
+    const inf = document.createElement('div'); inf.className='item-info';
+    addEl(inf,'div','item-name-label',item.name);
+    const sp=['['+item.type+']'];
+    if (item.atk)        sp.push('+'+item.atk+' ATK');
+    if (item.hp)         sp.push('+'+item.hp+' HP');
+    if (item.speedBoost) sp.push('+'+Math.round(item.speedBoost*100)+'% VEL');
+    addEl(inf,'div','item-stat-label',sp.join(' '));
+    if (item.allowedRoles?.length) addEl(inf,'div','item-role-label','Para: '+item.allowedRoles.join(', '));
+    else if (item.type==='accessory') addEl(inf,'div','item-role-label','Todos os personagens');
+    row.appendChild(inf);
 
-function renderInventoryItems(){
-  const container = document.getElementById('inventory-items');
-  container.innerHTML = '<h3>Itens Disponíveis</h3>'
-  if (state.inventory.length === 0) {
-    const msg = document.createElement('div');
-    msg.className = 'empty-message';
-    msg.innerText = 'Nenhum item no inventário.';
-    container.appendChild(msg);
-    return;
-  }
-
-  state.inventory.forEach((item, index) => {
-    const div = document.createElement('div')
-    div.className = 'item-row';
-    
-    const info = document.createElement('span');
-    info.innerText = `${item.name} (${item.type}) ${item.atk ? '+'+item.atk+' ATK' : ''} ${item.hp ? '+'+item.hp+' HP' : ''}`;
-    div.appendChild(info);
-    
-    const btn = document.createElement('button');
-    btn.innerText = 'Equipar';
-    btn.onclick = () => {
-      if(!state.selectedChar){
-        alert('Escolha um personagem primeiro')
-        return
-      }
-      equipItemToChar(item, state.selectedChar);
-      state.inventory.splice(index, 1);
-      openInventory();
+    const canUse = S.selChar && (!item.allowedRoles?.length || item.allowedRoles.includes(S.selChar.role));
+    const btn=document.createElement('button');
+    btn.className='btn-equip'+(S.selChar&&!canUse?' role-mismatch':'');
+    btn.textContent = !S.selChar?'Selecionar': canUse?'Equipar':'Incompatível';
+    btn.disabled = !S.selChar || !canUse;
+    btn.onclick=()=>{
+      if (!S.selChar){alert('Selecione um personagem.');return;}
+      if (equipItem(item,S.selChar)){ S.inventory.splice(idx,1); saveGame(); renderInv(); }
     };
-    div.appendChild(btn);
-    
-    container.appendChild(div)
-  })
-}
-
-function closeInventory(){
-  document.getElementById('inventory-modal').classList.remove('active');
-}
-
-function openShop(){
-  const modal = document.getElementById('shop-modal');
-  modal.classList.add('active');
-  
-  document.getElementById('shop-title').innerText = 'Loja - Ouro: ' + state.gold;
-  
-  const itemsDiv = document.getElementById('shop-items');
-  itemsDiv.innerHTML = '';
-  
-  state.shopItems.forEach((item) => {
-    const div = document.createElement('div');
-    div.className = 'shop-item';
-    
-    const img = document.createElement('img');
-    img.src = 'sites/images (4).jpg' + item.name[0];
-    div.appendChild(img);
-    
-    const info = document.createElement('div');
-    info.className = 'shop-item-info';
-    
-    const name = document.createElement('h4');
-    name.innerText = item.name;
-    info.appendChild(name);
-    
-    const desc = document.createElement('p');
-    desc.innerText = `${item.type} - ${item.atk ? 'ATK: +'+item.atk : ''} ${item.hp ? 'HP: +'+item.hp : ''} ${item.speed ? 'SPD: +'+item.speed : ''}`;
-    info.appendChild(desc);
-    
-    const price = document.createElement('p');
-    price.style.color = '#ffd700';
-    price.innerText = 'Preço: ' + item.price + ' ouro';
-    info.appendChild(price);
-    div.appendChild(info);
-    const btn = document.createElement('button');
-    btn.innerText = 'Comprar';
-    btn.onclick = () => {
-      if (state.gold >= item.price) {
-        state.gold -= item.price;
-        const newItem = JSON.parse(JSON.stringify(item));
-        state.inventory.push(newItem);
-        openShop();
-      } else {
-        alert('Ouro insuficiente!');
-      }
-    }
-    div.appendChild(btn);
-    
-    itemsDiv.appendChild(div);
+    row.appendChild(btn);
+    id.appendChild(row);
   });
 }
 
-function closeShop(){
-  document.getElementById('shop-modal').classList.remove('active');
+// ═══════════════════════════════════════════
+// FSHOP
+// ═══════════════════════════════════════════
+function openShop() { document.getElementById('shop-modal').classList.add('open'); renderShop(); }
+function openEndMenu() { document.getElementById('end-screen-modal').classList.add('open'); renderEndScreen(); }
+function closeShop() { document.getElementById('shop-modal').classList.remove('open'); }
+function renderShop() {
+  document.getElementById('shop-head').textContent='◈ LOJA — 💰 '+S.gold;
+  const body=document.getElementById('shop-body'); body.innerHTML='';
+  S.shop.forEach(item=>{
+    const row=document.createElement('div'); row.className='shop-row';
+    const inf=document.createElement('div'); inf.className='shop-info';
+    addEl(inf,'div','shop-name',item.name);
+    const sp=['['+item.type+']'];
+    if (item.atk)        sp.push('+'+item.atk+' ATK');
+    if (item.hp)         sp.push('+'+item.hp+' HP');
+    if (item.speedBoost) sp.push('+'+Math.round(item.speedBoost*100)+'% velocidade de ataque');
+    addEl(inf,'div','shop-stats',sp.join(' '));
+    if (item.allowedRoles?.length) addEl(inf,'div','shop-roles','Requer: '+item.allowedRoles.join(', '));
+    else if (item.type==='accessory') addEl(inf,'div','shop-roles','Todos os personagens');
+    addEl(inf,'div','shop-price','💰 '+item.price);
+    row.appendChild(inf);
+    const btn=document.createElement('button'); btn.className='btn-buy';
+    btn.textContent='Comprar'; btn.disabled=S.gold<item.price;
+    btn.onclick=()=>{
+      if (S.gold<item.price){alert('Ouro insuficiente!');return;}
+      S.gold-=item.price; S.inventory.push(JSON.parse(JSON.stringify(item)));
+      saveGame(); refreshGold(); renderShop(); notify('Comprado: '+item.name);
+    };
+    row.appendChild(btn); body.appendChild(row);
+  });
 }
 
-function equipItemToChar(item, char) {
-  if (item.type === 'weapon') char.equip.weapon = item;
-  if (item.type === 'armor') char.equip.armor = item;
-  recalcStats(char);
+// ═══════════════════════════════════════════
+// FTOOL TIP
+// ═══════════════════════════════════════════
+const TT = document.getElementById('char-tooltip');
+let ttChar = null;
+
+function showTooltip(c, anchor) {
+  ttChar = c;
+  updateTooltipContent(c);
+  TT.classList.add('visible');
+  const r = anchor.getBoundingClientRect();
+  const tw = TT.offsetWidth||200, th = TT.offsetHeight||240;
+  let x = r.left + r.width/2 - tw/2;
+  let y = r.top - th - 10;
+  if (y < 8) y = r.bottom + 10;
+  x = Math.max(8, Math.min(window.innerWidth - tw - 8, x));
+  TT.style.left = x+'px'; TT.style.top = y+'px';
 }
 
-function startGame(){
-  state.inBattle = true;
-  state.menuVisible = false;
-  document.getElementById('menu-screen').style.display = 'none';
-  document.getElementById('battle').classList.add('active');
-  state.room = 0
-  nextRoom()
+function updateTooltipContent(c) {
+  document.getElementById('tt-name').textContent = c.name;
+  document.getElementById('tt-role').textContent = '['+(c.role||'?')+']';
+  document.getElementById('tt-lv').textContent   = 'Lv.'+c.level+'  ATK:'+c.atk+'  SPD:'+c.speed;
+  const hpP = Math.max(0,Math.min(100,(c.hp/c.maxHp)*100));
+  const xpP = Math.max(0,Math.min(100,(c.xp/c.xpToNext)*100));
+  document.getElementById('tt-hp-fill').style.width = hpP+'%';
+  document.getElementById('tt-xp-fill').style.width = xpP+'%';
+  document.getElementById('tt-hp-val').textContent = Math.ceil(c.hp)+' / '+c.maxHp;
+  document.getElementById('tt-xp-val').textContent = c.xp+' / '+c.xpToNext+' xp';
+  const wEl=document.getElementById('tt-weapon');
+  const w=c.equip?.weapon;
+  wEl.textContent = w ? w.name+(w.atk?' (+'+w.atk+' ATK)':'') : '— vazio —';
+  wEl.className = 'tt-slot-text '+(w?'filled':'empty');
+  const aEl=document.getElementById('tt-armor');
+  const a=c.equip?.armor;
+  aEl.textContent = a ? a.name+(a.hp?' (+'+a.hp+' HP)':'') : '— vazio —';
+  aEl.className = 'tt-slot-text '+(a?'filled':'empty');
+  const acEl=document.getElementById('tt-acc');
+  const ac=c.equip?.accessory;
+  acEl.textContent = ac ? ac.name+(ac.speedBoost?' (+'+Math.round(ac.speedBoost*100)+'% VEL)':''+(ac.atk?' (+'+ac.atk+' ATK)':'')) : '— vazio —';
+  acEl.className = 'tt-slot-text '+(ac?'filled':'empty');
+}
+function hideTooltip() { ttChar=null; TT.classList.remove('visible'); }
+function refreshTT() { if (ttChar && TT.classList.contains('visible')) updateTooltipContent(ttChar); }
+
+// ═══════════════════════════════════════════
+// FBATTLE SETUP
+// ═══════════════════════════════════════════
+function startGame() {
+  let reward_list  = []
+  if (!S.party.length) return;
+  S.inBattle=true; S.room=0;
+  S.party.forEach(c=>{ c.atkProg=0; c.dead=false; recalc(c); c.hp=c.maxHp; });
+  document.getElementById('menu-screen').classList.remove('active');
+  document.getElementById('battle-screen').classList.add('active');
+  setActiveTab('tab-dungeon');
+  nextRoom();
 }
 
-function nextRoom(){
-  state.room++
-  spawnEnemy()
-  state.party.forEach(c => recalcStats(c))
-  renderBattle()
-  renderMonster()
-  startLoop()
+// ═══════════════════════════════════════════
+// FNEXT ROOM 
+// ═══════════════════════════════════════════
+function nextRoom() {
+  S.room++;
+  document.getElementById('hud-room').textContent = 'Sala '+S.room;
+  refreshGold();
+  spawnEnemy();
+  buildPartyDOM();
+  updateEnemyDOM();
+  startLoop();
 }
 
-function spawnEnemy(){
-  const base = state.inimigos[Math.floor(Math.random()*state.inimigos.length)]
-  state.enemy = JSON.parse(JSON.stringify(base))
-
-  state.enemy.maxHp = base.hp + (state.room - 1) * 15
-  state.enemy.hp = state.enemy.maxHp
-  state.enemy.atk += (state.room - 1) * 2
-  state.enemy.atkProg = 0
+function spawnEnemy() {
+  const base = S.enemies[Math.floor(Math.random()*S.enemies.length)];
+  S.enemy = JSON.parse(JSON.stringify(base));
+  S.enemy.maxHp   = base.hp+(S.room-1)*15;
+  S.enemy.hp      = S.enemy.maxHp;
+  S.enemy.atk    += (S.room-1)*2;
+  S.enemy.atkProg = 0;
 }
 
-function renderBattle() {
-  const el = document.getElementById('battle');
-  
-  let battleDiv = el.querySelector('#battle-content');
-  if (!battleDiv) {
-    el.innerHTML = `
-      <div id='battle-content' style="position:relative; width:100%; height:100%;">
-        <div id='enemy-container'></div> 
-        <div class='party'></div>
-      </div>`;
-    battleDiv = el.querySelector('#battle-content');
-    
-    const pdiv = battleDiv.querySelector('.party');
-    state.party.forEach((c, i) => {
-      c.atkProg = 0;
-      const d = document.createElement('div');
-      d.className = 'card';
-      d.innerHTML = `
-        <img id='pimg-${i}' src='${c.idle}' onerror="this.src='sites/images (4).jpg'">
-        <div class='bar'><div id='php-${i}' class='fill'></div></div>
-        <div class='bar'><div id='patk-${i}' class='fill atk'></div></div>
-      `;
-      pdiv.appendChild(d);
-    });
+function updateEnemyDOM() {
+  const wrap = document.getElementById('enemy-img-wrap');
+  wrap.innerHTML = '';
+  if (S.enemy.idle) {
+    const img = document.createElement('img');
+    img.src = S.enemy.idle;
+    img.alt = S.enemy.name;
+    img.onerror = function() {
+
+      wrap.innerHTML = '';
+      const ph = document.createElement('div');
+      ph.className='e-ph'; ph.textContent = S.enemy.name[0];
+      wrap.appendChild(ph);
+    };
+    wrap.appendChild(img);
   } else {
-    state.party.forEach((c, i) => {
-      c.atkProg = 0;
-    });
+    const ph = document.createElement('div');
+    ph.className='e-ph'; ph.textContent = S.enemy.name[0];
+    wrap.appendChild(ph);
   }
+  document.getElementById('enemy-title').textContent = S.enemy.name;
+  setW('enemy-hp-fill', 100);
+  setW('enemy-atk-fill', 0);
 }
 
-function renderMonster() {
-  const container = document.getElementById('enemy-container');// PIMP Ajustar dps
-  if (!container) return;
+// ═══════════════════════════════════════════
+// FPARTY DOM 
+// ═══════════════════════════════════════════
+function buildPartyDOM() {
+  const sec = document.getElementById('party-section');
+  sec.innerHTML = '';
+  S.party.forEach(c => {
+    const card = document.createElement('div');
+    card.className = 'battle-card'+(c.dead?' dead':'');
+    card.id = 'bc-'+c.uid;
 
-  container.innerHTML = `
-    <div class='enemy'>
-      <img id='enemy-img' src='${state.enemy.idle}' onerror="this.src='https://via.placeholder.com/150?text=${state.enemy.name}'">
-      <div class='bar'>
-        <div id='enemy-hp' class='fill' style="width: 100%"></div>
-      </div>
-      <div class='bar'>
-        <div id='enemy-atk' class='fill atk' style="width: 0%"></div>
-      </div>
-      <div style="margin-top:5px">${state.enemy.name} (Sala ${state.room})</div>
-    </div>
-  `;
+    // Full-body sprite with falback ma fren >:D
+    const bwrap = document.createElement('div');
+    bwrap.className = 'card-body-wrap'; bwrap.id = 'bwrap-'+c.uid;
+    const bimg = document.createElement('img'); bimg.id='bimg-'+c.uid;
+    bimg.src = c.idle||''; bimg.alt = c.name;
+    bimg.onerror = function(){
+      bwrap.innerHTML='';
+      const ph=document.createElement('div'); ph.className='c-ph'; ph.textContent=c.name[0];
+      bwrap.appendChild(ph);
+    };
+    bwrap.appendChild(bimg); card.appendChild(bwrap);
+
+    // Icon
+    const iwrap = document.createElement('div');
+    iwrap.className='card-icon-wrap';
+    const iimg=document.createElement('img'); iimg.src=c.icon||c.idle||''; iimg.alt='';
+    iimg.onerror=function(){
+      iwrap.innerHTML='';
+      const ph=document.createElement('div'); ph.className='ci-ph'; ph.textContent=c.name[0];
+      iwrap.appendChild(ph);
+    };
+    iwrap.appendChild(iimg); card.appendChild(iwrap);
+
+    // Bars: HP>XP>ATK
+    const bars = document.createElement('div'); bars.className='card-bars';
+    bars.appendChild(mkBar('b-hp',  'bhp-'+c.uid,  (c.hp/c.maxHp)*100));
+    bars.appendChild(mkBar('b-xp',  'bxp-'+c.uid,  (c.xp/c.xpToNext)*100));
+    bars.appendChild(mkBar('b-atk', 'batk-'+c.uid, 0));
+    card.appendChild(bars);
+
+    // Tooltip on hover
+    card.addEventListener('mouseenter', ()=>showTooltip(c,card));
+    card.addEventListener('mouseleave', hideTooltip);
+
+    sec.appendChild(card);
+  });
 }
 
-function startLoop(){
-  if(state.loop) clearInterval(state.loop)
-
-  state.loop = setInterval(()=>{
-    if (!state.inBattle) {
-      return;
-    }
-    
-    if(state.party.length === 0){
-      clearInterval(state.loop)
-      state.inBattle = false;
-      state.menuVisible = true;
-      document.getElementById('battle').classList.remove('active');
-      document.getElementById('menu-screen').style.display = 'flex';
-      alert("Game Over! Seu time foi derrotado.");
-      return
-    }
-
-    if(state.enemy.hp <= 0){
-      clearInterval(state.loop)
-      state.gold += state.room * 10;
-      dropLoot()
-      setTimeout(nextRoom, 1000);
-      return
-    }
-
-    updateCombat()
-    updateUI()
-  }, 50)
+function mkBar(cls, fid, pct) {
+  const w=document.createElement('div'); w.className='bar '+cls;
+  const f=document.createElement('div'); f.className='bar-fill'; f.id=fid;
+  f.style.width=Math.max(0,Math.min(100,pct))+'%';
+  w.appendChild(f); return w;
 }
 
-function recalcStats(char) {
-  const baseAtk = char.baseAtk || char.atk;
-  const baseHp = char.baseHp || char.hp;
+// ═══════════════════════════════════════════
+// FLOOP  //FGAMEOVER
+// ═══════════════════════════════════════════
+function startLoop() {
+  if (S.loop) clearInterval(S.loop);
+  S.loop = setInterval(tick, 50);
+}
 
-  char.atk = baseAtk + (char.equip?.weapon?.atk || 0);
-  
-  const oldMaxHp = char.maxHp || baseHp;
-  char.maxHp = baseHp + (char.equip?.armor?.hp || 0);
-  
-  if (char.hp === undefined) {
-    char.hp = char.maxHp;
-  } else {
-    const ratio = char.hp / oldMaxHp;
-    char.hp = char.maxHp * ratio;
+function tick() {
+  const alive = S.party.filter(c=>!c.dead);
+  if (alive.length===0) {
+    clearInterval(S.loop); S.loop=null; S.inBattle=false;
+    saveGame();
+    setTimeout(()=>{
+      document.getElementById('battle-screen').classList.remove('active');
+      document.getElementById('menu-screen').classList.add('active');
+      S.party.forEach(c=>{ c.hp=c.maxHp; c.atkProg=0; c.dead=false; });
+
+      alert('Game Over! Seu time foi derrotado.');
+      
+      
+      let reward_list = [];
+    },700);
+    return;
   }
+  if (S.enemy.hp<=0) {
+    clearInterval(S.loop); S.loop=null;
+    S.gold+=S.room*10; refreshGold();
+    grantXP(alive); dropLoot(); saveGame();
+    setTimeout(nextRoom,1200);
+    return;
+  }
+  combat(alive); updateBattleUI(); refreshTT();
 }
 
-function updateCombat(){
-  state.party.forEach((c,i)=>{
-    c.atkProg += c.speed/50
-
-    if(c.atkProg >= 100){
-      c.atkProg = 0
-      const img = document.getElementById(`pimg-${i}`)
-      if(img){
-        const originalSrc = img.src;
-        img.src = c.atkImg;
-        setTimeout(()=> { if(img) img.src = originalSrc }, 150)
+function combat(alive) {
+  alive.forEach(c=>{
+    c.atkProg += c.speed/50;
+    if (c.atkProg>=100){
+      c.atkProg=0; flashEnemy();
+      const bwrap=document.getElementById('bwrap-'+c.uid);
+      const bimg =document.getElementById('bimg-'+c.uid);
+      if (bimg && c.atkImg && document.contains(bimg)) {
+        const orig=bimg.src; bimg.src=c.atkImg;
+        setTimeout(()=>{ if (bimg&&document.contains(bimg)) bimg.src=orig; },140);
       }
-
-      flashEnemy()
-      createDamage(window.innerWidth/2, window.innerHeight*0.25, c.atk)
-      state.enemy.hp -= c.atk
+      S.enemy.hp-=c.atk;
+      spawnDmg(window.innerWidth*.5, window.innerHeight*.32, c.atk,'#f5c518');
     }
-  })
-
-  if (state.enemy.hp > 0) {
-    state.enemy.atkProg += state.enemy.speed/50
-    if(state.enemy.atkProg >= 100){
-      state.enemy.atkProg = 0
-      const i = Math.floor(Math.random()*state.party.length)
-      const target = state.party[i]
-
-      if(target){
-        flashPlayer(i)
-        createDamage(window.innerWidth/2 - 100 + i*100, window.innerHeight*0.7, state.enemy.atk)
-        target.hp -= state.enemy.atk
-        if(target.hp <= 0) state.party.splice(i,1)
+  });
+  if (S.enemy.hp>0){
+    S.enemy.atkProg+=S.enemy.speed/50;
+    if (S.enemy.atkProg>=100){
+      S.enemy.atkProg=0;
+      const t=alive[Math.floor(Math.random()*alive.length)];
+      if (!t) return;
+      t.hp-=S.enemy.atk;
+      spawnDmg(window.innerWidth*.45,window.innerHeight*.68,S.enemy.atk,'#e74c3c');
+      flashChar(t.uid);
+      if (t.hp<=0){
+        t.hp=0; t.dead=true;
+        const card=document.getElementById('bc-'+t.uid);
+        if (card) card.classList.add('dead');
+        if (t.deadImg){
+          const bi=document.getElementById('bimg-'+t.uid);
+          if (bi&&document.contains(bi)) bi.src=t.deadImg;
+        }
       }
     }
   }
 }
 
-function updateUI(){
-  state.party.forEach((c,i)=>{
-    const hp = document.getElementById(`php-${i}`)
-    const atk = document.getElementById(`patk-${i}`)
-    if(hp) hp.style.width = Math.max(0, (c.hp / c.maxHp) * 100) + '%'
-    if(atk) atk.style.width = c.atkProg + '%'
-  })
-
-  const e = document.getElementById('enemy-hp')
-  if(e) e.style.width = Math.max(0, (state.enemy.hp / state.enemy.maxHp) * 100) + '%'
-  
-  const eAtk = document.getElementById('enemy-atk')
-  if(eAtk) eAtk.style.width = state.enemy.atkProg + '%'
+function updateBattleUI(){
+  S.party.forEach(c=>{
+    setW('bhp-'+c.uid, (c.hp/c.maxHp)*100);
+    setW('bxp-'+c.uid, (c.xp/c.xpToNext)*100);
+    setW('batk-'+c.uid, c.atkProg);
+  });
+  setW('enemy-hp-fill',  (S.enemy.hp/S.enemy.maxHp)*100);
+  setW('enemy-atk-fill', S.enemy.atkProg);
 }
 
+// ═══════════════════════════════════════════
+// XP / LEVEL
+// ═══════════════════════════════════════════
+function grantXP(alive){
+  const gain=S.room*20;
+  alive.forEach(c=>{
+    c.xp+=gain;
+    while(c.xp>=c.xpToNext){ c.xp-=c.xpToNext; levelUp(c); }
+    S.charSave[c.name]={level:c.level,xp:c.xp,xpToNext:c.xpToNext};
+  });
+}
+function levelUp(c){
+  c.level++; c.xpToNext=Math.floor(c.xpToNext*1.5);
+  c.baseAtk+=2; c.baseHp+=10; recalc(c); c.hp=c.maxHp;
+  const card=document.getElementById('bc-'+c.uid);
+  if (card){card.classList.add('lv-flash'); setTimeout(()=>card.classList.remove('lv-flash'),600);}
+  spawnDmg(window.innerWidth*.5,window.innerHeight*.55,'LV '+c.level+'!','#f5c518');
+  notify(c.name+' subiu para Lv.'+c.level+'!');
+}
+
+// ═══════════════════════════════════════════
+// LOOT
+// ═══════════════════════════════════════════
 function dropLoot(){
-  if (!state.enemy.drops) return;
-  state.enemy.drops.forEach(d => {
-    if(Math.random() < d.chance){
-      const itemData = state.itens.find(i => i.name === d.item)
-      if(itemData) {
-        state.inventory.push(JSON.parse(JSON.stringify(itemData)));
-      }
+  (S.enemy.drops||[]).forEach(d=>{
+    if (Math.random()<d.chance){
+      const item=S.itemsDB.find(i=>i.name===d.item);
+      if (item){S.inventory.push(JSON.parse(JSON.stringify(item))); notify('Item: '+item.name);
+      reward_list.push(item.name);
+     
     }
-  })
+    }
+  });
+  console.log(reward_list)
 }
 
+// ═══════════════════════════════════════════
+// FVFX
+// ═══════════════════════════════════════════
 function flashEnemy(){
-  const el = document.getElementById('enemy-img')
-  if(!el) return
-  el.style.filter = 'brightness(2)'
-  setTimeout(()=> { if(el) el.style.filter = 'none' }, 80)
+  const wrap=document.getElementById('enemy-img-wrap');
+  const img=wrap?.querySelector('img'); if (!img) return;
+  img.style.filter='brightness(4) drop-shadow(0 0 10px #fff)';
+  setTimeout(()=>{ if (img) img.style.filter=''; },85);
+}
+function flashChar(uid){
+  const img=document.getElementById('bimg-'+uid);
+  if (!img||!document.contains(img)) return;
+  img.style.filter='brightness(3) saturate(0)';
+  setTimeout(()=>{ if (img&&document.contains(img)) img.style.filter=''; },85);
+}
+function spawnDmg(x,y,val,color){
+  const el=document.createElement('div'); el.className='dmg';
+  el.textContent=val; el.style.color=color;
+  el.style.left=(x+(Math.random()-.5)*60)+'px'; el.style.top=y+'px';
+  document.body.appendChild(el);
+  requestAnimationFrame(()=>{ el.style.top=(y-85)+'px'; el.style.opacity='0'; });
+  setTimeout(()=>el.remove(),700);
+}
+function notify(msg){//PIMP Ocupa mt espço gerar como se fosse um toast notifications = []
+  const el=document.createElement('div'); el.className='notif'; el.textContent=msg;
+  document.body.appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity .4s'; },1800);
+  setTimeout(()=>el.remove(),2300);
 }
 
-function flashPlayer(i){
-  const el = document.getElementById(`pimg-${i}`)
-  if(!el) return
-  el.style.filter = 'brightness(2)'
-  setTimeout(()=> { if(el) el.style.filter = 'none' }, 80)
-}
+// ═══════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════
+function setW(id,pct){ const e=document.getElementById(id); if(e) e.style.width=Math.max(0,Math.min(100,pct))+'%'; }
+function addEl(p,tag,cls,txt){ const e=document.createElement(tag); if(cls)e.className=cls; if(txt)e.textContent=txt; p.appendChild(e); return e; }
+function fallback(w,h,l){ return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}'%3E%3Crect width='${w}' height='${h}' fill='%23181818'/%3E%3Ctext x='${w/2}' y='${h/2+9}' text-anchor='middle' fill='%23555' font-size='24' font-family='monospace'%3E${encodeURIComponent(l)}%3C/text%3E%3C/svg%3E`; }
+function imgSrc(src,sz,l){ return src || fallback(sz,sz,l); }
 
-function createDamage(x,y,val){
-  const d = document.createElement('div')
-  d.innerText = val
-  d.style.position='fixed'
-  d.style.left=x+'px'
-  d.style.top=y+'px'
-  d.style.color='#ffd700'
-  d.style.fontWeight='bold'
-  d.style.fontSize='24px'
-  d.style.pointerEvents='none'
-  d.style.transition='all 0.6s ease-out'
-  d.style.textShadow='0 0 5px #ffd700'
-  d.style.zIndex='50'
-  document.body.appendChild(d)
-
-  setTimeout(()=>{
-    d.style.top=(y-80)+'px'
-    d.style.opacity='0'
-  },50)
-  setTimeout(()=>d.remove(),600)
-}
-
-async function loadData(){
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+async function init(){
+  loadGame(); refreshGold();
   try {
-    const [p, i, it] = await Promise.all([
+    const [ch,en,it]=await Promise.all([
       fetch('personagens.json').then(r=>r.json()),
       fetch('inimigos.json').then(r=>r.json()),
       fetch('itens.json').then(r=>r.json())
-    ])
-
-    state.personagens = p
-    state.inimigos = i
-    state.itens = it
-    
-    renderMenuScreen();
-    
-    document.getElementById('start-btn').onclick = () => {
-      if (state.party.length > 0) {
-        startGame();
-      } else {
-        alert("Escolha pelo menos um personagem!");
-      }
-    }
-    
-    document.getElementById('reset-btn').onclick = () => {
-      state.party = [];
-      state.selectedChar = null;
-      renderMenuScreen();
-    }
-  } catch (err) {
-    console.error("Erro ao carregar JSONs:", err);
-    document.getElementById('menu-screen').innerHTML = "Erro ao carregar arquivos JSON";
+    ]);
+    S.chars=ch; S.enemies=en; S.itemsDB=it;
+  } catch(e) {
+    console.warn('JSONs não encontrados. Usando FallBAck',e);
+    S.chars=[
+      {name:"Punchy",hp:60, atk:12,speed:170,role:"dps",   idle:"",icon:"",atkImg:"",deadImg:"assets/characters/deadfb.png"},
+      {name:"Stonk", hp:120,atk:7, speed:75, role:"tank",  idle:"",icon:"",atkImg:"",deadImg:"assets/characters/deadfb.png"},
+      {name:"Wiz",   hp:45, atk:16,speed:130,role:"mage",  idle:"",icon:"",atkImg:"",deadImg:"assets/characters/deadfb.png"},
+      {name:"Shade", hp:55, atk:14,speed:200,role:"rogue", idle:"",icon:"",atkImg:"",deadImg:"assets/characters/deadfb.png"},
+      {name:"Lyra",  hp:70, atk:8, speed:90, role:"healer",idle:"",icon:"",atkImg:"",deadImg:"assets/characters/deadfb.png"},
+    ];
+    S.enemies=[
+      {name:"Goblin",hp:55, atk:9, speed:120,idle:"",drops:[]},
+      {name:"Orc",   hp:90, atk:14,speed:80, idle:"",drops:[]},
+      {name:"Mago",  hp:70, atk:18,speed:100,idle:"",drops:[]},
+      {name:"Troll", hp:160,atk:11,speed:50, idle:"",drops:[]},
+    ];
+    S.itemsDB=[];
   }
+  renderMenu();
+  document.getElementById('btn-start').onclick=startGame;
+  document.getElementById('btn-reset').onclick=()=>{ S.party=[]; S.selChar=null; renderMenu(); };
 }
-
-loadData()
+init();
 </script>
-
 </body>
 </html>

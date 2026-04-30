@@ -1,26 +1,54 @@
 [
   {
-    "name": "Slime",
-    "type": "tank",
-    "hp": 100,
-    "atk": 6,
-    "speed": 50,
-    "idle": "sprites/slime.png",
+    "name": "Bugugu",
+    "hp": 55,
+    "atk": 9,
+    "speed": 130,
+    "idle": "assets/enemies/bugugu.jpg",
     "drops": [
-      { "item": "Gel", "chance": 0.8 },
-      { "item": "Essência", "chance": 0.2 }
+      { "item": "Adaga Enferrujada", "chance": 0.25 },
+      { "item": "Ouro Sujo",         "chance": 0.5  }
     ]
   },
   {
-    "name": "Goblin",
-    "type": "dps",
-    "hp": 90,
-    "atk": 10,
-    "speed": 90,
-    "idle": "sprites/goblin.png",
+    "name": "Daluncio",
+    "hp": 95,
+    "atk": 14,
+    "speed": 80,
+    "idle": "assets/enemies/daluncio.jpg",
     "drops": [
-      { "item": "Adaga", "chance": 0.4 },
-      { "item": "Ouro", "chance": 0.9 }
+      { "item": "Machado Tosco", "chance": 0.2 },
+      { "item": "Armadura Velha","chance": 0.15 }
+    ]
+  },
+  {
+    "name": "Colgatius",
+    "hp": 70,
+    "atk": 18,
+    "speed": 100,
+    "idle": "assets/enemies/colgate.jpg",
+    "drops": [
+      { "item": "Tomo Maldito", "chance": 0.3 }
+    ]
+  },
+  {
+    "name": "Devorador de Mundos(Modo Raiva >:V)",
+    "hp": 3000,
+    "atk": 8000,
+    "speed": 20,
+    "idle": "assets/enemies/pibou.jpg",
+    "drops": [
+      { "item": "Escudo Trincado", "chance": 0.35 }
+    ]
+  },
+   {
+    "name": "ROPOPO( SUPER VELOCIDADE)",
+    "hp": 1500,
+    "atk": 5,
+    "speed": 1200,
+    "idle": "assets/enemies/poporo.jpg",
+    "drops": [
+      { "item": "Escudo Trincado", "chance": 0.35 }
     ]
   }
 ]

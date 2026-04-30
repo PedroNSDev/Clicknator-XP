@@ -1,23 +1,37 @@
 [
   {
-    "name": "Espada",
+    "name": "Adaga Enferrujada",
     "type": "weapon",
-    "atk": 5
+    "atk": 2,
+    "price": 0,
+    "allowedRoles": ["dps", "rogue"]
   },
   {
-    "name": "Armadura",
+    "name": "Machado Tosco",
+    "type": "weapon",
+    "atk": 4,
+    "price": 0,
+    "allowedRoles": ["dps", "tank"]
+  },
+  {
+    "name": "Tomo Maldito",
+    "type": "weapon",
+    "atk": 5,
+    "price": 0,
+    "allowedRoles": ["mage", "healer"]
+  },
+  {
+    "name": "Armadura Velha",
     "type": "armor",
-    "hp": 20
+    "hp": 12,
+    "price": 0,
+    "allowedRoles": ["tank", "dps"]
   },
   {
-    "name": "Adaga",
-    "type": "weapon",
-    "atk": 3,
-    "speed": 10
-  },
-  {
-    "name": "Essência",
-    "type": "consumable",
-    "effect": "mana"
+    "name": "Escudo Trincado",
+    "type": "armor",
+    "hp": 18,
+    "price": 0,
+    "allowedRoles": ["tank"]
   }
 ]
