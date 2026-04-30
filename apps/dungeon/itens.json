@@ -33,5 +33,12 @@
     "hp": 18,
     "price": 0,
     "allowedRoles": ["tank"]
+  },
+    {
+    "name": "Escudo ",
+    "type": "armor",
+    "hp": 32,
+    "price": 100,
+    "allowedRoles": ["tank"]
   }
 ]
