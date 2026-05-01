@@ -9,7 +9,7 @@
     "icon":    "assets/characters/punchy.png",
     "atkImg":  "assets/characters/punchy_atk.png",
     "dmgImg":  "assets/characters/punchy_dmg.png",
-    "deadImg": "assets/characters/deadfb.png"
+    "deadImg": "assets/characters/fb.png"
   },
   {
     "name": "Stonkius",
@@ -21,7 +21,7 @@
     "icon":    "assets/characters/knight.png",
     "atkImg":  "assets/characters/stonk_atk.png",
     "dmgImg":  "assets/characters/stonk_dmg.png",
-    "deadImg": "assets/characters/deadfb.png"
+    "deadImg": "assets/characters/fb.png"
   },
   {
     "name": "Mage",
@@ -33,7 +33,7 @@
     "icon":    "assets/characters/mage.png",
     "atkImg":  "assets/characters/wiz_atk.png",
     "dmgImg":  "assets/characters/wiz_dmg.png",
-    "deadImg": "assets/characters/deadfb.png"
+    "deadImg": "assets/characters/fb.png"
   },
   {
     "name": "Gambler",
@@ -45,7 +45,7 @@
     "icon":    "assets/icons/shade_icon.png",
     "atkImg":  "assets/characters/shade_atk.png",
     "dmgImg":  "assets/characters/shade_dmg.png",
-    "deadImg": "assets/characters/deadfb.png"
+    "deadImg": "assets/characters/fb.png"
   },
   {
     "name": "Healer",
@@ -57,7 +57,7 @@
     "icon":    "assets/icons/lyra_icon.png",
     "atkImg":  "assets/characters/lyra_atk.png",
     "dmgImg":  "assets/characters/lyra_dmg.png",
-    "deadImg": "assets/characters/deadfb.png"
+    "deadImg": "assets/characters/fb.png"
   },
     {
     "name": "Automato",
@@ -65,11 +65,25 @@
     "atk": 8,
     "speed": 90,
     "role": "VERS",
-    "idle":    "assets/characters/lyra_idle.png",
-    "icon":    "assets/icons/lyra_icon.png",
-    "atkImg":  "assets/characters/lyra_atk.png",
+    "idle":    "assets/characters/auto/auto_idle.png",
+    "icon":    "assets/characters/auto/auto_icon.png",  
+    "atkImg":  "assets/characters/auto/auto_atk.png",
+    "dmgImg":  "assets/characters/auto/auto_hurt.png",
+    "deadImg": "assets/characters/fb.png"
+  },
+     {
+    "name": "Gabubu",
+    "hp": 40,
+    "atk": 15,
+    "speed": 200,
+    "role": "CAT",
+    "str": 2, "int": 0, "con": 1, "agi":700,
+    "idle":    "assets/characters/gabu/gabubu_idle.png",
+    "icon":    "assets/characters/gabu/icon/gabubu.png",
+    "iconimgs": "s",
+    "atkImg":  "assets/characters/gabubu_atk.png",
     "dmgImg":  "assets/characters/lyra_dmg.png",
-    "deadImg": "assets/characters/deadfb.png"
+    "deadImg": "assets/characters/fb.png"
   }
   
 ]

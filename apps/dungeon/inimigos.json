@@ -11,6 +11,17 @@
     ]
   },
   {
+    "name": "Porcus",
+    "hp": 70,
+    "atk": 12,
+    "speed": 150,
+    "idle": "assets/enemies/princesa.jpg",
+    "drops": [
+      { "item": "Adaga Enferrujada", "chance": 0.25 },
+      { "item": "Ouro Sujo",         "chance": 0.5  }
+    ]
+  },
+  {
     "name": "Daluncio",
     "hp": 95,
     "atk": 14,
@@ -47,6 +58,26 @@
     "atk": 5,
     "speed": 1200,
     "idle": "assets/enemies/poporo.jpg",
+    "drops": [
+      { "item": "Escudo Trincado", "chance": 0.35 }
+    ]
+  },
+    {
+    "name": "Buxinho",
+    "hp": 1200,
+    "atk": 15,
+    "speed": 400,
+    "idle": "assets/enemies/demon.jpg",
+    "drops": [
+      { "item": "Escudo Trincado", "chance": 0.35 }
+    ]
+  },
+  {
+    "name": "Ronaldo",
+    "hp": 1000,
+    "atk": 8,
+    "speed": 450,
+    "idle": "assets/enemies/demon2.jpg",
     "drops": [
       { "item": "Escudo Trincado", "chance": 0.35 }
     ]
