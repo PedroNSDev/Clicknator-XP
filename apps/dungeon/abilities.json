@@ -1,0 +1,35 @@
+[   
+{
+    "name":"punch",
+    "type": "impact",
+    "target": "single",
+    "side": "enemy",
+    "ammount":1,
+    "interval":1
+},
+{
+    "name": "SLASH",
+    "type": "cut",
+    "target": "single",
+    "side": "enemy",
+    "ammount":1,
+    "interval":1
+
+},
+{
+    "name":"heal",
+    "type":"heal",
+    "target":"single",
+    "side": "ally",
+    "ammount": 1, // * FTH(FAITH)
+    "interval": 1 // * SPEED
+},
+{
+    "name":"Group HEal",
+    "type":"heal",
+    "target":"group",
+    "side": "ally",
+    "ammount": 1, // * FTH(FAITH)
+    "interval": 3 // * SPEED
+}
+]

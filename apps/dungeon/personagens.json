@@ -77,10 +77,10 @@
     "atk": 15,
     "speed": 200,
     "role": "CAT",
+    "abilities": {"punch": 0},
     "str": 2, "int": 0, "con": 1, "agi":700,
     "idle":    "assets/characters/gabu/gabubu_idle.png",
-    "icon":    "assets/characters/gabu/icon/gabubu.png",
-    "iconimgs": "s",
+    "iconimgs": {"normal":"assets/characters/gabu/icon/gabubu.png","hurt":"assets/characters/gabu/icon/gabubu.png"},
     "atkImg":  "assets/characters/gabubu_atk.png",
     "dmgImg":  "assets/characters/lyra_dmg.png",
     "deadImg": "assets/characters/fb.png"
