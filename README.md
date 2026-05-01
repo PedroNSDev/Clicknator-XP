@@ -9,9 +9,8 @@ clicknator.com.br
 
 # Apps
 
--video editor (software de edição de video)
+- video editor (software de edição de video)
 - Tyr4n-X (software de Criação de Musicas)
-- 
  
 # Sites 
 - GameHub(site de Jogos)
