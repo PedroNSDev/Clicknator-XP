@@ -1,25 +1,66 @@
-[{
-   "name": "Regen",
-   "type": "over time",
-   "effect":"heal",
-   "amount": 1,// Caster Heal factor  * 1
-   "interval": 1 //settar um intervalo depois o interval do EffectTick é predefinido  a quantidade de procs que ele da por tick é definida aqui
-
-},
-{
+[
+  {
+    "name": "Regen",
+    "type": "over time",
+    "effect": "heal",
+    "amount": 1,
+    "interval": 15
+  },
+  {
     "name": "Poison",
-   "type": "over time",
-   "effect":"Damage",
-   "amount": 1,// Caster Heal factor  * 1
-   "interval": 1 //settar um intervalo depois o interval do EffectTick é predefinido  a quantidade de procs que ele da por tick é definida aqui
-
-},
-{
-    "name": "Rot",//seria interessante se não pudesse regenerar oq foi perdido hehehe
-   "type": "over time",
-   "effect":"Damage",
-   "amount": 2,// Caster Heal factor  * 1
-   "interval": 0.7 //settar um intervalo depois o interval do EffectTick é predefinido  a quantidade de procs que ele da por tick é definida aqui
-}
-
+    "type": "over time",
+    "effect": "Damage",
+    "amount": 1,
+    "interval": 10
+  },
+  {
+    "name": "Rot",
+    "type": "over time",
+    "effect": "Damage",
+    "amount": 2,
+    "interval": 10
+  },
+  {
+    "name": "Aumento de Ataque",
+    "type": "buff",
+    "effect": { "ATK": 1.5 },
+    "interval": 10
+  },
+  {
+    "name": "Frenesi",
+    "type": "buff",
+    "effect": { "ATK": 1.75, "SPD": 1.75 },
+    "interval": 7.5
+  },
+  {
+    "name": "Slowness",
+    "type": "debuff",
+    "effect": { "SPD": 0.60 },
+    "interval": 10
+  },
+  {
+    "name": "ATAQUEM ME",
+    "type": "buff",
+    "effect": { "AGGRO": 3.0 },
+    "interval": 15
+  },
+  {
+    "name": "LETS GO GAMBLING",
+    "type": "buff",
+    "effect": { "ATK": 0.7, "CRITMULTI": 2, "CRITCHANCE": 1.8 },
+    "interval": 20
+  },
+  {
+    "name": "OVERCLOCK",
+    "type": "buff",
+    "effect": { "SPD": 3, "ATK": 1.30 },
+    "side effect": ["OverHeat"],
+    "interval": 20
+  },
+  {
+    "name": "OverHeat",
+    "type": "debuff",
+    "effect": { "SPD": 0.4 },
+    "interval": 15
+  }
 ]

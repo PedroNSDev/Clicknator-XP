@@ -1,35 +1,14 @@
-[   
-{
-    "name":"punch",
-    "type": "impact",
-    "target": "single",
-    "side": "enemy",
-    "amount":1,
-    "interval":1
-},
-{
-    "name": "SLASH",
-    "type": "cut",
-    "target": "single",
-    "side": "enemy",
-    "amount":1,
-    "interval":1
-
-},
-{
-    "name":"heal",
-    "type":"heal",
-    "target":"single",
-    "side": "ally",
-    "amount": 1, 
-    "interval": 1
-},
-{
-    "name":"Group HEal",
-    "type":"heal",
-    "target":"group",
-    "side": "ally",
-    "amount": 1,
-    "interval": 3 
-}
+[
+  {"name":"punch","type":"impact","target":"single","side":"enemy","amount":1,"interval":1},
+  {"name":"SLASH","type":"cut","target":"single","side":"enemy","amount":1,"interval":1},
+  {"name":"Bash","type":"impact","target":"single","side":"enemy","amount":1,"interval":1},
+  {"name":"heal","type":"heal","target":"single","side":"ally","amount":1,"interval":1},
+  {"name":"Group HEal","type":"heal","target":"group","side":"ally","amount":1,"interval":3},
+  {"name":"Regen","type":"buff","effect":["Regen"],"target":"single","side":"ally","amount":1,"interval":1},
+  {"name":"ME ATAQUEM","type":"buff","effect":["ATAQUEM ME"],"target":"self","side":"self","amount":1,"interval":1},
+  {"name":"ROT CAST","type":"debuff","effect":["Rot"],"target":"single","side":"enemy","amount":1,"interval":1},
+  {"name":"Poison Stab","type":"cut","effect":["Poison"],"target":"single","side":"enemy","amount":1,"interval":1},
+  {"name":"OVERCLOCK","type":"buff","effect":["OVERCLOCK"],"target":"self","side":"self","amount":1,"interval":1},
+  {"name":"LETS GO GAMBLING","type":"buff","effect":["LETS GO GAMBLING"],"target":"self","side":"self","amount":1,"interval":1},
+   {"name":"Tyran's Module","type":"buff","effect":["OVERCLOCK"],"target":"self","side":"self","amount":1,"interval":1}
 ]

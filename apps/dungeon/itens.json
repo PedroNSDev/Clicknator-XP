@@ -54,5 +54,21 @@
     "atk": 100,
     "price": 1000,
     "allowedRoles": ["auto"]
+  },
+    {
+    "name": "OverClock Module",
+    "type": "armor",
+    "hp": 68,
+    "price": 0,
+    "allowedRoles": ["auto"]
+  },
+     {
+    "name": "Staff",
+    "type": "INT",
+    "level": 20,
+    "atk": 40,
+    "int": 2,
+    "price": 500,
+    "allowedRoles": ["mage"]
   }
 ]

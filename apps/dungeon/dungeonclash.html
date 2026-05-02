@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  
+<meta charset="UTF-8">
   <meta name="google-adsense-account" content="ca-pub-1194290959028721">
         <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1194290959028721"
          crossorigin="anonymous"></script>
-<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dungeon Clash</title>
 <style>
@@ -157,14 +158,17 @@ html, body {
 .card-icon-wrap.state-injuried img { filter: sepia(.8) saturate(1.2) hue-rotate(-20deg) brightness(.8); }
 .card-icon-wrap.state-dead    img { filter: grayscale(1) brightness(.5); }
 .ci-ph { width: 100%; height: 100%; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--text2); }
-/*  flash  */
+
+/*  flash */
 .ability-flash {
   position: fixed; pointer-events: none; z-index: 202;
   font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
   color: #aef; text-shadow: 0 0 8px #4af;
   transition: top .6s ease-out, opacity .6s ease-out;
 }
+
 .card-bars { width: 100%; display: flex; flex-direction: column; gap: 2px; }
+
 /* Heal VFX on character */
 @keyframes healGlow { 0%,100%{box-shadow:none} 50%{box-shadow:0 0 18px #2ecc71, inset 0 0 10px #2ecc7144;} }
 .heal-glow { animation: healGlow .5s ease; }
@@ -296,6 +300,35 @@ html, body {
 
 @keyframes lv-flash { 0%,100%{filter:brightness(1);} 40%{filter:brightness(4) drop-shadow(0 0 12px #ffd700);} }
 .lv-flash { animation: lv-flash .6s ease; }
+
+/* EFFECT BADGES */
+.fx-bar {
+  width: 100%; display: flex; flex-wrap: wrap; gap: 2px;
+  min-height: 6px;
+}
+.fx-badge {
+  font-size: 8px; letter-spacing: .5px; padding: 1px 4px;
+  border-radius: 2px; white-space: nowrap; line-height: 1.5;
+  animation: fxIn .25s ease;
+}
+@keyframes fxIn { from{opacity:0;transform:scale(.7)} to{opacity:1;transform:scale(1)} }
+.fx-buff    { background:#0e2a1a; color:#4d9; border:1px solid #1a5a2a; }
+.fx-debuff  { background:#2a0e0e; color:#e55; border:1px solid #5a1a1a; }
+.fx-ot-heal { background:#0a2010; color:#2ecc71; border:1px solid #155a25; }
+.fx-ot-dmg  { background:#1a0a2a; color:#a855f7; border:1px solid #4a1a7a; }
+
+/* tooltip effect */
+.tt-effects { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+.tt-effect-label { font-size: 9px; color: var(--text2); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+.tt-effect-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 3px 6px; border-radius: 2px; margin-bottom: 3px; font-size: 9px;
+}
+.tt-effect-row.buff    { background:#0e2a1a; color:#4d9; }
+.tt-effect-row.debuff  { background:#2a0e0e; color:#e55; }
+.tt-effect-row.ot-heal { background:#0a2010; color:#2ecc71; }
+.tt-effect-row.ot-dmg  { background:#1a0a2a; color:#a855f7; }
+.tt-effect-timer { opacity:.6; }
 </style>
 </head>
 <body>
@@ -404,6 +437,7 @@ html, body {
   <div class="tt-attrs" id="tt-attrs"></div>
   <div class="tt-sub-attrs" id="tt-sub-attrs"></div>
   <div class="tt-abilities" id="tt-abilities"></div>
+  <div class="tt-effects" id="tt-effects"></div>
   <div class="tt-slots">
     <div class="tt-slot-label">Equipamentos</div>
     <div class="tt-slot-row"><span class="tt-slot-icon">⚔</span><span class="tt-slot-text" id="tt-weapon">— vazio —</span></div>
@@ -418,7 +452,7 @@ html, body {
 // ═══════════════════════════════════════════
 let UID = 0;
 const S = {
-  chars: [], enemies: [], itemsDB: [], abilitiesDB: [],
+  chars: [], enemies: [], itemsDB: [], abilitiesDB: [], effectsDB: [],
   party: [], inventory: [],
   selChar: null, enemy: null,
   room: 0, loop: null, gold: 0,
@@ -547,13 +581,15 @@ function addToParty(p) {
   c.uid     = UID++;
   c.atkProg = 0;
   c.dead    = false;
+  c.activeEffects = [];
 
   deriveBaseStats(c);
-//SaveItens
+
   const sv = S.charSave[p.name];
   c.level    = sv?.level    || 1;
   c.xp       = sv?.xp       || 0;
   c.xpToNext = sv?.xpToNext || 100;
+
   c.equip = { weapon:null, armor:null, accessory:null };
   if (sv?.equip) {
     ['weapon','armor','accessory'].forEach(slot=>{
@@ -567,6 +603,7 @@ function addToParty(p) {
 
   for (let i=1; i<c.level; i++) applyLevelBonus(c);
   recalc(c); c.hp = c.maxHp;
+
   selectNextAbility(c);
   S.party.push(c);
   renderMenu();
@@ -622,6 +659,17 @@ function recalc(c) {
   c.critmlt    = c.critmltBase || 1.5;
   c.aggro      = c.aggroBase   || 1;
   c.fth        = c.baseFth     || 0;
+  (c.activeEffects||[]).forEach(eff => {
+    const t = (eff.def.type||'').toLowerCase();
+    if (t !== 'buff' && t !== 'debuff') return;
+    const fx = eff.def.effect;
+    if (!fx || typeof fx !== 'object') return;
+    if (fx.ATK        !== undefined) c.atk        = Math.round(c.atk        * fx.ATK);
+    if (fx.SPD        !== undefined) c.speed      = Math.round(c.speed      * fx.SPD);
+    if (fx.AGGRO      !== undefined) c.aggro      = c.aggro      * fx.AGGRO;
+    if (fx.CRITMULTI  !== undefined) c.critmlt    = c.critmlt    * fx.CRITMULTI;
+    if (fx.CRITCHANCE !== undefined) c.critChance = c.critChance * fx.CRITCHANCE;
+  });
 }
 
 // ═══════════════════════════════════════════
@@ -629,6 +677,7 @@ function recalc(c) {
 // ═══════════════════════════════════════════
 function getAvailableAbilities(c) {
   if (!c.abilities) return [];
+  // abilities { "punch": 0, "slash": 10 } onde valor = nivel minimo
   return Object.entries(c.abilities)
     .filter(([, minLv]) => c.level >= (minLv||0))
     .map(([name]) => S.abilitiesDB.find(a => a.name.toLowerCase() === name.toLowerCase()))
@@ -638,20 +687,26 @@ function getAvailableAbilities(c) {
 function selectNextAbility(c) {
   const avail = getAvailableAbilities(c);
   if (!avail.length) {
-    c.nextAbility = null;
-    c.nextInterval = 1;
-    return;
+    c.nextAbility = null; c.nextInterval = 1; return;
   }
+
   const alive = S.party ? S.party.filter(m=>!m.dead) : [];
   const lowestHpPct = alive.length ? Math.min(...alive.map(m=>m.hp/m.maxHp)) : 1;
-  const healAbilities = avail.filter(a=>a.type==='heal');
-  const offAbilities  = avail.filter(a=>a.side==='enemy');
+
+  const healAbs  = avail.filter(a=>a.type==='heal');
+  const buffAbs  = avail.filter(a=>a.type==='buff' || a.type==='debuff');
+  const offAbs   = avail.filter(a=>a.side==='enemy');
+  const selfAbs  = avail.filter(a=>a.side==='self');
 
   let chosen;
-  if (healAbilities.length && lowestHpPct < 0.5) {
-    chosen = healAbilities[Math.floor(Math.random()*healAbilities.length)];
-  } else if (offAbilities.length) {
-    chosen = offAbilities[Math.floor(Math.random()*offAbilities.length)];
+  if (healAbs.length && lowestHpPct < 0.5) {
+    chosen = healAbs[Math.floor(Math.random()*healAbs.length)];
+  } else if (buffAbs.length && Math.random() < 0.25) {
+    chosen = buffAbs[Math.floor(Math.random()*buffAbs.length)];
+  } else if (selfAbs.length && Math.random() < 0.15) {
+    chosen = selfAbs[Math.floor(Math.random()*selfAbs.length)];
+  } else if (offAbs.length) {
+    chosen = offAbs[Math.floor(Math.random()*offAbs.length)];
   } else {
     chosen = avail[Math.floor(Math.random()*avail.length)];
   }
@@ -663,15 +718,30 @@ function selectNextAbility(c) {
 function executeAbility(c, alive) {
   const ab = c.nextAbility;
 
-  if (!ab) {
-    doBasicAttack(c);
-    return;
-  }
+  if (!ab) { doBasicAttack(c); return; }
 
   if (ab.side === 'enemy') {
     doOffensiveAbility(c, ab);
+    if (ab.effect) {
+      const names = Array.isArray(ab.effect) ? ab.effect : Object.keys(ab.effect);
+      names.forEach(eName => addEffect(S.enemy, eName, c));
+    }
   } else if (ab.side === 'ally') {
-    doHealAbility(c, ab, alive);
+    if (ab.type === 'heal') {
+      doHealAbility(c, ab, alive);
+    } else if (ab.type === 'buff') {
+      const names = Array.isArray(ab.effect) ? ab.effect : Object.keys(ab.effect||{});
+      if (ab.target === 'group') {
+        alive.forEach(t => names.forEach(n => addEffect(t, n, c)));
+      } else {
+        const t = alive.reduce((a,b)=>(a.hp/a.maxHp)<(b.hp/b.maxHp)?a:b, alive[0]);
+        if (t) names.forEach(n => addEffect(t, n, c));
+      }
+    }
+  } else if (ab.side === 'self') {
+    // AutoBuff 
+    const names = Array.isArray(ab.effect) ? ab.effect : Object.keys(ab.effect||{});
+    names.forEach(n => addEffect(c, n, c));
   }
 
   spawnAbilityLabel(c, ab.name);
@@ -714,6 +784,7 @@ function doHealAbility(c, ab, alive) {
   if (ab.target === 'group') {
     alive.forEach(t => applyHeal(t, heal));
   } else {
+    // GET MOST INJURIED
     const target = alive.reduce((a,b) => (a.hp/a.maxHp) < (b.hp/b.maxHp) ? a : b);
     applyHeal(target, heal);
   }
@@ -734,6 +805,149 @@ function applyHeal(target, amount) {
 
   updateCharIcon(target);
 }
+// ═══════════════════════════════════════════
+// FEFFECTS HANDLER
+// ═══════════════════════════════════════════
+const TICK_SEC = 0.05; 
+
+function addEffect(target, effectName, caster) {
+  const def = S.effectsDB.find(e => e.name.toLowerCase() === effectName.toLowerCase());
+  if (!def) { console.warn('Efeito não encontrado:', effectName); return; }
+  if (!target.activeEffects) target.activeEffects = [];
+
+  const entry = {
+    name:      def.name,
+    def:       def,
+    timer:     0,                       
+    remaining: def.interval || 10,      
+    source:    caster?.name || '?'
+  };
+  target.activeEffects.push(entry);
+
+  if (target.uid !== undefined) recalc(target);
+
+  const cls = effectClass(def);
+  const label = caster?.name ? caster.name+': '+def.name : def.name;
+  notify(label + badgeForClass(cls));
+}
+
+function effectClass(def) {
+  const t = (def.type||'').toLowerCase();
+  if (def.effect === 'heal') return 'ot-heal';
+  if (t === 'over time' && (def.effect||'').toLowerCase().includes('damage')) return 'ot-dmg';
+  if (t === 'buff')   return 'buff';
+  if (t === 'debuff') return 'debuff';
+  return 'buff';
+}
+function badgeForClass(cls) {
+  return {buff:' ▲', debuff:' ▼', 'ot-heal':' ♥', 'ot-dmg':' ☠'}[cls] || '';
+}
+
+function processEffects(alive) {
+  // Aliados
+  alive.forEach(c => {
+    if (!c.activeEffects?.length) return;
+    let needRecalc = false;
+    const expired = [];
+
+    c.activeEffects.forEach((eff, idx) => {
+      eff.timer     += TICK_SEC;
+      eff.remaining -= TICK_SEC;
+
+      const t = (eff.def.type||'').toLowerCase();
+      if (t === 'over time') {
+        if (eff.timer >= (eff.def.interval || 10)) {
+          eff.timer = 0;
+          applyOTTick(c, eff.def);
+        }
+      }
+      
+
+      if (eff.remaining <= 0) { expired.push(idx); needRecalc = true; }
+    });
+
+    expired.reverse().forEach(idx => {
+      const e = c.activeEffects.splice(idx, 1)[0];
+      onExpire(c, e);
+    });
+    if (needRecalc) recalc(c);
+
+    renderFxBar(c);
+  });
+
+  // Inimigo
+  if (S.enemy && S.enemy.activeEffects?.length) {
+    const expired = [];
+    S.enemy.activeEffects.forEach((eff, idx) => {
+      eff.timer     += TICK_SEC;
+      eff.remaining -= TICK_SEC;
+      const t = (eff.def.type||'').toLowerCase();
+      if (t === 'over time') {
+        if (eff.timer >= (eff.def.interval || 10)) {
+          eff.timer = 0;
+          applyOTTickEnemy(eff.def);
+        }
+      }
+      if (eff.remaining <= 0) expired.push(idx);
+    });
+    expired.reverse().forEach(idx => {
+      const e = S.enemy.activeEffects.splice(idx, 1)[0];
+      onExpireEnemy(e);
+    });
+  }
+}
+
+function applyOTTick(target, def) {
+  const effect = (def.effect||'').toLowerCase();
+  if (effect === 'heal') {
+    const amount = Math.round((target.fth||1) * (def.amount||1));
+    applyHeal(target, amount);
+  } else if (effect === 'damage') {
+    const dmg = Math.max(1, Math.round(def.amount || 1));
+    target.hp = Math.max(0, target.hp - dmg);
+    const bwrap = document.getElementById('bwrap-'+target.uid);
+    const rect  = bwrap?.getBoundingClientRect() || {left:window.innerWidth*.5, top:window.innerHeight*.6, width:72};
+    spawnDmg(rect.left + rect.width/2, rect.top, '−'+dmg, '#a855f7', false, false);
+    if (target.hp <= 0) {
+      target.hp=0; target.dead=true;
+      const card=document.getElementById('bc-'+target.uid);
+      if (card) card.classList.add('dead');
+    }
+    updateCharIcon(target);
+  }
+}
+
+function applyOTTickEnemy(def) {
+  const effect = (def.effect||'').toLowerCase();
+  if (effect === 'damage') {
+    const dmg = Math.max(1, Math.round(def.amount || 1));
+    S.enemy.hp = Math.max(0, S.enemy.hp - dmg);
+    spawnDmg(window.innerWidth*.5, window.innerHeight*.32, '−'+dmg, '#a855f7', false, false);
+  }
+}
+
+function onExpire(target, eff) {
+  const se = eff.def['side effect'] || eff.def.sideEffects;
+  if (se?.length) se.forEach(n => addEffect(target, n, {name: eff.def.name}));
+  notify(target.name + ': ' + eff.name + ' acabou');
+}
+function onExpireEnemy(eff) {
+  const se = eff.def['side effect'] || eff.def.sideEffects;
+  if (se?.length) se.forEach(n => addEffect(S.enemy, n, {name: eff.def.name}));
+}
+
+function renderFxBar(c) {
+  const bar = document.getElementById('fxbar-'+c.uid);
+  if (!bar) return;
+  bar.innerHTML = '';
+  (c.activeEffects||[]).forEach(eff => {
+    const badge = document.createElement('div');
+    badge.className = 'fx-badge fx-'+effectClass(eff.def);
+    badge.textContent = eff.name.substring(0,8) + ' ' + Math.ceil(eff.remaining)+'s';
+    badge.title = eff.name + ' — ' + Math.ceil(eff.remaining) + 's restantes';
+    bar.appendChild(badge);
+  });
+}
 
 function spawnAbilityLabel(c, name) {
   const bwrap = document.getElementById('bwrap-'+c.uid);
@@ -751,7 +965,7 @@ function spawnAbilityLabel(c, name) {
 }
 
 // ═══════════════════════════════════════════
-// FICON STATE
+// FICON STATE(iconimgs com base em %HP)
 // ═══════════════════════════════════════════
 function getIconState(c) {
   if (c.dead || c.hp <= 0) return 'dead';
@@ -765,9 +979,8 @@ function updateCharIcon(c) {
   const wrap = document.getElementById('ciwrap-'+c.uid);
   const el   = document.getElementById('cicon-'+c.uid);
   if (!el || !wrap) return;
+
   const state = getIconState(c);
-
-
   if (c._iconState === state) return;
   c._iconState = state;
 
@@ -918,7 +1131,7 @@ function updateTooltipContent(c) {
   document.getElementById('tt-hp-val').textContent = Math.ceil(c.hp)+' / '+c.maxHp;
   document.getElementById('tt-xp-val').textContent = c.xp+' / '+c.xpToNext+' xp';
 
-  //  PRIMARY ATTRIBUTES
+ //  PRIMARY ATTRIBUTES
   const attrsDiv = document.getElementById('tt-attrs');
   attrsDiv.innerHTML = '';
   const attrs = [
@@ -949,7 +1162,6 @@ function updateTooltipContent(c) {
     const d=document.createElement('div'); d.className='tt-sub';
     d.innerHTML=k+' <span>'+v+'</span>'; subDiv.appendChild(d);
   });
-  
   // Abilities
   const abDiv = document.getElementById('tt-abilities');
   abDiv.innerHTML = '';
@@ -966,6 +1178,23 @@ function updateTooltipContent(c) {
       typeEl.textContent = ab ? '['+ab.type+'] x'+ab.amount : (locked?'🔒 Lv.'+minLv:'?');
       row.appendChild(nameEl); row.appendChild(typeEl);
       abDiv.appendChild(row);
+    });
+  }
+
+  // Efeitos ativos
+  const fxDiv = document.getElementById('tt-effects');
+  fxDiv.innerHTML = '';
+  const fx = c.activeEffects||[];
+  if (fx.length) {
+    const lbl=document.createElement('div'); lbl.className='tt-effect-label'; lbl.textContent='Efeitos Ativos';
+    fxDiv.appendChild(lbl);
+    fx.forEach(eff=>{
+      const cls = effectClass(eff.def);
+      const row=document.createElement('div'); row.className='tt-effect-row '+cls;
+      const nm=document.createElement('span'); nm.textContent=eff.name;
+      const tm=document.createElement('span'); tm.className='tt-effect-timer'; tm.textContent=Math.ceil(eff.remaining)+'s';
+      row.appendChild(nm); row.appendChild(tm);
+      fxDiv.appendChild(row);
     });
   }
 
@@ -1030,6 +1259,7 @@ function spawnEnemy() {
   S.enemy.hp      = S.enemy.maxHp;
   S.enemy.atk    += (S.room-1)*2;
   S.enemy.atkProg = 0;
+  S.enemy.activeEffects = [];
 }
 
 function updateEnemyDOM() {
@@ -1080,7 +1310,7 @@ function buildPartyDOM() {
     };
     bwrap.appendChild(bimg); card.appendChild(bwrap);
 
-    // Icon com estados HP [normal/hurt/injuried/dead] via iconimgs
+    // Icon com estados HP (normal/hurt/injuried/dead) via iconimgs
     const iwrap = document.createElement('div');
     iwrap.className='card-icon-wrap state-'+getIconState(c);
     iwrap.id = 'ciwrap-'+c.uid;
@@ -1103,6 +1333,11 @@ function buildPartyDOM() {
     const atkBarCls = c.nextAbility?.side==='ally' ? 'b-atk is-heal' : 'b-atk';
     bars.appendChild(mkBar(atkBarCls, 'batk-'+c.uid, 0));
     card.appendChild(bars);
+
+    // Effect badges
+    const fxbar = document.createElement('div');
+    fxbar.className = 'fx-bar'; fxbar.id = 'fxbar-'+c.uid;
+    card.appendChild(fxbar);
 
     // Tooltip on hover
     card.addEventListener('mouseenter', ()=>showTooltip(c,card));
@@ -1146,9 +1381,10 @@ function tick() {
     return;
   }
   combat(alive); updateBattleUI(); refreshTT();
+  processEffects(alive);
 }
 
-function combat(alive) { // TEMPO = AGILITY * INTERVAL COF (ABILITY)
+function combat(alive) {
   alive.forEach(c=>{
     const interval = c.nextInterval || 1;
     c.atkProg += (c.speed/50) / interval;
@@ -1212,14 +1448,12 @@ function updateBattleUI(){
     setW('bxp-'+c.uid, (c.xp/c.xpToNext)*100);
     setW('batk-'+c.uid, c.atkProg);
 
-    // Cor da barra de ataque muda se proxima action é heal
     const atkBar = document.getElementById('batk-'+c.uid)?.parentElement;
     if (atkBar) {
       const isHeal = c.nextAbility?.side === 'ally';
       atkBar.className = 'bar ' + (isHeal ? 'b-atk is-heal' : 'b-atk');
     }
 
-    // Ícone muda a cada tick conforme o HP
     updateCharIcon(c);
   });
   setW('enemy-hp-fill',  (S.enemy.hp/S.enemy.maxHp)*100);
@@ -1281,9 +1515,10 @@ function renderEndScreen() {
   heading.innerHTML=`<div style="font-family:'UnifrakturMaguntia',cursive;font-size:22px;color:var(--gold);letter-spacing:2px;">${title}</div>`;
   body.appendChild(heading);
 
+
   makeEndStat(body,'🏃‍♂️','SALAS COMPLETADAS', S.room > 0 ? S.room-1 : 0);
-  makeEndStat(body,'💰','OURO GANHO NESSA PARTIDA', (goldEarned>=0?'+':'')+goldEarned);
-  makeEndStat(body,'💰','OURO TOTAL', S.gold);
+  makeEndStat(body,'💰','OURO GANHO NESSA PARTIDA', (goldEarned>=0?'+':'')+goldEarned), "(",S.gold,")";
+
 
   // Itens coletados
   const itemsSection = document.createElement('div');
@@ -1369,54 +1604,98 @@ function imgSrc(src,sz,l){ return src || fallback(sz,sz,l); }
 async function init(){
   loadGame(); refreshGold();
   try {
-    const [ch,en,it,ab]=await Promise.all([
+    const [ch,en,it,ab,fx]=await Promise.all([
       fetch('personagens.json').then(r=>r.json()),
       fetch('inimigos.json').then(r=>r.json()),
       fetch('itens.json').then(r=>r.json()),
-      fetch('ataques.json').then(r=>r.json())
+      fetch('ataques.json').then(r=>r.json()),
+      fetch('effects.json').then(r=>r.json())
     ]);
-    S.chars=ch; S.enemies=en; S.itemsDB=it; S.abilitiesDB=ab;
+    S.chars=ch; S.enemies=en; S.itemsDB=it; S.abilitiesDB=ab; S.effectsDB=fx;
   } catch(e) {
     console.warn('JSONs não encontrados. Usando FallBAck',e);
 
     S.abilitiesDB = [
-      { name:"punch",      type:"impact", target:"single", side:"enemy", amount:1,   interval:1 },
-      { name:"slash",      type:"cut",    target:"single", side:"enemy", amount:1.2, interval:1 },
-      { name:"SLASH",      type:"cut",    target:"single", side:"enemy", amount:1.2, interval:1 },
-      { name:"heal",       type:"heal",   target:"single", side:"ally",  amount:1,   interval:1 },
-      { name:"Group HEal", type:"heal",   target:"group",  side:"ally",  amount:0.6, interval:3 },
+      { name:"punch",       type:"impact", target:"single", side:"enemy", amount:1,   interval:1 },
+      { name:"SLASH",       type:"cut",    target:"single", side:"enemy", amount:1,   interval:1 },
+      { name:"Bash",        type:"impact", target:"single", side:"enemy", amount:1,   interval:1 },
+      { name:"heal",        type:"heal",   target:"single", side:"ally",  amount:1,   interval:1 },
+      { name:"Group HEal",  type:"heal",   target:"group",  side:"ally",  amount:1,   interval:3 },
+      { name:"Regen",       type:"buff",   effect:["Regen"],target:"single",side:"ally",amount:1, interval:1 },
+      { name:"ME ATAQUEM",  type:"buff",   effect:["ATAQUEM ME"],target:"self",side:"self",amount:1,interval:1 },
+      { name:"ROT CAST",    type:"debuff", effect:["Rot"],  target:"enemy",side:"enemy",amount:1, interval:1 },
+      { name:"Poison Stab", type:"cut",    effect:["Poison"],target:"single",side:"enemy",amount:1,interval:1 },
+    ];
+
+    S.effectsDB = [
+      { name:"Regen",             type:"over time", effect:"heal",   amount:1,   interval:15 },
+      { name:"Poison",            type:"over time", effect:"Damage", amount:1,   interval:10 },
+      { name:"Rot",               type:"over time", effect:"Damage", amount:2,   interval:10 },
+      { name:"Aumento de Ataque", type:"buff",      effect:{ATK:1.5},            interval:10 },
+      { name:"Frenesi",           type:"buff",      effect:{ATK:1.75,SPD:1.75},  interval:7.5 },
+      { name:"Slowness",          type:"debuff",    effect:{SPD:0.60},           interval:10 },
+      { name:"ATAQUEM ME",        type:"buff",      effect:{AGGRO:3.0},          interval:15 },
+      { name:"LETS GO GAMBLING",  type:"buff",      effect:{ATK:0.7,CRITMULTI:2,CRITCHANCE:1.8}, interval:20 },
+      { name:"OVERCLOCK",         type:"buff",      effect:{SPD:3,ATK:1.30}, "side effect":["OverHeat"], interval:20 },
+      { name:"OverHeat",          type:"debuff",    effect:{SPD:0.4},            interval:15 },
     ];
 
     S.chars=[
       {
-        name:"ittyKitty", hp:40, atk:15, speed:200, role:"CAT",
+        name:"Punchy", hp:60, atk:10, speed:400, role:"dps",
+        abilities:{"punch":0,"slash":8},
+        str:12, int:2, con:12, agi:170, dex:5, lck:10, fth:0, aggro:1, critmlt:1.8,
+        idle:"assets/characters/punchy_idle.png",
+        iconimgs:{normal:"assets/characters/punchy/icon/punchy.png",hurt:"assets/characters/punchy/icon/punchy.png",injuried:"assets/characters/punchy/icon/punchy.png",dead:"assets/characters/punchy/icon/punchy.png"},
+        atkImg:"assets/characters/punchy_atk.png", dmgImg:"assets/characters/punchy_dmg.png", deadImg:"assets/characters/fb.png"
+      },
+      {
+        name:"Stonkius", hp:130, atk:7, speed:75, role:"tank",
+        abilities:{"punch":0,"Bash":0,"ME ATAQUEM":5},
+        str:7, int:1, con:26, agi:75, dex:2, lck:5, fth:0, aggro:3, critmlt:1.3,
+        idle:"assets/characters/stonk_idle.png",
+        iconimgs:{normal:"assets/characters/knight/icon/knight.png",hurt:"assets/characters/knight/icon/knight.png",injuried:"assets/characters/knight/icon/knight.png",dead:"assets/characters/knight/icon/knight.png"},
+        atkImg:"assets/characters/stonk_atk.png", dmgImg:"assets/characters/stonk_dmg.png", deadImg:"assets/characters/fb.png"
+      },
+      {
+        name:"Mage", hp:45, atk:16, speed:130, role:"mage",
+        abilities:{"SLASH":0,"ROT CAST":8},
+        str:2, int:16, con:9, agi:130, dex:3, lck:8, fth:2, aggro:1, critmlt:2.0,
+        idle:"assets/characters/mage_idle.webp",
+        iconimgs:{normal:"assets/characters/mage.png",hurt:"assets/characters/mage.png",injuried:"assets/characters/mage.png",dead:"assets/characters/mage.png"},
+        atkImg:"assets/characters/wiz_atk.png", dmgImg:"assets/characters/wiz_dmg.png", deadImg:"assets/characters/fb.png"
+      },
+      {
+        name:"Gambler", hp:55, atk:14, speed:200, role:"rogue",
+        abilities:{"Poison Stab":0,"LETS GO GAMBLING":10},
+        str:8, int:2, con:11, agi:200, dex:14, lck:20, fth:0, aggro:1, critmlt:2.5,
+        idle:"assets/characters/shade_idle.png",
+        iconimgs:{normal:"assets/icons/shade_icon.png",hurt:"assets/icons/shade_icon.png",injuried:"assets/icons/shade_icon.png",dead:"assets/icons/shade_icon.png"},
+        atkImg:"assets/characters/shade_atk.png", dmgImg:"assets/characters/shade_dmg.png", deadImg:"assets/characters/fb.png"
+      },
+      {
+        name:"Healer", hp:70, atk:8, speed:90, role:"healer",
+        abilities:{"heal":0,"Group HEal":10,"Regen":5,"punch":0},
+        str:3, int:8, con:14, agi:90, dex:4, lck:12, fth:14, aggro:1, critmlt:1.5,
+        idle:"assets/characters/lyra_idle.png",
+        iconimgs:{normal:"assets/icons/lyra_icon.png",hurt:"assets/icons/lyra_icon.png",injuried:"assets/icons/lyra_icon.png",dead:"assets/icons/lyra_icon.png"},
+        atkImg:"assets/characters/lyra_atk.png", dmgImg:"assets/characters/lyra_dmg.png", deadImg:"assets/characters/fb.png"
+      },
+      {
+        name:"Automato", hp:70, atk:8, speed:90, role:"VERS",
+        abilities:{"punch":0,"SLASH":5,"heal":15,"OVERCLOCK":10},
+        str:8, int:8, con:14, agi:90, dex:8, lck:6, fth:6, aggro:2, critmlt:1.6,
+        idle:"assets/characters/auto/auto_idle.png",
+        iconimgs:{normal:"assets/characters/auto/auto_icon.png",hurt:"assets/characters/auto/auto_icon.png",injuried:"assets/characters/auto/auto_icon.png",dead:"assets/characters/auto/auto_icon.png"},
+        atkImg:"assets/characters/auto/auto_atk.png", dmgImg:"assets/characters/auto/auto_hurt.png", deadImg:"assets/characters/fb.png"
+      },
+      {
+        name:"Gabubu", hp:40, atk:15, speed:200, role:"CAT",
         abilities:{"punch":0,"slash":10},
-        str:2, int:0, con:1, agi:700, lck:5, fth:0, aggro:1, critmlt:1.8,
+        str:2, int:0, con:1, agi:700, dex:8, lck:15, fth:0, aggro:1, critmlt:2.0,
         idle:"assets/characters/gabu/gabubu_idle.png",
         iconimgs:{normal:"assets/characters/gabu/icon/normal.png",hurt:"assets/characters/gabu/icon/hurt.png",injuried:"assets/characters/gabu/icon/injuried.png",dead:"assets/characters/gabu/icon/dead.png"},
-        atkImg:"assets/characters/gabubu_atk.png",
-        dmgImg:"assets/characters/lyra_dmg.png",
-        deadImg:"assets/characters/fb.png"
-      },
-      {
-        name:"Punchy", con:12, str:12, agi:170, dex:5, int:2, lck:10, fth:0, aggro:1, critmlt:1.5, role:"dps",
-        abilities:{"punch":0,"slash":5},
-        idle:"", iconimgs:{normal:"",hurt:"",injuried:"",dead:""}, icon:"", atkImg:"", dmgImg:"", deadImg:"assets/characters/fb.png"
-      },
-      {
-        name:"Stonk", con:24, str:7, agi:75, dex:2, int:1, lck:5, fth:0, aggro:3, critmlt:1.3, role:"tank",
-        abilities:{"punch":0},
-        idle:"", iconimgs:{normal:"",hurt:"",injuried:"",dead:""}, icon:"", atkImg:"", dmgImg:"", deadImg:"assets/characters/fb.png"
-      },
-      {
-        name:"Wiz", con:9, str:2, agi:130, dex:3, int:16, lck:8, fth:0, aggro:1, critmlt:2.0, role:"mage",
-        abilities:{"slash":0},
-        idle:"", iconimgs:{normal:"",hurt:"",injuried:"",dead:""}, icon:"", atkImg:"", dmgImg:"", deadImg:"assets/characters/fb.png"
-      },
-      {
-        name:"Lyra", con:14, str:3, agi:90, dex:4, int:8, lck:12, fth:14, aggro:1, critmlt:1.5, role:"healer",
-        abilities:{"heal":0,"Group HEal":10,"punch":0},
-        idle:"", iconimgs:{normal:"",hurt:"",injuried:"",dead:""}, icon:"", atkImg:"", dmgImg:"", deadImg:"assets/characters/fb.png"
+        atkImg:"assets/characters/gabubu_atk.png", dmgImg:"assets/characters/lyra_dmg.png", deadImg:"assets/characters/fb.png"
       },
     ];
 

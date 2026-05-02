@@ -8,15 +8,15 @@
     "abilities": { "punch": 0, "slash": 8 },
     "str": 12, "int": 2, "con": 12, "agi": 170, "dex": 5, "lck": 10, "fth": 0,
     "aggro": 1, "critmlt": 1.8,
-    "idle":    "assets/characters/punchy_idle.png",
     "iconimgs": {
       "normal":   "assets/characters/punchy/icon/punchy.png",
       "hurt":     "assets/characters/punchy/icon/punchy.png",
       "injuried": "assets/characters/punchy/icon/punchy.png",
       "dead":     "assets/characters/punchy/icon/punchy.png"
     },
-    "atkImg":  "assets/characters/punchy_atk.png",
-    "dmgImg":  "assets/characters/punchy_dmg.png",
+     "idle":    "assets/characters/idlefb.webp",
+    "atkImg":  "assets/characters/atkfb.webp",
+    "dmgImg":  "assets/characters/damagefb.webp",
     "deadImg": "assets/characters/fb.png"
   },
   {
@@ -28,16 +28,17 @@
     "abilities": { "punch": 0 },
     "str": 7, "int": 1, "con": 26, "agi": 75, "dex": 2, "lck": 5, "fth": 0,
     "aggro": 3, "critmlt": 1.3,
-    "idle":    "assets/characters/stonk_idle.png",
+  
     "iconimgs": {
       "normal":   "assets/characters/knight/icon/knight.png",
       "hurt":     "assets/characters/knight/icon/knight.png",
       "injuried": "assets/characters/knight/icon/knight.png",
       "dead":     "assets/characters/knight/icon/knight.png"
     },
-    "atkImg":  "assets/characters/stonk_atk.png",
-    "dmgImg":  "assets/characters/stonk_dmg.png",
-    "deadImg": "assets/characters/fb.png"
+      "idle":    "assets/characters/idlefb.webp",
+      "atkImg":  "assets/characters/atkfb.webp",
+      "dmgImg":  "assets/characters/damagefb.webp",
+      "deadImg": "assets/characters/fb.png"
   },
   {
     "name": "Mage",
@@ -45,18 +46,18 @@
     "atk": 16,
     "speed": 130,
     "role": "mage",
-    "abilities": { "slash": 0 },
-    "str": 2, "int": 16, "con": 9, "agi": 130, "dex": 3, "lck": 8, "fth": 2,
-    "aggro": 1, "critmlt": 2.0,
-    "idle":    "assets/characters/mage_idle.webp",
+    "abilities": { "Bash": 0 },
+    "str": 2, "int": 30, "con": 9, "agi": 130, "dex": 3, "lck": 8, "fth": 2,
+    "aggro": 0.7, "critmlt": 2.0,
     "iconimgs": {
-      "normal":   "assets/characters/mage.png",
-      "hurt":     "assets/characters/mage.png",
-      "injuried": "assets/characters/mage.png",
-      "dead":     "assets/characters/mage.png"
+      "normal":   "assets/characters/mage/icon/mage.png",
+      "hurt":     "assets/characters/mage/icon/mage.png",
+      "injuried": "assets/characters/mage/icon/mage.png",
+      "dead":     "assets/characters/mage/icon/mage.png"
     },
-    "atkImg":  "assets/characters/wiz_atk.png",
-    "dmgImg":  "assets/characters/wiz_dmg.png",
+    "idle":    "assets/characters/idlefb.webp",
+    "atkImg":  "assets/characters/atkfb.webp",
+    "dmgImg":  "assets/characters/damagefb.webp",
     "deadImg": "assets/characters/fb.png"
   },
   {
@@ -68,15 +69,16 @@
     "abilities": { "slash": 0, "punch": 0 },
     "str": 8, "int": 2, "con": 11, "agi": 200, "dex": 14, "lck": 20, "fth": 0,
     "aggro": 1, "critmlt": 2.5,
-    "idle":    "assets/characters/shade_idle.png",
+  
     "iconimgs": {
       "normal":   "assets/icons/shade_icon.png",
       "hurt":     "assets/icons/shade_icon.png",
       "injuried": "assets/icons/shade_icon.png",
       "dead":     "assets/icons/shade_icon.png"
     },
-    "atkImg":  "assets/characters/shade_atk.png",
-    "dmgImg":  "assets/characters/shade_dmg.png",
+   "idle":    "assets/characters/idlefb.webp",
+    "atkImg":  "assets/characters/atkfb.webp",
+    "dmgImg":  "assets/characters/damagefb.webp",
     "deadImg": "assets/characters/fb.png"
   },
   {
@@ -85,18 +87,18 @@
     "atk": 8,
     "speed": 90,
     "role": "healer",
-    "abilities": { "heal": 0, "Group HEal": 10, "punch": 0 },
-    "str": 3, "int": 8, "con": 14, "agi": 90, "dex": 4, "lck": 12, "fth": 14,
+    "abilities": { "heal": 0, "Group HEal":0},
+    "str": 3, "int": 8, "con": 14, "agi": 300, "dex": 4, "lck": 12, "fth": 32,
     "aggro": 1, "critmlt": 1.5,
-    "idle":    "assets/characters/lyra_idle.png",
     "iconimgs": {
       "normal":   "assets/icons/lyra_icon.png",
       "hurt":     "assets/icons/lyra_icon.png",
       "injuried": "assets/icons/lyra_icon.png",
       "dead":     "assets/icons/lyra_icon.png"
     },
-    "atkImg":  "assets/characters/lyra_atk.png",
-    "dmgImg":  "assets/characters/lyra_dmg.png",
+    "idle":    "assets/characters/idlefb.webp",
+    "atkImg":  "assets/characters/atkfb.webp",
+    "dmgImg":  "assets/characters/damagefb.webp",
     "deadImg": "assets/characters/fb.png"
   },
   {
@@ -105,7 +107,7 @@
     "atk": 8,
     "speed": 90,
     "role": "auto",
-    "abilities": { "punch": 0, "slash": 5, "heal": 15 },
+    "abilities": { "punch": 0, "slash": 5,"Tyran's Module":0, "heal": 15 },
     "str": 8, "int": 8, "con": 14, "agi": 90, "dex": 8, "lck": 6, "fth": 6,
     "aggro": 2, "critmlt": 1.6,
     "idle":    "assets/characters/auto/auto_idle.png",
@@ -126,7 +128,7 @@
     "atk": 15,
     "speed": 200,
     "role": "CAT",
-    "abilities": { "punch": 0, "slash": 10 },
+    "abilities": { "punch": 0,"LETS GO GAMBLING":0, "slash": 10 },
     "str": 2, "int": 0, "con": 10, "agi": 700, "dex": 8, "lck": 15, "fth": 0,
     "aggro": 0, "critmlt": 2.0,
     "idle":    "assets/characters/gabu/gabubu_idle.png",
