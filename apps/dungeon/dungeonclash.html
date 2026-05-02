@@ -148,25 +148,20 @@ html, body {
 }
 .card-body-wrap img { max-width: 72px; max-height: 148px; image-rendering: auto; object-fit: cover; object-position: top; display: block; }
 .c-ph { width: 72px; height: 148px; background: var(--bg3); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 28px; color: var(--text2); }
-
-/* Icon wrapper — icon state (normal/hurt/injuried/dead) changes here */
 .card-icon-wrap { width: 70px; height: 70px; border: 1px solid var(--border); border-radius: 2px; overflow: hidden; position: relative; }
 .card-icon-wrap img { width: 100%; height: 100%; object-fit: cover; image-rendering: auto; display: block; transition: filter .2s; }
 .card-icon-wrap.state-hurt    img { filter: sepia(.5) saturate(1.5) hue-rotate(-10deg); }
 .card-icon-wrap.state-injuried img { filter: sepia(.8) saturate(1.2) hue-rotate(-20deg) brightness(.8); }
 .card-icon-wrap.state-dead    img { filter: grayscale(1) brightness(.5); }
 .ci-ph { width: 100%; height: 100%; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--text2); }
-
-/* Ability flash label */
+/*  flash  */
 .ability-flash {
   position: fixed; pointer-events: none; z-index: 202;
   font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
   color: #aef; text-shadow: 0 0 8px #4af;
   transition: top .6s ease-out, opacity .6s ease-out;
 }
-
 .card-bars { width: 100%; display: flex; flex-direction: column; gap: 2px; }
-
 /* Heal VFX on character */
 @keyframes healGlow { 0%,100%{box-shadow:none} 50%{box-shadow:0 0 18px #2ecc71, inset 0 0 10px #2ecc7144;} }
 .heal-glow { animation: healGlow .5s ease; }
@@ -443,7 +438,7 @@ const S = {
 };
 
 // ═══════════════════════════════════════════
-// SAVE / LOAD FLOAD — equip agora é salvo junto com o personagem
+// SAVE / LOAD FLOAD 
 // ═══════════════════════════════════════════
 const KEY = 'dungeonClash_v4';
 function saveGame() {
@@ -452,7 +447,7 @@ function saveGame() {
       level:    c.level,
       xp:       c.xp,
       xpToNext: c.xpToNext,
-      equip:    c.equip   // weapon/armor/accessory persistem
+      equip:    c.equip  
     };
   });
   try {
@@ -551,19 +546,16 @@ function addToParty(p) {
   c.dead    = false;
 
   deriveBaseStats(c);
-
+//SaveItens
   const sv = S.charSave[p.name];
   c.level    = sv?.level    || 1;
   c.xp       = sv?.xp       || 0;
   c.xpToNext = sv?.xpToNext || 100;
-
-  // Restaurar equip salvo — itens são removidos do inventário se presentes
   c.equip = { weapon:null, armor:null, accessory:null };
   if (sv?.equip) {
     ['weapon','armor','accessory'].forEach(slot=>{
       if (sv.equip[slot]) {
         c.equip[slot] = sv.equip[slot];
-        // Remove do inventário caso esteja duplicado
         const idx = S.inventory.findIndex(i=>i.name===sv.equip[slot].name);
         if (idx>=0) S.inventory.splice(idx,1);
       }
@@ -572,20 +564,15 @@ function addToParty(p) {
 
   for (let i=1; i<c.level; i++) applyLevelBonus(c);
   recalc(c); c.hp = c.maxHp;
-
-  // Abilidades iniciais
   selectNextAbility(c);
-
   S.party.push(c);
   renderMenu();
 }
 
 // ═══════════════════════════════════════════
-// FSTATS — CON STR AGI DEX INT LCK FTH AGGRO CRITMLT
+// FSTATS — CON STR AGI DEX INT LCK FTH---AGGRO CRITMLT
 // ═══════════════════════════════════════════
 function deriveBaseStats(c) {
-  // Nova ficha: con,str,agi,dex,int,lck,fth → derivar baseHp, baseAtk, baseSpeed
-  // Retrocompatibilidade: se nao tiver atributos novos usa hp/atk/speed direto
   c.baseHp    = c.con  !== undefined ? c.con * 5    : (c.hp    || 0);
   c.baseSpeed = c.agi  !== undefined ? c.agi         : (c.speed || 100);
   c.baseFth   = c.fth  !== undefined ? c.fth         : 0;
@@ -639,7 +626,6 @@ function recalc(c) {
 // ═══════════════════════════════════════════
 function getAvailableAbilities(c) {
   if (!c.abilities) return [];
-  // abilities é um objeto { "punch": 0, "slash": 10 } onde valor = nivel minimo
   return Object.entries(c.abilities)
     .filter(([, minLv]) => c.level >= (minLv||0))
     .map(([name]) => S.abilitiesDB.find(a => a.name.toLowerCase() === name.toLowerCase()))
@@ -649,12 +635,10 @@ function getAvailableAbilities(c) {
 function selectNextAbility(c) {
   const avail = getAvailableAbilities(c);
   if (!avail.length) {
-    // sem abilities definidas: usa ataque básico genérico
     c.nextAbility = null;
     c.nextInterval = 1;
     return;
   }
-  // Prioriza heal quando aliado está baixo; caso contrario usa ofensiva
   const alive = S.party ? S.party.filter(m=>!m.dead) : [];
   const lowestHpPct = alive.length ? Math.min(...alive.map(m=>m.hp/m.maxHp)) : 1;
   const healAbilities = avail.filter(a=>a.type==='heal');
@@ -677,7 +661,6 @@ function executeAbility(c, alive) {
   const ab = c.nextAbility;
 
   if (!ab) {
-    // Ataque básico sem ability definida
     doBasicAttack(c);
     return;
   }
@@ -688,9 +671,7 @@ function executeAbility(c, alive) {
     doHealAbility(c, ab, alive);
   }
 
-  // Flash do nome da ability na tela
   spawnAbilityLabel(c, ab.name);
-  // Selecionar próxima ability
   selectNextAbility(c);
 }
 
@@ -730,7 +711,6 @@ function doHealAbility(c, ab, alive) {
   if (ab.target === 'group') {
     alive.forEach(t => applyHeal(t, heal));
   } else {
-    // single: curar o aliado com menos HP
     const target = alive.reduce((a,b) => (a.hp/a.maxHp) < (b.hp/b.maxHp) ? a : b);
     applyHeal(target, heal);
   }
@@ -745,7 +725,6 @@ function applyHeal(target, amount) {
   // VFX
   const card = document.getElementById('bc-'+target.uid);
   if (card) { card.classList.add('heal-glow'); setTimeout(()=>card.classList.remove('heal-glow'),500); }
-  // posição do card para o número flutuar
   const bwrap = document.getElementById('bwrap-'+target.uid);
   const rect  = bwrap ? bwrap.getBoundingClientRect() : {left:window.innerWidth*.5, top:window.innerHeight*.6, width:72};
   spawnDmg(rect.left+rect.width/2, rect.top, '+'+healed, '#2ecc71', false, true);
@@ -769,7 +748,7 @@ function spawnAbilityLabel(c, name) {
 }
 
 // ═══════════════════════════════════════════
-// FICON STATE — iconimgs por HP%
+// FICON STATE
 // ═══════════════════════════════════════════
 function getIconState(c) {
   if (c.dead || c.hp <= 0) return 'dead';
@@ -783,22 +762,20 @@ function updateCharIcon(c) {
   const wrap = document.getElementById('ciwrap-'+c.uid);
   const el   = document.getElementById('cicon-'+c.uid);
   if (!el || !wrap) return;
-
   const state = getIconState(c);
 
-  // Só atualiza DOM se o estado mudou — evita flickering
+
   if (c._iconState === state) return;
   c._iconState = state;
 
   const src = c.iconimgs?.[state] || c.icon || c.idle || '';
-  // Setar src diretamente: não comparar com el.src pois browser converte pra URL absoluta
   if (el.tagName === 'IMG') el.src = src || fallback(70,70,c.name[0]);
 
   wrap.className = 'card-icon-wrap state-'+state;
 }
 
 // ═══════════════════════════════════════════
-// FEQUIP ( 'weapon' | 'armor' | 'accessory' | 'consumable')
+// FEQUIP ( 'weapon' | 'armor' |'accessory' | 'consumable')
 // ═══════════════════════════════════════════
 function equipItem(item, chr) {
   if (item.allowedRoles?.length && !item.allowedRoles.includes(chr.role)) {
@@ -938,7 +915,7 @@ function updateTooltipContent(c) {
   document.getElementById('tt-hp-val').textContent = Math.ceil(c.hp)+' / '+c.maxHp;
   document.getElementById('tt-xp-val').textContent = c.xp+' / '+c.xpToNext+' xp';
 
-  // Atributos primários
+  //  PRIMARY ATTRIBUTES
   const attrsDiv = document.getElementById('tt-attrs');
   attrsDiv.innerHTML = '';
   const attrs = [
@@ -957,7 +934,7 @@ function updateTooltipContent(c) {
     d.appendChild(kd); d.appendChild(vd); attrsDiv.appendChild(d);
   });
 
-  // Sub-atributos
+  // SubATTRIBUTES
   const subDiv = document.getElementById('tt-sub-attrs');
   subDiv.innerHTML = '';
   const subs = [
@@ -1100,7 +1077,7 @@ function buildPartyDOM() {
     };
     bwrap.appendChild(bimg); card.appendChild(bwrap);
 
-    // Icon com estados HP (normal/hurt/injuried/dead) via iconimgs
+    // Icon com estados HP [normal/hurt/injuried/dead] via iconimgs
     const iwrap = document.createElement('div');
     iwrap.className='card-icon-wrap state-'+getIconState(c);
     iwrap.id = 'ciwrap-'+c.uid;
@@ -1232,7 +1209,7 @@ function updateBattleUI(){
     setW('bxp-'+c.uid, (c.xp/c.xpToNext)*100);
     setW('batk-'+c.uid, c.atkProg);
 
-    // Cor da barra de ataque muda se próxima action é heal
+    // Cor da barra de ataque muda se proxima action é heal
     const atkBar = document.getElementById('batk-'+c.uid)?.parentElement;
     if (atkBar) {
       const isHeal = c.nextAbility?.side === 'ally';
@@ -1301,11 +1278,8 @@ function renderEndScreen() {
   heading.innerHTML=`<div style="font-family:'UnifrakturMaguntia',cursive;font-size:22px;color:var(--gold);letter-spacing:2px;">${title}</div>`;
   body.appendChild(heading);
 
-  // Salas
   makeEndStat(body,'🏃‍♂️','SALAS COMPLETADAS', S.room > 0 ? S.room-1 : 0);
-  // Ouro ganho
   makeEndStat(body,'💰','OURO GANHO NESSA PARTIDA', (goldEarned>=0?'+':'')+goldEarned);
-  // Ouro total
   makeEndStat(body,'💰','OURO TOTAL', S.gold);
 
   // Itens coletados
