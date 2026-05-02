@@ -1,0 +1,25 @@
+[{
+   "name": "Regen",
+   "type": "over time",
+   "effect":"heal",
+   "amount": 1,// Caster Heal factor  * 1
+   "interval": 1 //settar um intervalo depois o interval do EffectTick é predefinido  a quantidade de procs que ele da por tick é definida aqui
+
+},
+{
+    "name": "Poison",
+   "type": "over time",
+   "effect":"Damage",
+   "amount": 1,// Caster Heal factor  * 1
+   "interval": 1 //settar um intervalo depois o interval do EffectTick é predefinido  a quantidade de procs que ele da por tick é definida aqui
+
+},
+{
+    "name": "Rot",//seria interessante se não pudesse regenerar oq foi perdido hehehe
+   "type": "over time",
+   "effect":"Damage",
+   "amount": 2,// Caster Heal factor  * 1
+   "interval": 0.7 //settar um intervalo depois o interval do EffectTick é predefinido  a quantidade de procs que ele da por tick é definida aqui
+}
+
+]
