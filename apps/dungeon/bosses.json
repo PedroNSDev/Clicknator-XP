@@ -1,0 +1,21 @@
+[{
+    "name":"Balls McGoofy",
+    "hp": 30000,
+    "atk": 5,
+    "speed": 1200,
+    "idle": "assets/enemies/poporo.jpg",
+    "drops": [
+      { "item": "Reliquia Ancestral", "chance": 0.10 }
+    ]
+},
+{
+    "name":"Tyran",
+    "hp": 100000,
+    "atk": 60,
+    "speed": 1200,
+    "idle": "assets/enemies/poporo.jpg",
+    "drops": [
+      { "item": "Tyrans ARM", "chance": 0.10 }
+    ]
+}
+]

@@ -104,7 +104,7 @@
     "hp": 70,
     "atk": 8,
     "speed": 90,
-    "role": "VERS",
+    "role": "auto",
     "abilities": { "punch": 0, "slash": 5, "heal": 15 },
     "str": 8, "int": 8, "con": 14, "agi": 90, "dex": 8, "lck": 6, "fth": 6,
     "aggro": 2, "critmlt": 1.6,
@@ -121,6 +121,7 @@
   },
   {
     "name": "Gabubu",
+    "lockedd": "",
     "hp": 40,
     "atk": 15,
     "speed": 200,

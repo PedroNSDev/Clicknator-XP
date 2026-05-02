@@ -69,7 +69,7 @@
     "speed": 400,
     "idle": "assets/enemies/demon.jpg",
     "drops": [
-      { "item": "Escudo Trincado", "chance": 0.35 }
+      { "item": "TyranPropulsor", "chance": 0.35 }
     ]
   },
   {

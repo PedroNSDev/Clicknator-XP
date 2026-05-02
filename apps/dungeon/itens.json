@@ -40,5 +40,19 @@
     "hp": 32,
     "price": 100,
     "allowedRoles": ["tank"]
+  },
+  {
+    "name": "Coleira",
+    "type": "armor",
+    "hp": 20,
+    "price": 45,
+    "allowedRoles": ["CAT","rogue"]
+  },
+   {
+    "name": "TyranPropulsor",
+    "type": "atk",
+    "atk": 100,
+    "price": 1000,
+    "allowedRoles": ["auto"]
   }
 ]
