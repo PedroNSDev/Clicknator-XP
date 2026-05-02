@@ -814,6 +814,16 @@ function addEffect(target, effectName, caster) {
   const def = S.effectsDB.find(e => e.name.toLowerCase() === effectName.toLowerCase());
   if (!def) { console.warn('Efeito não encontrado:', effectName); return; }
   if (!target.activeEffects) target.activeEffects = [];
+   const existing = target.activeEffects.find(e => 
+    e.name.toLowerCase() === def.name.toLowerCase()
+  );
+
+  if (existing) {
+    //refresh
+    existing.remaining = def.interval || 10;
+    existing.timer = 0;
+    return }
+
 
   const entry = {
     name:      def.name,
