@@ -55,7 +55,7 @@ html, body {
 #menu-screen {
   overflow-y: auto; display: flex; flex-direction: column; align-items: center;
   padding: 28px 20px 40px; gap: 20px;
-  background: radial-gradient(ellipse, #282725 0%, var(--bg) 70%);
+  background: radial-gradient(ellipse at top, #110a00 0%, var(--bg) 70%);
 }
 #menu-screen.active { display: flex; }
 .menu-logo {
@@ -93,7 +93,7 @@ html, body {
 .btn-del:hover { background: #2a1515; }
 
 /* BATTLE */
-#battle-screen { background: radial-gradient(ellipse at 50% 30%, #393939 0%, var(--bg) 65%); }
+#battle-screen { background: radial-gradient(ellipse at 50% 30%, #140800 0%, var(--bg) 65%); }
 .battle-hud { position: absolute; top: 10px; right: 14px; text-align: right; color: var(--text2); font-size: 11px; letter-spacing: 1px; z-index: 5; }
 .battle-hud .room-label { color: var(--text); font-size: 13px; }
 
@@ -129,6 +129,7 @@ html, body {
 .b-ehp  .bar-fill { background: linear-gradient(90deg,#b22,#e33); }
 .b-xp   .bar-fill { background: linear-gradient(90deg,#1a4a8a,#3498db); }
 .b-atk  .bar-fill { background: linear-gradient(90deg,#811,#c33); }
+.b-atk.is-heal .bar-fill { background: linear-gradient(90deg,#0e6e30,#2ecc71); }
 
 /* PARTY SECTION */
 .party-section {
@@ -145,18 +146,36 @@ html, body {
 .card-body-wrap {
   width: 72px; height: 148px; display: flex; align-items: flex-end; justify-content: center; overflow: hidden;
 }
-.card-body-wrap img { max-width: 72px; max-height: 148px; image-rendering: pixelated; object-fit: cover; object-position: top; display: block; image-rendering: auto; }
+.card-body-wrap img { max-width: 72px; max-height: 148px; image-rendering: auto; object-fit: cover; object-position: top; display: block; }
 .c-ph { width: 72px; height: 148px; background: var(--bg3); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 28px; color: var(--text2); }
-.card-icon-wrap { width: 70px; height: 70px; border: 1px solid var(--border); border-radius: 2px; overflow: hidden; }
-.card-icon-wrap img { width: 100%; height: 100%; object-fit: cover; image-rendering: auto; display: block; }
+
+/* Icon wrapper — icon state (normal/hurt/injuried/dead) changes here */
+.card-icon-wrap { width: 70px; height: 70px; border: 1px solid var(--border); border-radius: 2px; overflow: hidden; position: relative; }
+.card-icon-wrap img { width: 100%; height: 100%; object-fit: cover; image-rendering: auto; display: block; transition: filter .2s; }
+.card-icon-wrap.state-hurt    img { filter: sepia(.5) saturate(1.5) hue-rotate(-10deg); }
+.card-icon-wrap.state-injuried img { filter: sepia(.8) saturate(1.2) hue-rotate(-20deg) brightness(.8); }
+.card-icon-wrap.state-dead    img { filter: grayscale(1) brightness(.5); }
 .ci-ph { width: 100%; height: 100%; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--text2); }
+
+/* Ability flash label */
+.ability-flash {
+  position: fixed; pointer-events: none; z-index: 202;
+  font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
+  color: #aef; text-shadow: 0 0 8px #4af;
+  transition: top .6s ease-out, opacity .6s ease-out;
+}
+
 .card-bars { width: 100%; display: flex; flex-direction: column; gap: 2px; }
+
+/* Heal VFX on character */
+@keyframes healGlow { 0%,100%{box-shadow:none} 50%{box-shadow:0 0 18px #2ecc71, inset 0 0 10px #2ecc7144;} }
+.heal-glow { animation: healGlow .5s ease; }
 
 /* HOVER TOOLTIP */
 #char-tooltip {
   display: none; position: fixed; z-index: 400;
   background: rgba(6,6,6,.97); border: 1px solid var(--gold-lo); border-radius: 3px;
-  padding: 12px 14px; min-width: 200px; max-width: 240px; pointer-events: none;
+  padding: 12px 14px; min-width: 200px; max-width: 250px; pointer-events: none;
   box-shadow: 0 4px 28px rgba(0,0,0,.8), 0 0 0 1px #000;
 }
 #char-tooltip.visible { display: block; }
@@ -171,7 +190,7 @@ html, body {
 .tt-fill.xp-fill { background: linear-gradient(90deg,#1a4a8a,#3498db); }
 .tt-bar-val { font-size: 9px; color: var(--text2); margin-top: 1px; text-align: right; }
 .tt-attrs {
-  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  display: grid; grid-template-columns: 1fr 1fr 1fr 1fr;
   gap: 4px; margin: 8px 0; padding: 6px;
   background: var(--bg3); border: 1px solid var(--border); border-radius: 2px;
 }
@@ -181,10 +200,19 @@ html, body {
 .tt-attr-val.highlight { color: var(--gold); }
 .tt-sub-attrs {
   display: flex; gap: 8px; margin-bottom: 8px; padding: 4px 6px;
-  background: var(--bg3); border: 1px solid var(--border); border-radius: 2px;
+  background: var(--bg3); border: 1px solid var(--border); border-radius: 2px; flex-wrap: wrap;
 }
 .tt-sub { font-size: 9px; color: var(--text2); }
 .tt-sub span { color: var(--text); }
+.tt-abilities { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+.tt-ability-label { font-size: 9px; color: var(--text2); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px; }
+.tt-ability-row {
+  display: flex; align-items: center; gap: 6px; margin-bottom: 3px;
+  padding: 4px 6px; background: var(--bg3); border-radius: 2px; border: 1px solid var(--border);
+}
+.tt-ability-name { font-size: 10px; color: var(--gold); flex: 1; }
+.tt-ability-type { font-size: 9px; color: var(--text2); }
+.tt-ability-locked { opacity: .4; }
 .tt-slots { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
 .tt-slot-label { font-size: 9px; color: var(--text2); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px; }
 .tt-slot-row {
@@ -262,6 +290,7 @@ html, body {
 /* FLOATING DAMAGE */
 .dmg { position: fixed; pointer-events: none; z-index: 201; font-size: 22px; font-weight: bold; text-shadow: 0 1px 4px #000; transition: top .65s ease-out, opacity .65s ease-out; }
 .dmg.crit { font-size: 28px; }
+.dmg.heal-txt { color: #2ecc71 !important; font-size: 20px; }
 
 /* NOTIF */
 .notif { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: var(--bg2); border: 1px solid var(--gold); color: var(--gold); padding: 7px 20px; border-radius: 3px; font-size: 12px; letter-spacing: 1px; z-index: 300; pointer-events: none; animation: notifIn .4s ease; }
@@ -376,6 +405,7 @@ html, body {
   </div>
   <div class="tt-attrs" id="tt-attrs"></div>
   <div class="tt-sub-attrs" id="tt-sub-attrs"></div>
+  <div class="tt-abilities" id="tt-abilities"></div>
   <div class="tt-slots">
     <div class="tt-slot-label">Equipamentos</div>
     <div class="tt-slot-row"><span class="tt-slot-icon">⚔</span><span class="tt-slot-text" id="tt-weapon">— vazio —</span></div>
@@ -390,7 +420,7 @@ html, body {
 // ═══════════════════════════════════════════
 let UID = 0;
 const S = {
-  chars: [], enemies: [], itemsDB: [],
+  chars: [], enemies: [], itemsDB: [], abilitiesDB: [],
   party: [], inventory: [],
   selChar: null, enemy: null,
   room: 0, loop: null, gold: 0,
@@ -413,18 +443,33 @@ const S = {
 };
 
 // ═══════════════════════════════════════════
-// SAVE / LOAD FLOAD
+// SAVE / LOAD FLOAD — equip agora é salvo junto com o personagem
 // ═══════════════════════════════════════════
-const KEY = 'dungeonClash_v3';
+const KEY = 'dungeonClash_v4';
 function saveGame() {
-  S.party.forEach(c => { S.charSave[c.name] = { level:c.level, xp:c.xp, xpToNext:c.xpToNext }; });
-  try { localStorage.setItem(KEY, JSON.stringify({ gold:S.gold, charSave:S.charSave, inventory:S.inventory })); } catch(_){}
+  S.party.forEach(c => {
+    S.charSave[c.name] = {
+      level:    c.level,
+      xp:       c.xp,
+      xpToNext: c.xpToNext,
+      equip:    c.equip   // weapon/armor/accessory persistem
+    };
+  });
+  try {
+    localStorage.setItem(KEY, JSON.stringify({
+      gold:     S.gold,
+      charSave: S.charSave,
+      inventory: S.inventory
+    }));
+  } catch(_){}
 }
 function loadGame() {
   try {
     const d = JSON.parse(localStorage.getItem(KEY)||'null');
     if (!d) return;
-    S.gold = d.gold||0; S.charSave = d.charSave||{}; S.inventory = d.inventory||[];
+    S.gold      = d.gold      || 0;
+    S.charSave  = d.charSave  || {};
+    S.inventory = d.inventory || [];
   } catch(_){}
 }
 
@@ -464,7 +509,7 @@ function renderMenu() {
     s.className = 'p-slot' + (i<S.party.length?' filled':'');
     if (i<S.party.length) {
       const img = document.createElement('img');
-      img.src = imgSrc(S.party[i].icon||S.party[i].idle, 44, S.party[i].name[0]);
+      img.src = imgSrc(S.party[i].iconimgs?.normal||S.party[i].icon||S.party[i].idle, 44, S.party[i].name[0]);
       img.onerror = function(){ this.src = fallback(44,44,this._l); };
       img._l = S.party[i].name[0];
       s.appendChild(img);
@@ -481,7 +526,7 @@ function renderMenu() {
     tile.className = 'char-tile'+(inParty?' in-party':'');
     const img = document.createElement('img');
     img.className = 'tile-icon';
-    img.src = imgSrc(p.icon||p.idle, 60, p.name[0]);
+    img.src = imgSrc(p.iconimgs?.normal||p.icon||p.idle, 60, p.name[0]);
     img.onerror = function(){ this.src = fallback(60,60,p.name[0]); };
     tile.appendChild(img);
     addEl(tile,'div','tile-name',p.name);
@@ -501,8 +546,7 @@ function returnToMenu() {
 function addToParty(p) {
   if (S.party.length>=5 || S.party.some(m=>m.name===p.name)) return;
   const c = JSON.parse(JSON.stringify(p));
-  c.uid = UID++;
-  c.equip = { weapon:null, armor:null, accessory:null };
+  c.uid     = UID++;
   c.atkProg = 0;
   c.dead    = false;
 
@@ -512,35 +556,50 @@ function addToParty(p) {
   c.level    = sv?.level    || 1;
   c.xp       = sv?.xp       || 0;
   c.xpToNext = sv?.xpToNext || 100;
+
+  // Restaurar equip salvo — itens são removidos do inventário se presentes
+  c.equip = { weapon:null, armor:null, accessory:null };
+  if (sv?.equip) {
+    ['weapon','armor','accessory'].forEach(slot=>{
+      if (sv.equip[slot]) {
+        c.equip[slot] = sv.equip[slot];
+        // Remove do inventário caso esteja duplicado
+        const idx = S.inventory.findIndex(i=>i.name===sv.equip[slot].name);
+        if (idx>=0) S.inventory.splice(idx,1);
+      }
+    });
+  }
+
   for (let i=1; i<c.level; i++) applyLevelBonus(c);
   recalc(c); c.hp = c.maxHp;
+
+  // Abilidades iniciais
+  selectNextAbility(c);
+
   S.party.push(c);
   renderMenu();
 }
 
 // ═══════════════════════════════════════════
-// FSTATS — CON STR AGI DEX INT LCK AGGRO CRITMLT
+// FSTATS — CON STR AGI DEX INT LCK FTH AGGRO CRITMLT
 // ═══════════════════════════════════════════
 function deriveBaseStats(c) {
-  // { con,str,agi,dex,int,lck → derivar baseHp, baseAtk, baseSpeed}
-  if (c.con !== undefined) {
-    c.baseHp = c.con * 5;
-  } else {
-    c.baseHp = c.hp || 0;
-  }
-  if (c.agi !== undefined) {
-    c.baseSpeed = c.agi;
-  } else {
-    c.baseSpeed = c.speed || 100;
-  }
+  // Nova ficha: con,str,agi,dex,int,lck,fth → derivar baseHp, baseAtk, baseSpeed
+  // Retrocompatibilidade: se nao tiver atributos novos usa hp/atk/speed direto
+  c.baseHp    = c.con  !== undefined ? c.con * 5    : (c.hp    || 0);
+  c.baseSpeed = c.agi  !== undefined ? c.agi         : (c.speed || 100);
+  c.baseFth   = c.fth  !== undefined ? c.fth         : 0;
+
   const role = c.role || '';
   if (c.str !== undefined || c.int !== undefined || c.dex !== undefined) {
-    if (role==='mage'||role==='healer')        c.baseAtk = c.int||0;
-    else if (role==='rogue'||role==='archer')  c.baseAtk = Math.max(c.dex||0, c.str||0);
-    else                                       c.baseAtk = c.str||0;
+    if (role==='mage')                               c.baseAtk = c.int || 0;
+    else if (role==='healer')                        c.baseAtk = c.int || 0;
+    else if (role==='rogue' || role==='archer')      c.baseAtk = Math.max(c.dex||0, c.str||0);
+    else                                             c.baseAtk = c.str || 0;
   } else {
     c.baseAtk = c.atk || 0;
   }
+
   c.critChanceBase = (c.lck||0) * 0.5;
   c.critmltBase    = c.critmlt || 1.5;
   c.aggroBase      = c.aggro   || 1;
@@ -549,11 +608,12 @@ function deriveBaseStats(c) {
 function applyLevelBonus(c) {
   if (c.con !== undefined) { c.con++; c.baseHp = c.con*5; } else c.baseHp+=10;
   const role = c.role||'';
-  if (c.str!==undefined && (role==='dps'||role==='tank'))        { c.str++;  c.baseAtk=c.str; }
-  else if (c.int!==undefined && (role==='mage'||role==='healer')){ c.int++;  c.baseAtk=c.int; }
-  else if (c.dex!==undefined && (role==='rogue'||role==='archer')){ c.dex++; c.baseAtk=Math.max(c.dex,c.str||0); }
+  if (c.str!==undefined && (role==='dps'||role==='tank'))          { c.str++;  c.baseAtk=c.str; }
+  else if (c.int!==undefined && (role==='mage'||role==='healer'))  { c.int++;  c.baseAtk=c.int; }
+  else if (c.dex!==undefined && (role==='rogue'||role==='archer')) { c.dex++;  c.baseAtk=Math.max(c.dex,c.str||0); }
   else c.baseAtk+=2;
-  if (c.lck!==undefined) c.lck+=0.5;
+  if (c.fth!==undefined) c.fth += 0.5;
+  if (c.lck!==undefined) c.lck += 0.5;
 }
 
 function recalc(c) {
@@ -571,10 +631,174 @@ function recalc(c) {
   c.critChance = (c.critChanceBase||0) + (c.equip?.accessory?.critBonus||0);
   c.critmlt    = c.critmltBase || 1.5;
   c.aggro      = c.aggroBase   || 1;
+  c.fth        = c.baseFth     || 0;
 }
 
 // ═══════════════════════════════════════════
-// FEQUIP ( 'weapon' | 'armor' |'accessory' | 'consumable')
+// FABILITY SYSTEM
+// ═══════════════════════════════════════════
+function getAvailableAbilities(c) {
+  if (!c.abilities) return [];
+  // abilities é um objeto { "punch": 0, "slash": 10 } onde valor = nivel minimo
+  return Object.entries(c.abilities)
+    .filter(([, minLv]) => c.level >= (minLv||0))
+    .map(([name]) => S.abilitiesDB.find(a => a.name.toLowerCase() === name.toLowerCase()))
+    .filter(Boolean);
+}
+
+function selectNextAbility(c) {
+  const avail = getAvailableAbilities(c);
+  if (!avail.length) {
+    // sem abilities definidas: usa ataque básico genérico
+    c.nextAbility = null;
+    c.nextInterval = 1;
+    return;
+  }
+  // Prioriza heal quando aliado está baixo; caso contrario usa ofensiva
+  const alive = S.party ? S.party.filter(m=>!m.dead) : [];
+  const lowestHpPct = alive.length ? Math.min(...alive.map(m=>m.hp/m.maxHp)) : 1;
+  const healAbilities = avail.filter(a=>a.type==='heal');
+  const offAbilities  = avail.filter(a=>a.side==='enemy');
+
+  let chosen;
+  if (healAbilities.length && lowestHpPct < 0.5) {
+    chosen = healAbilities[Math.floor(Math.random()*healAbilities.length)];
+  } else if (offAbilities.length) {
+    chosen = offAbilities[Math.floor(Math.random()*offAbilities.length)];
+  } else {
+    chosen = avail[Math.floor(Math.random()*avail.length)];
+  }
+
+  c.nextAbility  = chosen;
+  c.nextInterval = chosen.interval || 1;
+}
+
+function executeAbility(c, alive) {
+  const ab = c.nextAbility;
+
+  if (!ab) {
+    // Ataque básico sem ability definida
+    doBasicAttack(c);
+    return;
+  }
+
+  if (ab.side === 'enemy') {
+    doOffensiveAbility(c, ab);
+  } else if (ab.side === 'ally') {
+    doHealAbility(c, ab, alive);
+  }
+
+  // Flash do nome da ability na tela
+  spawnAbilityLabel(c, ab.name);
+  // Selecionar próxima ability
+  selectNextAbility(c);
+}
+
+function doBasicAttack(c) {
+  flashEnemy();
+  const bimg = document.getElementById('bimg-'+c.uid);
+  if (bimg && c.atkImg && document.contains(bimg)) {
+    const orig=bimg.src; bimg.src=c.atkImg;
+    setTimeout(()=>{ if (bimg&&document.contains(bimg)) bimg.src=orig; },140);
+  }
+  const isCrit = Math.random()*100 < (c.critChance||0);
+  const dmg    = Math.round(c.atk * (isCrit ? (c.critmlt||1.5) : 1));
+  S.enemy.hp -= dmg;
+  spawnDmg(window.innerWidth*.5, window.innerHeight*.32, isCrit?'⚡'+dmg:dmg, isCrit?'#ffe000':'#f5c518', isCrit);
+}
+
+function doOffensiveAbility(c, ab) {
+  flashEnemy();
+  const bimg = document.getElementById('bimg-'+c.uid);
+  if (bimg && c.atkImg && document.contains(bimg)) {
+    const orig=bimg.src; bimg.src=c.atkImg;
+    setTimeout(()=>{ if (bimg&&document.contains(bimg)) bimg.src=orig; },140);
+  }
+  const isCrit = Math.random()*100 < (c.critChance||0);
+  const base   = c.atk * (ab.amount||1);
+  const dmg    = Math.round(base * (isCrit ? (c.critmlt||1.5) : 1));
+  S.enemy.hp -= dmg;
+  spawnDmg(window.innerWidth*.5, window.innerHeight*.32, isCrit?'⚡'+dmg:dmg, isCrit?'#ffe000':'#f5c518', isCrit);
+}
+
+function doHealAbility(c, ab, alive) {
+  const healPow = ((c.fth||0) + (c.int||0) * 0.5 || c.baseAtk || 5) * (ab.amount||1);
+  const heal    = Math.round(healPow);
+
+  if (!alive.length) return;
+
+  if (ab.target === 'group') {
+    alive.forEach(t => applyHeal(t, heal));
+  } else {
+    // single: curar o aliado com menos HP
+    const target = alive.reduce((a,b) => (a.hp/a.maxHp) < (b.hp/b.maxHp) ? a : b);
+    applyHeal(target, heal);
+  }
+}
+
+function applyHeal(target, amount) {
+  const before = target.hp;
+  target.hp = Math.min(target.maxHp, target.hp + amount);
+  const healed = Math.round(target.hp - before);
+  if (healed <= 0) return;
+
+  // VFX
+  const card = document.getElementById('bc-'+target.uid);
+  if (card) { card.classList.add('heal-glow'); setTimeout(()=>card.classList.remove('heal-glow'),500); }
+  // posição do card para o número flutuar
+  const bwrap = document.getElementById('bwrap-'+target.uid);
+  const rect  = bwrap ? bwrap.getBoundingClientRect() : {left:window.innerWidth*.5, top:window.innerHeight*.6, width:72};
+  spawnDmg(rect.left+rect.width/2, rect.top, '+'+healed, '#2ecc71', false, true);
+
+  updateCharIcon(target);
+}
+
+function spawnAbilityLabel(c, name) {
+  const bwrap = document.getElementById('bwrap-'+c.uid);
+  if (!bwrap) return;
+  const r = bwrap.getBoundingClientRect();
+  const el = document.createElement('div');
+  el.className = 'ability-flash';
+  el.textContent = name.toUpperCase();
+  el.style.left = (r.left + r.width/2) + 'px';
+  el.style.top  = (r.top - 10) + 'px';
+  el.style.transform = 'translateX(-50%)';
+  document.body.appendChild(el);
+  requestAnimationFrame(()=>{ el.style.top=(r.top-50)+'px'; el.style.opacity='0'; });
+  setTimeout(()=>el.remove(), 650);
+}
+
+// ═══════════════════════════════════════════
+// FICON STATE — iconimgs por HP%
+// ═══════════════════════════════════════════
+function getIconState(c) {
+  if (c.dead || c.hp <= 0) return 'dead';
+  const pct = c.hp / c.maxHp;
+  if (pct >= 0.7) return 'normal';
+  if (pct >= 0.3) return 'hurt';
+  return 'injuried';
+}
+
+function updateCharIcon(c) {
+  const wrap = document.getElementById('ciwrap-'+c.uid);
+  const el   = document.getElementById('cicon-'+c.uid);
+  if (!el || !wrap) return;
+
+  const state = getIconState(c);
+
+  // Só atualiza DOM se o estado mudou — evita flickering
+  if (c._iconState === state) return;
+  c._iconState = state;
+
+  const src = c.iconimgs?.[state] || c.icon || c.idle || '';
+  // Setar src diretamente: não comparar com el.src pois browser converte pra URL absoluta
+  if (el.tagName === 'IMG') el.src = src || fallback(70,70,c.name[0]);
+
+  wrap.className = 'card-icon-wrap state-'+state;
+}
+
+// ═══════════════════════════════════════════
+// FEQUIP ( 'weapon' | 'armor' | 'accessory' | 'consumable')
 // ═══════════════════════════════════════════
 function equipItem(item, chr) {
   if (item.allowedRoles?.length && !item.allowedRoles.includes(chr.role)) {
@@ -611,7 +835,7 @@ function renderInv() {
     const btn = document.createElement('button');
     btn.className = 'inv-char-btn'+(S.selChar===c?' sel':'');
     const img = document.createElement('img');
-    img.src = imgSrc(c.icon||c.idle,44,c.name[0]);
+    img.src = imgSrc(c.iconimgs?.normal||c.icon||c.idle,44,c.name[0]);
     img.onerror = function(){ this.src=fallback(44,44,c.name[0]); };
     btn.appendChild(img);
     addEl(btn,'div','',c.name);
@@ -706,7 +930,7 @@ function showTooltip(c, anchor) {
 function updateTooltipContent(c) {
   document.getElementById('tt-name').textContent = c.name;
   document.getElementById('tt-role').textContent = '['+(c.role||'?')+']';
-  document.getElementById('tt-lv').textContent   = 'Lv.'+c.level+'  ATK:'+c.atk+'  SPD:'+c.speed;
+  document.getElementById('tt-lv').textContent   = 'Lv.'+c.level+'  ATK:'+c.atk+'  SPD:'+c.speed+(c.fth?' FTH:'+c.fth.toFixed(1):'');
   const hpP = Math.max(0,Math.min(100,(c.hp/c.maxHp)*100));
   const xpP = Math.max(0,Math.min(100,(c.xp/c.xpToNext)*100));
   document.getElementById('tt-hp-fill').style.width = hpP+'%';
@@ -714,7 +938,7 @@ function updateTooltipContent(c) {
   document.getElementById('tt-hp-val').textContent = Math.ceil(c.hp)+' / '+c.maxHp;
   document.getElementById('tt-xp-val').textContent = c.xp+' / '+c.xpToNext+' xp';
 
-  // Novos atributos
+  // Atributos primários
   const attrsDiv = document.getElementById('tt-attrs');
   attrsDiv.innerHTML = '';
   const attrs = [
@@ -723,6 +947,7 @@ function updateTooltipContent(c) {
     ['AGI', c.agi!==undefined?c.agi:'—'],
     ['DEX', c.dex!==undefined?c.dex:'—'],
     ['INT', c.int!==undefined?c.int:'—'],
+    ['FTH', c.fth!==undefined?c.fth.toFixed(1):'—'],
     ['LCK', c.lck!==undefined?c.lck.toFixed(1):'—'],
   ];
   attrs.forEach(([k,v])=>{
@@ -732,18 +957,39 @@ function updateTooltipContent(c) {
     d.appendChild(kd); d.appendChild(vd); attrsDiv.appendChild(d);
   });
 
+  // Sub-atributos
   const subDiv = document.getElementById('tt-sub-attrs');
   subDiv.innerHTML = '';
   const subs = [
-    ['AGGRO', (c.aggroBase||1).toFixed(1)],
+    ['AGGRO',   (c.aggroBase||1).toFixed(1)],
     ['CRITMLT', 'x'+(c.critmltBase||1.5).toFixed(1)],
-    ['CRIT%', (c.critChance||0).toFixed(1)+'%'],
+    ['CRIT%',   (c.critChance||0).toFixed(1)+'%'],
   ];
   subs.forEach(([k,v])=>{
     const d=document.createElement('div'); d.className='tt-sub';
     d.innerHTML=k+' <span>'+v+'</span>'; subDiv.appendChild(d);
   });
+  
+  // Abilities
+  const abDiv = document.getElementById('tt-abilities');
+  abDiv.innerHTML = '';
+  if (c.abilities && Object.keys(c.abilities).length) {
+    const label = document.createElement('div'); label.className='tt-ability-label';
+    label.textContent = 'Ataques / Habilidades'; abDiv.appendChild(label);
+    Object.entries(c.abilities).forEach(([name, minLv])=>{
+      const ab = S.abilitiesDB.find(a=>a.name.toLowerCase()===name.toLowerCase());
+      const locked = c.level < (minLv||0);
+      const row = document.createElement('div');
+      row.className = 'tt-ability-row' + (locked?' tt-ability-locked':'');
+      const nameEl = document.createElement('div'); nameEl.className='tt-ability-name'; nameEl.textContent=name;
+      const typeEl = document.createElement('div'); typeEl.className='tt-ability-type';
+      typeEl.textContent = ab ? '['+ab.type+'] x'+ab.amount : (locked?'🔒 Lv.'+minLv:'?');
+      row.appendChild(nameEl); row.appendChild(typeEl);
+      abDiv.appendChild(row);
+    });
+  }
 
+  // Equipamentos
   const wEl=document.getElementById('tt-weapon');
   const w=c.equip?.weapon;
   wEl.textContent = w ? w.name+(w.atk?' (+'+w.atk+' ATK)':'') : '— vazio —';
@@ -768,7 +1014,7 @@ function startGame() {
   S.inBattle=true; S.room=0;
   S.runStartGold = S.gold;
   S.runDrops = [];
-  S.party.forEach(c=>{ c.atkProg=0; c.dead=false; recalc(c); c.hp=c.maxHp; });
+  S.party.forEach(c=>{ c.atkProg=0; c.dead=false; recalc(c); c.hp=c.maxHp; selectNextAbility(c); });
   document.getElementById('menu-screen').classList.remove('active');
   document.getElementById('battle-screen').classList.add('active');
   setActiveTab('tab-dungeon');
@@ -854,10 +1100,15 @@ function buildPartyDOM() {
     };
     bwrap.appendChild(bimg); card.appendChild(bwrap);
 
-    // Icon
+    // Icon com estados HP (normal/hurt/injuried/dead) via iconimgs
     const iwrap = document.createElement('div');
-    iwrap.className='card-icon-wrap';
-    const iimg=document.createElement('img'); iimg.src=c.icon||c.idle||''; iimg.alt='';
+    iwrap.className='card-icon-wrap state-'+getIconState(c);
+    iwrap.id = 'ciwrap-'+c.uid;
+    const iimg=document.createElement('img');
+    iimg.id = 'cicon-'+c.uid;
+    const iconState = getIconState(c);
+    iimg.src = c.iconimgs?.[iconState] || c.icon || c.idle || '';
+    iimg.alt='';
     iimg.onerror=function(){
       iwrap.innerHTML='';
       const ph=document.createElement('div'); ph.className='ci-ph'; ph.textContent=c.name[0];
@@ -869,7 +1120,8 @@ function buildPartyDOM() {
     const bars = document.createElement('div'); bars.className='card-bars';
     bars.appendChild(mkBar('b-hp',  'bhp-'+c.uid,  (c.hp/c.maxHp)*100));
     bars.appendChild(mkBar('b-xp',  'bxp-'+c.uid,  (c.xp/c.xpToNext)*100));
-    bars.appendChild(mkBar('b-atk', 'batk-'+c.uid, 0));
+    const atkBarCls = c.nextAbility?.side==='ally' ? 'b-atk is-heal' : 'b-atk';
+    bars.appendChild(mkBar(atkBarCls, 'batk-'+c.uid, 0));
     card.appendChild(bars);
 
     // Tooltip on hover
@@ -916,23 +1168,17 @@ function tick() {
   combat(alive); updateBattleUI(); refreshTT();
 }
 
-function combat(alive) {
+function combat(alive) { // TEMPO = AGILITY * INTERVAL COF (ABILITY)
   alive.forEach(c=>{
-    c.atkProg += c.speed/50;
+    const interval = c.nextInterval || 1;
+    c.atkProg += (c.speed/50) / interval;
+
     if (c.atkProg>=100){
-      c.atkProg=0; flashEnemy();
-      const bwrap=document.getElementById('bwrap-'+c.uid);
-      const bimg =document.getElementById('bimg-'+c.uid);
-      if (bimg && c.atkImg && document.contains(bimg)) {
-        const orig=bimg.src; bimg.src=c.atkImg;
-        setTimeout(()=>{ if (bimg&&document.contains(bimg)) bimg.src=orig; },140);
-      }
-      const isCrit = Math.random()*100 < (c.critChance||0);
-      const dmg    = Math.round(c.atk * (isCrit ? (c.critmlt||1.5) : 1));
-      S.enemy.hp -= dmg;
-      spawnDmg(window.innerWidth*.5, window.innerHeight*.32, isCrit?'⚡'+dmg:dmg, isCrit?'#ffe000':'#ffffff', isCrit);
+      c.atkProg=0;
+      executeAbility(c, alive);
     }
   });
+
   if (S.enemy.hp>0){
     S.enemy.atkProg+=S.enemy.speed/50;
     if (S.enemy.atkProg>=100){
@@ -941,7 +1187,7 @@ function combat(alive) {
       if (!t) return;
 
       t.hp -= S.enemy.atk;
-      spawnDmg(window.innerWidth*.45,window.innerHeight*.68,S.enemy.atk,'#e74c3c',false);
+      spawnDmg(window.innerWidth*.45,window.innerHeight*.68,S.enemy.atk,'#e74c3c',false,false);
 
       const biEl = document.getElementById('bimg-'+t.uid);
       const willDie = t.hp <= 0;
@@ -952,7 +1198,6 @@ function combat(alive) {
         if (card) card.classList.add('dead');
       }
 
-      //FCYCLE
       if (biEl && document.contains(biEl)) {
         if (t.dmgImg) {
           biEl.src = t.dmgImg;
@@ -968,6 +1213,8 @@ function combat(alive) {
           flashChar(t.uid);
         }
       }
+
+      updateCharIcon(t);
     }
   }
 }
@@ -984,6 +1231,16 @@ function updateBattleUI(){
     setW('bhp-'+c.uid, (c.hp/c.maxHp)*100);
     setW('bxp-'+c.uid, (c.xp/c.xpToNext)*100);
     setW('batk-'+c.uid, c.atkProg);
+
+    // Cor da barra de ataque muda se próxima action é heal
+    const atkBar = document.getElementById('batk-'+c.uid)?.parentElement;
+    if (atkBar) {
+      const isHeal = c.nextAbility?.side === 'ally';
+      atkBar.className = 'bar ' + (isHeal ? 'b-atk is-heal' : 'b-atk');
+    }
+
+    // Ícone muda a cada tick conforme o HP
+    updateCharIcon(c);
   });
   setW('enemy-hp-fill',  (S.enemy.hp/S.enemy.maxHp)*100);
   setW('enemy-atk-fill', S.enemy.atkProg);
@@ -997,15 +1254,16 @@ function grantXP(alive){
   alive.forEach(c=>{
     c.xp+=gain;
     while(c.xp>=c.xpToNext){ c.xp-=c.xpToNext; levelUp(c); }
-    S.charSave[c.name]={level:c.level,xp:c.xp,xpToNext:c.xpToNext};
+    S.charSave[c.name]={level:c.level,xp:c.xp,xpToNext:c.xpToNext,equip:c.equip};
   });
 }
 function levelUp(c){
   c.level++; c.xpToNext=Math.floor(c.xpToNext*1.5);
   applyLevelBonus(c); recalc(c); c.hp=c.maxHp;
+  selectNextAbility(c);
   const card=document.getElementById('bc-'+c.uid);
   if (card){card.classList.add('lv-flash'); setTimeout(()=>card.classList.remove('lv-flash'),600);}
-  spawnDmg(window.innerWidth*.5,window.innerHeight*.55,'LV '+c.level+'!','#f5c518',false);
+  spawnDmg(window.innerWidth*.5,window.innerHeight*.55,'LV '+c.level+'!','#f5c518',false,false);
   notify(c.name+' subiu para Lv.'+c.level+'!');
 }
 
@@ -1028,7 +1286,7 @@ function dropLoot(){
 }
 
 // ═══════════════════════════════════════════
-// FEND SCREEN
+// END SCREEN
 // ═══════════════════════════════════════════
 function renderEndScreen() {
   const body = document.getElementById('end-screen-body');
@@ -1040,10 +1298,14 @@ function renderEndScreen() {
 
   const heading = document.createElement('div');
   heading.style.cssText='text-align:center;margin-bottom:18px;';
-  heading.innerHTML=`<div style="font-family:\'UnifrakturMaguntia\',cursive;font-size:22px;color:var(--gold);letter-spacing:2px;">${title}</div>`;
+  heading.innerHTML=`<div style="font-family:'UnifrakturMaguntia',cursive;font-size:22px;color:var(--gold);letter-spacing:2px;">${title}</div>`;
   body.appendChild(heading);
-  makeEndStat(body,'🗺','SALAS COMPLETADAS', S.room > 0 ? S.room-1 : 0);
+
+  // Salas
+  makeEndStat(body,'🏃‍♂️','SALAS COMPLETADAS', S.room > 0 ? S.room-1 : 0);
+  // Ouro ganho
   makeEndStat(body,'💰','OURO GANHO NESSA PARTIDA', (goldEarned>=0?'+':'')+goldEarned);
+  // Ouro total
   makeEndStat(body,'💰','OURO TOTAL', S.gold);
 
   // Itens coletados
@@ -1074,6 +1336,7 @@ function renderEndScreen() {
   });
   body.appendChild(charSection);
 }
+
 function makeEndStat(parent, icon, label, val) {
   const row=document.createElement('div'); row.className='end-stat-row';
   const ic=document.createElement('div'); ic.className='end-stat-icon'; ic.textContent=icon;
@@ -1099,8 +1362,9 @@ function flashChar(uid){
   img.style.filter='brightness(3) saturate(0)';
   setTimeout(()=>{ if (img&&document.contains(img)) img.style.filter=''; },85);
 }
-function spawnDmg(x,y,val,color,isCrit){
-  const el=document.createElement('div'); el.className='dmg'+(isCrit?' crit':'');
+function spawnDmg(x,y,val,color,isCrit,isHeal){
+  const el=document.createElement('div');
+  el.className='dmg'+(isCrit?' crit':'')+(isHeal?' heal-txt':'');
   el.textContent=val; el.style.color=color;
   el.style.left=(x+(Math.random()-.5)*60)+'px'; el.style.top=y+'px';
   document.body.appendChild(el);
@@ -1128,21 +1392,57 @@ function imgSrc(src,sz,l){ return src || fallback(sz,sz,l); }
 async function init(){
   loadGame(); refreshGold();
   try {
-    const [ch,en,it]=await Promise.all([
+    const [ch,en,it,ab]=await Promise.all([
       fetch('personagens.json').then(r=>r.json()),
       fetch('inimigos.json').then(r=>r.json()),
-      fetch('itens.json').then(r=>r.json())
+      fetch('itens.json').then(r=>r.json()),
+      fetch('ataques.json').then(r=>r.json())
     ]);
-    S.chars=ch; S.enemies=en; S.itemsDB=it;
+    S.chars=ch; S.enemies=en; S.itemsDB=it; S.abilitiesDB=ab;
   } catch(e) {
     console.warn('JSONs não encontrados. Usando FallBAck',e);
-    S.chars=[
-      {name:"Punchy",con:12,str:12,agi:170,dex:5, int:2, lck:10,aggro:1,critmlt:1.5,role:"dps",   idle:"",icon:"",atkImg:"",dmgImg:"",deadImg:"assets/characters/fb.png"},
-      {name:"Stonk", con:24,str:7, agi:75, dex:2, int:1, lck:5, aggro:3,critmlt:1.3,role:"tank",  idle:"",icon:"",atkImg:"",dmgImg:"",deadImg:"assets/characters/fb.png"},
-      {name:"Wiz",   con:9, str:2, agi:130,dex:3, int:16,lck:8, aggro:1,critmlt:2.0,role:"mage",  idle:"",icon:"",atkImg:"",dmgImg:"",deadImg:"assets/characters/fb.png"},
-      {name:"Shade", con:11,str:8, agi:200,dex:14,int:2, lck:15,aggro:1,critmlt:2.5,role:"rogue", idle:"",icon:"",atkImg:"",dmgImg:"",deadImg:"assets/characters/fb.png"},
-      {name:"Lyra",  con:14,str:3, agi:90, dex:4, int:8, lck:12,aggro:1,critmlt:1.5,role:"healer",idle:"",icon:"",atkImg:"",dmgImg:"",deadImg:"assets/characters/fb.png"},
+
+    S.abilitiesDB = [
+      { name:"punch",      type:"impact", target:"single", side:"enemy", amount:1,   interval:1 },
+      { name:"slash",      type:"cut",    target:"single", side:"enemy", amount:1.2, interval:1 },
+      { name:"SLASH",      type:"cut",    target:"single", side:"enemy", amount:1.2, interval:1 },
+      { name:"heal",       type:"heal",   target:"single", side:"ally",  amount:1,   interval:1 },
+      { name:"Group HEal", type:"heal",   target:"group",  side:"ally",  amount:0.6, interval:3 },
     ];
+
+    S.chars=[
+      {
+        name:"ittyKitty", hp:40, atk:15, speed:200, role:"CAT",
+        abilities:{"punch":0,"slash":10},
+        str:2, int:0, con:1, agi:700, lck:5, fth:0, aggro:1, critmlt:1.8,
+        idle:"assets/characters/gabu/gabubu_idle.png",
+        iconimgs:{normal:"assets/characters/gabu/icon/normal.png",hurt:"assets/characters/gabu/icon/hurt.png",injuried:"assets/characters/gabu/icon/injuried.png",dead:"assets/characters/gabu/icon/dead.png"},
+        atkImg:"assets/characters/gabubu_atk.png",
+        dmgImg:"assets/characters/lyra_dmg.png",
+        deadImg:"assets/characters/fb.png"
+      },
+      {
+        name:"Punchy", con:12, str:12, agi:170, dex:5, int:2, lck:10, fth:0, aggro:1, critmlt:1.5, role:"dps",
+        abilities:{"punch":0,"slash":5},
+        idle:"", iconimgs:{normal:"",hurt:"",injuried:"",dead:""}, icon:"", atkImg:"", dmgImg:"", deadImg:"assets/characters/fb.png"
+      },
+      {
+        name:"Stonk", con:24, str:7, agi:75, dex:2, int:1, lck:5, fth:0, aggro:3, critmlt:1.3, role:"tank",
+        abilities:{"punch":0},
+        idle:"", iconimgs:{normal:"",hurt:"",injuried:"",dead:""}, icon:"", atkImg:"", dmgImg:"", deadImg:"assets/characters/fb.png"
+      },
+      {
+        name:"Wiz", con:9, str:2, agi:130, dex:3, int:16, lck:8, fth:0, aggro:1, critmlt:2.0, role:"mage",
+        abilities:{"slash":0},
+        idle:"", iconimgs:{normal:"",hurt:"",injuried:"",dead:""}, icon:"", atkImg:"", dmgImg:"", deadImg:"assets/characters/fb.png"
+      },
+      {
+        name:"Lyra", con:14, str:3, agi:90, dex:4, int:8, lck:12, fth:14, aggro:1, critmlt:1.5, role:"healer",
+        abilities:{"heal":0,"Group HEal":10,"punch":0},
+        idle:"", iconimgs:{normal:"",hurt:"",injuried:"",dead:""}, icon:"", atkImg:"", dmgImg:"", deadImg:"assets/characters/fb.png"
+      },
+    ];
+
     S.enemies=[
       {name:"Goblin",hp:55, atk:9, speed:120,idle:"",drops:[]},
       {name:"Orc",   hp:90, atk:14,speed:80, idle:"",drops:[]},

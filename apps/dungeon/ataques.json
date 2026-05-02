@@ -4,7 +4,7 @@
     "type": "impact",
     "target": "single",
     "side": "enemy",
-    "ammount":1,
+    "amount":1,
     "interval":1
 },
 {
@@ -12,7 +12,7 @@
     "type": "cut",
     "target": "single",
     "side": "enemy",
-    "ammount":1,
+    "amount":1,
     "interval":1
 
 },
@@ -21,15 +21,15 @@
     "type":"heal",
     "target":"single",
     "side": "ally",
-    "ammount": 1, // * FTH(FAITH)
-    "interval": 1 // * SPEED
+    "amount": 1, 
+    "interval": 1
 },
 {
     "name":"Group HEal",
     "type":"heal",
     "target":"group",
     "side": "ally",
-    "ammount": 1, // * FTH(FAITH)
-    "interval": 3 // * SPEED
+    "amount": 1,
+    "interval": 3 
 }
 ]
