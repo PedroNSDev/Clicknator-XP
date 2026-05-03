@@ -108,7 +108,7 @@
     "speed": 90,
     "role": "auto",
     "abilities": { "punch": 0, "slash": 5,"Tyran's Module":0, "heal": 15 },
-    "str": 8, "int": 8, "con": 14, "agi": 90, "dex": 8, "lck": 6, "fth": 6,
+    "str": 8, "int": 8, "con": 100, "agi": 300, "dex": 8, "lck": 6, "fth": 6,
     "aggro": 2, "critmlt": 1.6,
     "idle":    "assets/characters/auto/auto_idle.png",
     "iconimgs": {

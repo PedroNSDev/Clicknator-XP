@@ -683,7 +683,11 @@ function getAvailableAbilities(c) {
     .map(([name]) => S.abilitiesDB.find(a => a.name.toLowerCase() === name.toLowerCase()))
     .filter(Boolean);
 }
-
+function hasEffect(target, effectName) {
+  return target.activeEffects?.some(e => 
+    e.name.toLowerCase() === effectName.toLowerCase()
+  );
+}
 function selectNextAbility(c) {
   const avail = getAvailableAbilities(c);
   if (!avail.length) {
@@ -694,9 +698,18 @@ function selectNextAbility(c) {
   const lowestHpPct = alive.length ? Math.min(...alive.map(m=>m.hp/m.maxHp)) : 1;
 
   const healAbs  = avail.filter(a=>a.type==='heal');
-  const buffAbs  = avail.filter(a=>a.type==='buff' || a.type==='debuff');
   const offAbs   = avail.filter(a=>a.side==='enemy');
   const selfAbs  = avail.filter(a=>a.side==='self');
+  const buffAbs = avail.filter(a => {
+  if (!(a.type === 'buff' || a.type === 'debuff')) return false;
+  if (!a.effect) return true;
+
+  const effects = Array.isArray(a.effect)
+    ? a.effect
+    : Object.keys(a.effect);
+
+  return !effects.every(effName => hasEffect(c, effName));
+});
 
   let chosen;
   if (healAbs.length && lowestHpPct < 0.5) {
@@ -811,23 +824,24 @@ function applyHeal(target, amount) {
 const TICK_SEC = 0.05; 
 
 function addEffect(target, effectName, caster) {
-  const def = S.effectsDB.find(e => e.name.toLowerCase() === effectName.toLowerCase());
+  const def = S.effectsDB.find(e => e.name.toLowerCase() ===  effectName.toLowerCase());
   if (!def) { console.warn('Efeito não encontrado:', effectName); return; }
   if (!target.activeEffects) target.activeEffects = [];
-   const existing = target.activeEffects.find(e => 
-    e.name.toLowerCase() === def.name.toLowerCase()
-  );
+    const existing = target.activeEffects.find(e => 
+      e.name.toLowerCase() === def.name.toLowerCase()
+    );
 
-  if (existing) {
-    //refresh
-    existing.remaining = def.interval || 10;
-    existing.timer = 0;
-    return }
+    if (existing) {
+      if (def.refresh == true) {
+        existing.remaining = def.interval || 10;
+        existing.timer = 0;
+      }
+      return;}
 
 
   const entry = {
     name:      def.name,
-    def:       def,
+    def:      def,
     timer:     0,                       
     remaining: def.interval || 10,      
     source:    caster?.name || '?'
@@ -959,7 +973,7 @@ function renderFxBar(c) {
   });
 }
 
-function spawnAbilityLabel(c, name) {
+function spawnAbilityLabel(c, name) {// Hability Floattext 
   const bwrap = document.getElementById('bwrap-'+c.uid);
   if (!bwrap) return;
   const r = bwrap.getBoundingClientRect();

@@ -47,12 +47,14 @@
   {
     "name": "LETS GO GAMBLING",
     "type": "buff",
+    "refresh": true,
     "effect": { "ATK": 0.7, "CRITMULTI": 2, "CRITCHANCE": 1.8 },
     "interval": 20
   },
   {
     "name": "OVERCLOCK",
     "type": "buff",
+    "refresh": false,
     "effect": { "SPD": 3, "ATK": 1.30 },
     "side effect": ["OverHeat"],
     "interval": 20
